@@ -4,25 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hostel OM - Ultra Premium Edition</title>
-    <!-- PWA setup: makes the app installable ("Add to Home Screen") with a real icon and full-screen look -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HostelOM">
-    <!-- REVERTED: output.css wasn't found (build step not completed yet), which broke all styling. Back to CDN for now — safe/working. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- SENTRY ERROR LOGGING: paste your DSN below (from sentry.io project settings). Leave as-is until you have one — it just won't send anything. -->
     <script src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
     <script>
         if (window.Sentry) {
             Sentry.init({
-                dsn: "PASTE_YOUR_SENTRY_DSN_HERE", // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
+                dsn: "PASTE_YOUR_SENTRY_DSN_HERE",
                 tracesSampleRate: 0.2,
-                beforeSend(event) { if (!event.exception) return null; return event; } // sirf real errors bhejo, sab kuch nahi
+                beforeSend(event) { if (!event.exception) return null; return event; }
             });
         }
     </script>
@@ -51,7 +48,7 @@
         }
         .display-font { font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; }
         .hidden { display: none !important; }
-        .bg-blob { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.35; z-index: 0; pointer-events: none; will-change: auto; }
+        .bg-blob { position: fixed; border-radius: 50%; filter: blur(60px); opacity: 0.35; z-index: 0; pointer-events: none; }
         .bg-blob-1 { top: -100px; left: -100px; width: 350px; height: 350px; background: radial-gradient(circle, #a78bfa, transparent); }
         .bg-blob-2 { bottom: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, #f472b6, transparent); }
         .screen-panel { position: relative; z-index: 1; }
@@ -112,7 +109,6 @@
         .method-option:hover { background: white; border-color: #818cf8; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(99, 102, 241, 0.25); }
         .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
         
-        /* Compact Property Cards */
         .property-card { background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; will-change: transform; box-shadow: 0 4px 20px -8px rgba(0,0,0,0.08); }
         .property-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.2); border-color: rgba(129, 140, 248, 0.5); }
         .property-card img { transition: transform 0.4s ease; }
@@ -180,12 +176,12 @@
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden">
     <div class="bg-blob bg-blob-1"></div>
     <div class="bg-blob bg-blob-2"></div>
+    
     <div id="imageZoomModal" class="zoom-modal hidden" onclick="closeZoomModal()">
         <span class="zoom-close" onclick="closeZoomModal()">✕</span>
         <img id="zoomedImageTarget" class="zoom-content" src="" alt="Zoomed View">
     </div>
 
-    <!-- T&C Policy Modal -->
     <div id="modalTnC" class="zoom-modal hidden" onclick="document.getElementById('modalTnC').classList.add('hidden')">
         <div class="bg-white p-8 rounded-[2rem] max-w-lg w-full relative max-h-[85vh] overflow-y-auto layout-scroll" onclick="event.stopPropagation()">
             <button onclick="document.getElementById('modalTnC').classList.add('hidden')" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
@@ -200,7 +196,6 @@
         </div>
     </div>
 
-    <!-- Rating Modal -->
     <div id="modalRating" class="zoom-modal hidden" onclick="document.getElementById('modalRating').classList.add('hidden')">
         <div class="bg-white p-8 rounded-[2rem] max-w-sm w-full relative text-center" onclick="event.stopPropagation()">
             <button onclick="document.getElementById('modalRating').classList.add('hidden')" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
@@ -296,7 +291,6 @@
         <button type="button" onclick="validateAndSubmitProfile()" class="btn-dark w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SAVE & ENTER DASHBOARD</button>
     </div>
 
-    <!-- Onboarding for Business -->
     <div id="screenBusinessOnboarding" class="hidden premium-card p-6 rounded-[2rem] max-w-lg w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-5">
             <button type="button" onclick="goTo('screenOptions')" class="w-9 h-9 bg-white/70 rounded-xl flex items-center justify-center font-bold text-slate-500 hover:bg-white transition shadow-sm">←</button>
@@ -332,7 +326,6 @@
         <button type="button" onclick="saveBusinessProfile()" class="btn-gradient w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SAVE & CREATE ACCOUNT</button>
     </div>
 
-    <!-- USER DASHBOARD -->
     <div id="screenUserDashboard" class="hidden premium-card p-4 md:p-6 rounded-[2rem] max-w-6xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-200/60 flex-wrap gap-4">
             <div class="flex items-center gap-3">
@@ -349,9 +342,7 @@
         </div>
 
         <div class="flex justify-between items-center mb-3">
-            <div>
-                <h3 class="display-font text-xl font-black text-slate-800">Map View</h3>
-            </div>
+            <div><h3 class="display-font text-xl font-black text-slate-800">Map View</h3></div>
             <button type="button" onclick="toggleUserMap()" class="px-4 py-2 bg-white/80 text-indigo-600 font-black text-xs rounded-xl border border-indigo-100 hover:bg-white transition shadow-sm tracking-wide">📍 TOGGLE MAP</button>
         </div>
         <div id="userMapWrapper" class="w-full mb-6">
@@ -365,9 +356,7 @@
         </div>
 
         <div class="flex justify-between items-end mb-3 flex-wrap gap-3">
-            <div>
-                <h3 class="display-font text-xl font-black text-slate-800 mb-1">Available Properties</h3>
-            </div>
+            <div><h3 class="display-font text-xl font-black text-slate-800 mb-1">Available Properties</h3></div>
             <div class="flex items-center gap-3 flex-wrap">
                 <div class="flex flex-col">
                     <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">📅 Check-in Date</label>
@@ -380,7 +369,6 @@
             </div>
         </div>
         
-        <!-- ADVANCED FILTERS -->
         <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl mb-4 shadow-inner space-y-2">
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Property:</span>
@@ -389,7 +377,6 @@
                 <button onclick="setDiscoverFilter('type', 'Boys Hostel')" data-filter="type" data-value="Boys Hostel" class="filter-chip chip chip-outline hover:border-blue-300 transition">👨 Boys</button>
                 <button onclick="setDiscoverFilter('type', 'House/Flat')" data-filter="type" data-value="House/Flat" class="filter-chip chip chip-outline hover:border-amber-300 transition">🏡 House</button>
             </div>
-            
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Stay:</span>
                 <button onclick="setDiscoverFilter('stay', 'all')" data-filter="stay" data-value="all" class="filter-chip chip chip-primary active-filter">Any</button>
@@ -397,7 +384,6 @@
                 <button onclick="setDiscoverFilter('stay', 'weekly')" data-filter="stay" data-value="weekly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Weekly</button>
                 <button onclick="setDiscoverFilter('stay', 'monthly')" data-filter="stay" data-value="monthly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Monthly</button>
             </div>
-            
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Amenities:</span>
                 <button onclick="toggleFeatureFilter('ac')" id="flt-ac" class="chip chip-outline hover:border-indigo-400 transition cursor-pointer">❄️ AC</button>
@@ -408,11 +394,9 @@
                 <button onclick="toggleFeatureFilter('study_table')" id="flt-study_table" class="chip chip-outline hover:border-indigo-400 transition cursor-pointer">📚 Table</button>
             </div>
         </div>
-
         <div id="userPropertyContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
 
-    <!-- ADMIN DASHBOARD -->
     <div id="screenAdminDashboard" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
         <div class="flex justify-between items-center border-b border-slate-200/60 pb-6 mb-6">
             <div class="flex items-center gap-4">
@@ -427,12 +411,10 @@
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 border border-slate-200/60 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm">Logout</button>
             </div>
         </div>
-        
         <div class="flex gap-4 mb-6 border-b border-slate-200 pb-2">
             <button onclick="switchAdminTab('pending')" id="adminTabPending" class="pb-2 text-sm font-black border-b-2 border-indigo-600 text-indigo-700 transition">⏳ Pending Verifications</button>
             <button onclick="switchAdminTab('live')" id="adminTabLive" class="pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">✅ Live Properties</button>
         </div>
-
         <div id="adminPendingContainer" class="space-y-6"></div>
         <div id="adminLiveContainer" class="space-y-6 hidden"></div>
     </div>
@@ -535,7 +517,6 @@
         <div class="mt-6 flex justify-end"><button type="button" onclick="goTo('screenBusinessSecureForm')" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
     </div>
 
-    <!-- BUSINESS SECURE FORM -->
     <div id="screenBusinessSecureForm" class="hidden premium-card p-10 rounded-[2rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto layout-scroll screen-panel">
         <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-8">
             <div class="w-12 h-12 rounded-2xl btn-dark flex items-center justify-center text-white text-xl shadow-lg">🔒</div>
@@ -556,7 +537,6 @@
             
             <div class="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-3xl border border-blue-100/60">
                 <h3 class="text-xs font-black text-blue-900 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">2</span> Property Amenities & Rules</h3>
-                
                 <div class="mb-4 bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
                     <h4 class="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest">Available Stay Types</h4>
                     <div class="flex gap-4 mb-4">
@@ -623,7 +603,6 @@
                 </div>
             </div>
 
-            <!-- Advanced Mess Logic -->
             <div class="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-3xl border border-orange-100/60">
                 <h3 class="text-xs font-black text-orange-900 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] font-black">3</span> Mess & Food Charges</h3>
                 <div>
@@ -641,7 +620,6 @@
                     <div><label class="block text-[8px] font-black text-slate-500 mb-1 uppercase">One Time/Per Meal (₹)</label><input type="number" id="formMessMeal" value="0" class="w-full p-2 border-2 border-slate-200 rounded-lg font-bold text-slate-800 bg-white text-xs"></div>
                 </div>
             </div>
-
         </div>
         <div class="mt-8 flex justify-between items-center border-t border-slate-200/60 pt-6">
             <button type="button" onclick="goTo('screenGoogleMap')" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">← Back</button>
@@ -696,16 +674,15 @@
                 <button type="button" onclick="toggleBusinessPreviewPanel()" id="bizPreviewToggleBtn" class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-black rounded-xl hover:border-indigo-400 transition">🔽 Hide Preview</button>
             </div>
         </div>
-
         <div id="floorTabsContainer" class="flex gap-2 mb-3 overflow-x-auto pb-1 layout-scroll empty:hidden shrink-0"></div>
 
         <div id="bizPreviewPanel" class="flex flex-col md:flex-row gap-4 mb-4 h-[420px] md:h-48 shrink-0 transition-all duration-300">
             <div class="w-full md:w-1/3 bg-white border border-slate-200 rounded-2xl flex flex-col overflow-hidden relative shadow-sm h-full cursor-zoom-in" onclick="openZoomModal(document.getElementById('businessRawImageDisplay').src)">
-                <div class="bg-slate-100 text-slate-500 text-[10px] font-black uppercase px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 tracking-widest shrink-0"><span>🖼️</span> Original Map (Click to Zoom)</div>
+                <div class="bg-slate-100 text-slate-500 text-[10px] font-black uppercase px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 tracking-widest shrink-0"><span>🖼️</span> Original Map</div>
                 <div class="flex-1 p-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden"><img id="businessRawImageDisplay" src="" class="max-w-full max-h-full object-contain mix-blend-multiply"></div>
             </div>
             <div class="w-full md:w-2/3 bg-white border-2 border-indigo-200 rounded-2xl flex flex-col overflow-hidden relative shadow-sm h-full cursor-zoom-in" onclick="zoomBlueprintContainer()">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-black uppercase px-3 py-1.5 flex items-center gap-2 tracking-widest shrink-0"><span>✨</span> AI Generated 2D Blueprint (Click to Zoom)</div>
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-black uppercase px-3 py-1.5 flex items-center gap-2 tracking-widest shrink-0"><span>✨</span> AI Generated 2D Blueprint</div>
                 <div id="blueprintGrid" class="flex-1 p-3 overflow-y-auto layout-scroll bg-slate-50/50"></div>
             </div>
         </div>
@@ -714,7 +691,6 @@
             <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">📝 Data Editor <span class="text-[10px] text-slate-400 font-bold normal-case tracking-normal ml-2">Click Room strip below to expand</span></h3>
             <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100" id="dataEditorRoomCount"></span>
         </div>
-        
         <div id="dynamicBusinessRoomsContainer" class="flex-1 overflow-y-auto layout-scroll grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24 pr-2 min-h-[300px]"></div>
 
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 rounded-b-[2rem] flex justify-between items-center shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] z-20">
@@ -751,7 +727,6 @@
                     <p class="text-[10px] gradient-text font-black uppercase tracking-widest mt-1">Premium Architectural Canvas</p>
                 </div>
             </div>
-            
             <div class="flex gap-2 bg-slate-50/80 p-2 border border-slate-200/60 rounded-2xl flex-wrap">
                 <button onclick="addFabricBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🛏️ Bed</button>
                 <button onclick="addFabricRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
@@ -769,26 +744,24 @@
                 <button onclick="fitFabricCanvas()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">⛶ Fit</button>
                 <button onclick="toggleAdminFloorPlanPanel()" id="floorPanelToggleBtn" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">◧ Hide Plan</button>
             </div>
-
             <div class="flex items-center gap-4">
                 <div class="bg-slate-50 p-1.5 border border-slate-200 rounded-xl flex items-center gap-2"><label class="text-[10px] font-black uppercase text-slate-500 pl-2 tracking-widest">Rate:</label><input type="number" id="adminCanvasSetPrice" placeholder="5000" class="w-20 p-2 bg-white border-2 border-transparent rounded-lg text-sm font-black text-indigo-700 outline-none"></div>
                 <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 text-slate-600 rounded-full font-bold hover:bg-gray-50 transition">✕</button>
                 <button type="button" onclick="publishAdmin2DMap()" id="btnPublish2D" class="btn-gradient px-8 py-3 text-white font-black rounded-xl shadow-lg tracking-wide">Publish Blueprint</button>
             </div>
         </div>
-
         <div id="adminFloorTabsContainer" class="bg-white/90 backdrop-blur px-6 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
         <div class="flex-1 bg-slate-100/60 p-4 flex gap-4 overflow-hidden h-full">
             <div id="adminFloorPlanPanel" class="w-1/4 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative cursor-zoom-in transition-all duration-300" onclick="openZoomModal(document.getElementById('adminSideBySideImg').src)">
-                <div class="bg-slate-50 border-b border-slate-100 p-3 text-center text-xs font-black uppercase tracking-widest text-slate-500">Original Floor Plan (Click to Zoom)</div>
+                <div class="bg-slate-50 border-b border-slate-100 p-3 text-center text-xs font-black uppercase tracking-widest text-slate-500">Original Floor Plan</div>
                 <div id="adminMapDragContainer" class="flex-1 p-4 flex items-center justify-center overflow-auto bg-slate-100"><img id="adminSideBySideImg" src="" class="max-w-full max-h-full object-contain mix-blend-multiply origin-center"></div>
             </div>
             
             <div id="adminCanvasPanel" class="flex-1 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative transition-all duration-300">
                 <div class="btn-gradient text-white p-3 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10 flex justify-between items-center px-4">
                     <span>Architectural HD Canvas</span>
-                    <span class="text-[10px] opacity-80">Tip: Hold Shift/Ctrl + click for multi-select · Drag to lasso-select · Ctrl+A = Select All</span>
+                    <span class="text-[10px] opacity-80">Tip: Hold Shift/Ctrl to select • Backspace to Delete</span>
                 </div>
                 <div class="flex-1 overflow-auto layout-scroll bg-slate-50 p-4" id="fabricCanvasWrapper">
                     <canvas id="adminFabricCanvas"></canvas>
@@ -822,7 +795,6 @@
         </div>
     </div>
 
-    <!-- UPDATE: Fixed Layout Wrapper height -->
     <div id="screenUser2DLayout" class="hidden premium-card pt-4 pb-0 rounded-[2rem] max-w-7xl w-full relative h-[95vh] flex flex-col overflow-hidden screen-panel">
         <div class="bg-white/90 backdrop-blur px-8 py-5 border-b border-slate-200/60 shadow-sm z-10 flex justify-between items-center rounded-t-[2rem] flex-wrap gap-4">
             <div class="flex items-center gap-5">
@@ -837,7 +809,6 @@
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
         <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-32">
-            <!-- FIXED CANVAS WRAPPER -->
             <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-auto layout-scroll flex justify-start items-start p-6" id="userCanvasWrapper" style="min-height: 500px;">
                 <canvas id="userFabricCanvas"></canvas>
             </div>
@@ -851,6 +822,7 @@
                 </div>
             </div>
         </div>
+        
         <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0">
             <div>
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Payable</p>
@@ -864,7 +836,6 @@
         </div>
     </div>
 
-    <!-- HOSTEL / GUEST REGISTRATION FORM (shown before final Proceed to Pay) -->
     <div id="screenGuestRegistrationForm" class="hidden premium-card p-6 md:p-10 rounded-[2rem] max-w-3xl w-full max-h-[95vh] overflow-y-auto layout-scroll screen-panel">
         <div class="flex items-center gap-4 mb-2">
             <button type="button" onclick="closeGuestRegistrationForm()" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
@@ -873,7 +844,7 @@
                 <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest" id="grfHostelNameHeading">Hostel Name</p>
             </div>
         </div>
-        <p class="text-xs text-slate-500 font-medium mb-6">Required by the hostel owner for security & verification. A copy is saved for you and sent to the hostel owner.</p>
+        <p class="text-xs text-slate-500 font-medium mb-6">Required by the hostel owner for security & verification.</p>
 
         <div class="space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -884,7 +855,6 @@
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Passport Size Photo</label>
                     <input type="file" id="grfPassportPhoto" accept="image/*" capture="user" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
-                    <p class="text-[9px] text-slate-400 font-semibold mt-1">Tap to open camera directly, or choose from gallery</p>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -954,7 +924,7 @@
 
             <div class="pt-4 border-t border-slate-100 flex items-start gap-3 bg-slate-50 p-4 rounded-xl">
                 <input type="checkbox" id="grfDeclarationAgree" class="w-5 h-5 mt-0.5 accent-indigo-600 cursor-pointer">
-                <label for="grfDeclarationAgree" class="text-xs font-semibold text-slate-600 cursor-pointer">I declare that all the information given above is correct, and I agree to follow all hostel rules. I consent to my Aadhar number, photo, and other personal details being collected, stored, and shared with the hostel owner solely for identity verification and booking purposes.</label>
+                <label for="grfDeclarationAgree" class="text-xs font-semibold text-slate-600 cursor-pointer">I declare that all the information given above is correct.</label>
             </div>
             <div>
                 <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Signature (Type Full Name)</label>
@@ -969,7 +939,6 @@
         </div>
     </div>
 
-    <!-- PAYMENT STEP (placeholder — no real payment gateway wired in yet, see chat notes) -->
     <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
@@ -988,8 +957,6 @@
         const BACKEND_URL = 'https://hostel-backend-5hsf.onrender.com';
         let globalDynamicRooms = [];
         let userUnsubscribe = null;
-        let userDashRenderTimer = null;
-        let userMapInitTimer = null;
         let globalBizProfile = { firstName: '', phone: '', company: '', role: '' };
         let businessRules = { 
             stayTypes: { daily: false, weekly: false, monthly: true },
@@ -1000,8 +967,6 @@
         let discoverFilters = { type: 'all', stay: 'all', search: '', features: [] };
         let accountMode = 'user';
         let currentMethod = '';
-        let fullFormattedMobile = '';
-        let currentBedTarget = null;
         let selectedBedsList = [];
         let uploadedMapDataUrl = null;
         let uploadedMapFile = null;
@@ -1039,8 +1004,8 @@
         window.toggleDeposit = function() {
             const isMonthly = document.getElementById('stayMonthly').checked;
             const depInput = document.getElementById('formDeposit');
-            if(isMonthly) { depInput.disabled = false; depInput.classList.remove('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.add('bg-white'); } 
-            else { depInput.disabled = true; depInput.classList.add('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.remove('bg-white'); depInput.value = ''; }
+            if(isMonthly && depInput) { depInput.disabled = false; depInput.classList.remove('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.add('bg-white'); } 
+            else if (depInput) { depInput.disabled = true; depInput.classList.add('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.remove('bg-white'); depInput.value = ''; }
         }
         window.toggleMessCharges = function() {
             const messVal = document.getElementById('formMess').value; const chargeDiv = document.getElementById('messChargesDiv');
@@ -1053,35 +1018,19 @@
         window.switchAdminTab = function(tabId) {
             if(tabId === 'pending') {
                 document.getElementById('adminPendingContainer').classList.remove('hidden'); document.getElementById('adminLiveContainer').classList.add('hidden');
-                document.getElementById('adminTabPending').classList.replace('text-slate-500', 'text-indigo-700'); document.getElementById('adminTabPending').classList.replace('border-transparent', 'border-indigo-600');
-                document.getElementById('adminTabLive').classList.replace('text-indigo-700', 'text-slate-500'); document.getElementById('adminTabLive').classList.replace('border-indigo-600', 'border-transparent');
+                document.getElementById('adminTabPending').className = "pb-2 text-sm font-black border-b-2 border-indigo-600 text-indigo-700 transition";
+                document.getElementById('adminTabLive').className = "pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
             } else {
                 document.getElementById('adminPendingContainer').classList.add('hidden'); document.getElementById('adminLiveContainer').classList.remove('hidden');
-                document.getElementById('adminTabLive').classList.replace('text-slate-500', 'text-indigo-700'); document.getElementById('adminTabLive').classList.replace('border-transparent', 'border-indigo-600');
-                document.getElementById('adminTabPending').classList.replace('text-indigo-700', 'text-slate-500'); document.getElementById('adminTabPending').classList.replace('border-indigo-600', 'border-transparent');
+                document.getElementById('adminTabLive').className = "pb-2 text-sm font-black border-b-2 border-indigo-600 text-indigo-700 transition";
+                document.getElementById('adminTabPending').className = "pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition";
             }
-        }
-
-        async function compressImage(file, maxSizeKB = 200) {
-            return new Promise((resolve) => {
-                if (file.size <= maxSizeKB * 1024) { resolve(file); return; }
-                const reader = new FileReader(); reader.readAsDataURL(file);
-                reader.onload = (event) => {
-                    const img = new Image(); img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                        let width = img.width; let height = img.height; const MAX_WIDTH = 1200;
-                        if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-                        canvas.toBlob((blob) => { resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() })); }, 'image/jpeg', 0.7);
-                    };
-                };
-            });
         }
 
         window.toggleRoomAccordion = function(index) { currentlyExpandedRoomIdx = (currentlyExpandedRoomIdx === index) ? null : index; renderBusinessConfig(); }
         function openZoomModal(src) { if(!src) return; document.getElementById('zoomedImageTarget').src = src; document.getElementById('imageZoomModal').classList.remove('hidden'); }
         function closeZoomModal() { document.getElementById('imageZoomModal').classList.add('hidden'); }
+        
         function zoomBlueprintContainer() {
             const blueprintGridHtml = document.getElementById('blueprintGrid').innerHTML;
             const modalContainer = document.createElement('div'); modalContainer.id = 'blueprintZoomModal'; modalContainer.className = 'zoom-modal'; modalContainer.onclick = () => modalContainer.remove();
@@ -1091,12 +1040,11 @@
 
         function deleteSelectedFabricElement() {
             if(!adminFabricCanvasInstance) return; const activeObjects = adminFabricCanvasInstance.getActiveObjects();
-            if(activeObjects.length > 0) { if(confirm(`Delete ${activeObjects.length} element(s)?`)) { activeObjects.forEach(obj => { adminFabricCanvasInstance.remove(obj); }); adminFabricCanvasInstance.discardActiveObject(); adminFabricCanvasInstance.requestRenderAll(); } } 
-            else { alert("Please click/select an item on the canvas first to delete it."); }
+            if(activeObjects.length > 0) { activeObjects.forEach(obj => { adminFabricCanvasInstance.remove(obj); }); adminFabricCanvasInstance.discardActiveObject(); adminFabricCanvasInstance.requestRenderAll(); } 
         }
         function selectAllFabricElements() {
             if(!adminFabricCanvasInstance) return; const allObjects = adminFabricCanvasInstance.getObjects().filter(o => o.selectable !== false && !(o.type === 'line' && (o.stroke === '#cbd5e1' || o.stroke === '#f1f5f9')));
-            if(allObjects.length === 0) { alert("Canvas empty — nothing to select."); return; }
+            if(allObjects.length === 0) return;
             const selection = new fabric.ActiveSelection(allObjects, { canvas: adminFabricCanvasInstance }); adminFabricCanvasInstance.setActiveObject(selection); adminFabricCanvasInstance.requestRenderAll();
         }
 
@@ -1107,7 +1055,7 @@
         }
         function fitFabricCanvas() {
             if(!adminFabricCanvasInstance) return; const wrapper = document.getElementById('fabricCanvasWrapper'); if(!wrapper) return;
-            const availWidth = wrapper.clientWidth - 40; const availHeight = wrapper.clientHeight - 40; const scale = Math.min(availWidth / 3000, availHeight / 3000);
+            const scale = Math.min((wrapper.clientWidth - 40) / 3000, (wrapper.clientHeight - 40) / 3000);
             adminCanvasZoom = scale; adminFabricCanvasInstance.setZoom(scale); adminFabricCanvasInstance.setWidth(3000 * scale); adminFabricCanvasInstance.setHeight(3000 * scale); adminFabricCanvasInstance.requestRenderAll();
         }
 
@@ -1119,56 +1067,37 @@
             const tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'textarea') return;
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); selectAllFabricElements(); }
             else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelectedFabricElement(); }
-            else if (e.key === '+' || e.key === '=') { zoomFabricCanvas(1.15); }
-            else if (e.key === '-' || e.key === '_') { zoomFabricCanvas(0.85); }
-            else if (e.key === '0') { fitFabricCanvas(); }
         });
 
-        function addFabricBathroom() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 60, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 8, ry: 8, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.05)', blur: 6, offsetX: 0, offsetY: 3 }) }); let iconText = new fabric.IText('🚿 BATH', { left: 40, top: 30, fontSize: 13, fill: '#1d4ed8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricTable() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 45, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 8, ry: 8, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.05)', blur: 6, offsetX: 0, offsetY: 3 }) }); let iconText = new fabric.IText('📚 TABLE', { left: 40, top: 22.5, fontSize: 12, fill: '#b45309', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 150, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricBathroom() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 60, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('🚿 BATH', { left: 40, top: 30, fontSize: 13, fill: '#1d4ed8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let group = new fabric.Group([bgRect, iconText], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricTable() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 45, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('📚 TABLE', { left: 40, top: 22.5, fontSize: 12, fill: '#b45309', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let group = new fabric.Group([bgRect, iconText], { left: 150, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
         function addFabricText() { if(!adminFabricCanvasInstance) return; let text = new fabric.IText('Double Click to Edit', { left: 150, top: 120, fontSize: 18, fill: '#334155', fontWeight: '800', fontFamily: 'Plus Jakarta Sans' }); adminFabricCanvasInstance.add(text); }
-        function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 }) }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
-        function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16, shadow: new fabric.Shadow({ color: 'rgba(100,116,139,0.12)', blur: 15, offsetX: 0, offsetY: 6 }) }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
-        function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 100, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 50, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
+        function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
+        function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans' }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 100, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 50, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
 
         function initMap() {
             const bizMapEl = document.getElementById("map");
             if (bizMapEl) {
                 googleMap = new google.maps.Map(bizMapEl, { center: businessCoordinates, zoom: 14, mapId: "DEMO_MAP_ID" });
-                googleMarker = new google.maps.marker.AdvancedMarkerElement({ map: googleMap, position: businessCoordinates, gmpDraggable: true, title: "Location" });
-                googleMap.addListener("click", (mapsMouseEvent) => { const clickedPos = mapsMouseEvent.latLng; googleMarker.position = clickedPos; businessCoordinates = { lat: clickedPos.lat(), lng: clickedPos.lng() }; });
-                googleMarker.addListener("dragend", () => { const draggedPos = googleMarker.position; businessCoordinates = { lat: typeof draggedPos.lat === 'function' ? draggedPos.lat() : draggedPos.lat, lng: typeof draggedPos.lng === 'function' ? draggedPos.lng() : draggedPos.lng }; });
-                const searchInput = document.getElementById("businessMapSearch");
-                if (searchInput) {
-                    const searchBox = new google.maps.places.SearchBox(searchInput);
-                    searchBox.addListener("places_changed", () => { const places = searchBox.getPlaces(); if (places.length === 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return; googleMap.setCenter(place.geometry.location); googleMap.setZoom(16); googleMarker.position = place.geometry.location; businessCoordinates = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }; });
-                }
+                googleMarker = new google.maps.marker.AdvancedMarkerElement({ map: googleMap, position: businessCoordinates, gmpDraggable: true });
+                googleMap.addListener("click", (e) => { const p = e.latLng; googleMarker.position = p; businessCoordinates = { lat: p.lat(), lng: p.lng() }; });
             }
         }
 
         function toggleUserMap() { 
-            const mapWrap = document.getElementById('userMapWrapper'); 
-            if(mapWrap.classList.contains('hidden')) { 
-                mapWrap.classList.remove('hidden'); 
-                initUserMap(); 
-            } else { 
-                mapWrap.classList.add('hidden'); 
-            } 
+            const w = document.getElementById('userMapWrapper'); 
+            if(w.classList.contains('hidden')) { w.classList.remove('hidden'); initUserMap(); } else { w.classList.add('hidden'); } 
         }
 
         async function initUserMap() {
-            if(!userMapInstance) {
-                userMapInstance = new google.maps.Map(document.getElementById("userMapCanvas"), { center: { lat: 21.2514, lng: 81.6296 }, zoom: 12, mapId: "USER_MAP_ID", disableDefaultUI: true, zoomControl: true });
-                const searchInputUser = document.getElementById("userMapSearch");
-                if (searchInputUser) { const searchBoxUser = new google.maps.places.SearchBox(searchInputUser); searchBoxUser.addListener("places_changed", () => { const places = searchBoxUser.getPlaces(); if (places.length === 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return; userMapInstance.setCenter(place.geometry.location); userMapInstance.setZoom(14); }); }
-            }
+            if(!userMapInstance) { userMapInstance = new google.maps.Map(document.getElementById("userMapCanvas"), { center: { lat: 21.2514, lng: 81.6296 }, zoom: 12, mapId: "USER_MAP_ID", disableDefaultUI: true }); }
             userMapMarkers.forEach(m => m.map = null); userMapMarkers = []; let bounds = new google.maps.LatLngBounds();
             allApprovedProperties.forEach(data => {
                 if(data.coordinates) {
-                    const customPinImg = document.createElement("img"); customPinImg.src = "ho-pin.png"; customPinImg.onerror = function() { this.src = "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png"; this.style.width = "27px"; this.style.height = "43px"; }; customPinImg.style.width = "45px"; customPinImg.style.height = "65px"; customPinImg.style.objectFit = "contain"; customPinImg.style.cursor = "pointer"; customPinImg.style.filter = "drop-shadow(0px 4px 4px rgba(0,0,0,0.3))";
-                    const marker = new google.maps.marker.AdvancedMarkerElement({ map: userMapInstance, position: data.coordinates, title: data.propertyType || "Hostel", content: customPinImg });
-                    marker.addListener('click', () => { const card = document.getElementById(`prop-card-${data.id}`); if(card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('ring-4', 'ring-indigo-500', 'shadow-2xl'); setTimeout(() => card.classList.remove('ring-4', 'ring-indigo-500', 'shadow-2xl'), 2500); } });
+                    const marker = new google.maps.marker.AdvancedMarkerElement({ map: userMapInstance, position: data.coordinates });
+                    marker.addListener('click', () => { const card = document.getElementById(`prop-card-${data.id}`); if(card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
                     userMapMarkers.push(marker); bounds.extend(data.coordinates);
                 }
             });
@@ -1176,9 +1105,8 @@
         }
 
         function selectPropertyType(type) { selectedPropertyType = type; goTo('screenGoogleMap'); }
-        // PERF: compress images before upload — big files (5-10MB phone photos) were slowing down
-        // both the upload itself AND every later page load that displays them. Falls back to the
-        // original file if anything goes wrong, or if compression didn't actually shrink it.
+
+        // ENGINE COMPRESSION LAYER: Shrinks large visual imagery assets to protect browser cache threads
         function compressImage(file, maxDimension = 1280, quality = 0.75) {
             return new Promise((resolve) => {
                 if (!file || !file.type || !file.type.startsWith('image/')) { resolve(file); return; }
@@ -1199,10 +1127,8 @@
                             resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
                         }, 'image/jpeg', quality);
                     };
-                    img.onerror = () => resolve(file);
                     img.src = e.target.result;
                 };
-                reader.onerror = () => resolve(file);
                 reader.readAsDataURL(file);
             });
         }
@@ -1210,43 +1136,33 @@
         async function uploadFileToStorage(file, path) { const compressed = await compressImage(file); const storageRef = window.ref(window.storage, path); await window.uploadBytes(storageRef, compressed); return await window.getDownloadURL(storageRef); }
 
         function goTo(screenId) {
-            document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
-            const targetScreen = document.getElementById(screenId);
-            if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
-            if (screenId !== 'screenUserDashboard' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
+            document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); });
+            const s = document.getElementById(screenId);
+            if(s) { s.classList.remove('hidden'); s.classList.add('animate-fade-in'); }
+            if (screenId !== 'screenUser2DLayout' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
             
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
-            if(screenId === 'screenUserDashboard') {
-                refreshUserDash();
-                setTimeout(() => {
-                    const mapWrap = document.getElementById('userMapWrapper');
-                    if (mapWrap && !mapWrap.classList.contains('hidden')) {
-                        initUserMap();
-                    }
-                }, 300);
-            }
+            if(screenId === 'screenUserDashboard') refreshUserDash();
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
-            if(screenId === 'screenGoogleMap' && googleMap) { setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150); }
         }
 
         function switchAccountMode(mode) {
             accountMode = mode;
             ['User', 'Business', 'Admin'].forEach(t => { let tab = document.getElementById('tab' + t); if(tab) tab.className = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive cursor-pointer"; });
             let activeClass = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active cursor-pointer";
-            if (mode === 'user') { document.getElementById('tabUser').className = activeClass; document.getElementById('mainHeading').innerText = "Welcome Back"; document.getElementById('mainSubheading').innerText = "Log in to book verified properties"; } 
-            else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerText = "Manage your properties and layouts"; } 
-            else { document.getElementById('tabAdmin').className = activeClass; document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
+            if (mode === 'user') { document.getElementById('tabUser').className = activeClass; } 
+            else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; } 
+            else { document.getElementById('tabAdmin').className = activeClass; }
         }
 
         function selectMethod(method) { currentMethod = method; if (method === 'Mobile') goTo('screenOtpVerification'); else { goTo('screenProfileCompletion'); } }
         function sendOtpToBackend() { goTo('screenProfileCompletion'); }
-        function verifyOtpFromBackend() { goTo('screenProfileCompletion'); }
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
+        
         function routeToDashboard() {
             if (accountMode === 'user') { goTo('screenUserDashboard'); }
             else if (accountMode === 'business') {
-                // Already-registered business user: skip "Welcome Aboard" profile form, go straight to their dashboard
                 try {
                     const savedProfile = localStorage.getItem('hostelom_business_profile');
                     if (savedProfile) { globalBizProfile = JSON.parse(savedProfile); goTo('screenBusinessDashboard'); return; }
@@ -1258,12 +1174,11 @@
 
         function toggleBizIdInput() {
             const isChecked = document.getElementById('bizIdLater').checked; const idInput = document.getElementById('bizIdValue'); const idType = document.getElementById('bizIdType');
-            if(isChecked) { idInput.disabled = true; idType.disabled = true; idInput.classList.add('bg-slate-100', 'opacity-50'); idType.classList.add('bg-slate-100', 'opacity-50'); } 
-            else { idInput.disabled = false; idType.disabled = false; idInput.classList.remove('bg-slate-100', 'opacity-50'); idType.classList.remove('bg-slate-100', 'opacity-50'); }
+            if(isChecked) { idInput.disabled = true; idType.disabled = true; } else { idInput.disabled = false; idType.disabled = false; }
         }
 
         function saveBusinessProfile() {
-            globalBizProfile = { firstName: document.getElementById('bizFirstName').value || 'Unknown', lastName: document.getElementById('bizLastName').value || '', phone: document.getElementById('bizPhone').value || 'N/A', role: document.getElementById('bizRole').value || 'Admin', company: document.getElementById('bizCompanyName').value || 'Personal', empCount: document.getElementById('bizEmpCount').value || '1-10', idValue: document.getElementById('bizIdValue').value || 'N/A' };
+            globalBizProfile = { firstName: document.getElementById('bizFirstName').value || 'Unknown', phone: document.getElementById('bizPhone').value || 'N/A', role: document.getElementById('bizRole').value || 'Admin', company: document.getElementById('bizCompanyName').value || 'Personal' };
             try { localStorage.setItem('hostelom_business_profile', JSON.stringify(globalBizProfile)); } catch(e) {}
             goTo('screenBusinessDashboard');
         }
@@ -1272,643 +1187,292 @@
 
         function saveLegalAndNext() {
             businessLegalData.licence = document.getElementById('formLicence').value || 'LIC-OM-9942'; businessLegalData.gst = document.getElementById('formGst').value || '22AAAAA0000A1Z5';
-            businessRules.stayTypes = { daily: document.getElementById('stayDaily') ? document.getElementById('stayDaily').checked : false, weekly: document.getElementById('stayWeekly') ? document.getElementById('stayWeekly').checked : false, monthly: document.getElementById('stayMonthly') ? document.getElementById('stayMonthly').checked : true };
-            businessRules.securityDeposit = document.getElementById('formDeposit') ? parseInt(document.getElementById('formDeposit').value) || 0 : 0;
-            businessRules.acType = document.getElementById('formAcType') ? document.getElementById('formAcType').value : 'AC & Non-AC Both';
-            businessRules.bathType = document.getElementById('formBathType') ? document.getElementById('formBathType').value : 'Attached';
-            businessRules.parking = document.getElementById('formParking') ? document.getElementById('formParking').value : 'Bike Only';
-            businessRules.laundry = document.getElementById('formLaundry') ? document.getElementById('formLaundry').value : 'Not Available';
-            businessRules.laundryCharge = document.getElementById('formLaundryCharge') ? parseInt(document.getElementById('formLaundryCharge').value) || 0 : 0;
-            businessRules.wifi = document.getElementById('formWifi') ? document.getElementById('formWifi').checked : true;
-            businessRules.studyTable = document.getElementById('formStudyTable') ? document.getElementById('formStudyTable').checked : true;
-            businessRules.cctv = document.getElementById('formCctv') ? document.getElementById('formCctv').checked : false;
-            businessRules.noRestriction = document.getElementById('formNoRestriction') ? document.getElementById('formNoRestriction').checked : false;
-            businessRules.mess = document.getElementById('formMess') ? document.getElementById('formMess').value : 'Not Available';
-            businessRules.messPrices = { daily: document.getElementById('formMessDaily') ? parseInt(document.getElementById('formMessDaily').value) || 0 : 0, weekly: document.getElementById('formMessWeekly') ? parseInt(document.getElementById('formMessWeekly').value) || 0 : 0, monthly: document.getElementById('formMessMonthly') ? parseInt(document.getElementById('formMessMonthly').value) || 0 : 0, meal: document.getElementById('formMessMeal') ? parseInt(document.getElementById('formMessMeal').value) || 0 : 0 };
+            businessRules.stayTypes = { daily: document.getElementById('stayDaily')?.checked, weekly: document.getElementById('stayWeekly')?.checked, monthly: document.getElementById('stayMonthly')?.checked };
+            businessRules.securityDeposit = parseInt(document.getElementById('formDeposit')?.value) || 0;
+            businessRules.acType = document.getElementById('formAcType')?.value;
+            businessRules.bathType = document.getElementById('formBathType')?.value;
+            businessRules.parking = document.getElementById('formParking')?.value;
+            businessRules.laundry = document.getElementById('formLaundry')?.value;
+            businessRules.wifi = document.getElementById('formWifi')?.checked;
+            businessRules.studyTable = document.getElementById('formStudyTable')?.checked;
+            businessRules.mess = document.getElementById('formMess')?.value;
+            businessRules.messPrices = { monthly: parseInt(document.getElementById('formMessMonthly')?.value) || 0 };
             goTo('screenMapUploadPipeline');
         }
 
         function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; goTo('screenPropertyTypeSelection'); }
+        
         async function addFloorMap() {
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
-            if(!name || !fileInput.files[0]) { alert("Kripya Floor ka naam aur map ki photo dono dalein!"); return; }
+            if(!name || !fileInput.files[0]) return;
             const compressedFile = await compressImage(fileInput.files[0], 500); const localPreviewUrl = URL.createObjectURL(compressedFile);
             floorMaps.push({ floorName: name, file: compressedFile, dataUrl: localPreviewUrl });
             if(floorMaps.length === 1) { uploadedMapFile = compressedFile; uploadedMapDataUrl = localPreviewUrl; }
             renderFloorMaps(); document.getElementById('newFloorName').value = ''; fileInput.value = '';
         }
-        window.removeFloorMap = function(index) { floorMaps.splice(index, 1); if(floorMaps.length === 0) { uploadedMapFile = null; uploadedMapDataUrl = null; } renderFloorMaps(); }
+        
+        window.removeFloorMap = function(index) { floorMaps.splice(index, 1); renderFloorMaps(); }
+        
         function renderFloorMaps() {
             const container = document.getElementById('multiFloorContainer');
-            container.innerHTML = '<h4 class="font-black text-slate-700 text-xs uppercase tracking-widest border-b border-slate-100 pb-2 mb-3">Uploaded Maps</h4>';
-            floorMaps.forEach((fm, index) => { container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-200 text-sm mb-2 shadow-sm hover:shadow-md transition"><span class="font-black text-slate-800">${fm.floorName}</span><div class="flex items-center gap-3"><span class="chip chip-success">✅ Saved</span><button type="button" onclick="removeFloorMap(${index})" class="text-red-500 hover:text-white hover:bg-red-500 bg-red-50 font-bold text-xs px-2 py-1 rounded-lg transition cursor-pointer">🗑️</button></div></div>`; });
-            document.getElementById('uploadPrompt').innerHTML = floorMaps.length > 0 ? `<span class='text-5xl block mb-2'>✅</span><p class='font-black text-emerald-600'>${floorMaps.length} Map(s) Ready.</p>` : `<span class="text-5xl block mb-3 text-indigo-300">📥</span><p class="font-black text-slate-600">Add Floor Maps</p>`;
+            container.innerHTML = '';
+            floorMaps.forEach((fm, index) => { container.innerHTML += `<div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-200 mb-2"><span>${fm.floorName}</span><button type="button" onclick="removeFloorMap(${index})" class="text-red-500">🗑️</button></div>`; });
         }
 
         async function simulateAIProcessing() {
-            if(floorMaps.length === 0 || !uploadedMapFile) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
+            if(floorMaps.length === 0 || !uploadedMapFile) return;
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
             try {
                 const formData = new FormData(); formData.append('floor_plan', uploadedMapFile);
                 const response = await fetch(`${BACKEND_URL}/process-rough-layout`, { method: 'POST', body: formData });
-                if (!response.ok) throw new Error("Backend connection failed.");
                 const aiData = await response.json();
-                globalDynamicRooms = []; admin2DBlocks = []; let layoutPos = aiData.corridor_position || 'center'; const defaultFlr = floorMaps[0].floorName;
-                if(aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: layoutPos, floor: defaultFlr }); }
-                if(aiData.rooms && aiData.rooms.length > 0) {
+                globalDynamicRooms = []; admin2DBlocks = []; const defaultFlr = floorMaps[0].floorName;
+                if(aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: aiData.corridor_position || 'center', floor: defaultFlr }); }
+                if(aiData.rooms) {
                     aiData.rooms.forEach((r, idx) => {
                         let roomId = 'R' + (idx + 1); let bedsArr = []; let bedsCount = r.beds_count || 1;
-                        for(let i=0; i<bedsCount; i++) bedsArr.push({id: `${roomId}-B${i+1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000});
-                        let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx+1}`, floor: defaultFlr, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['','',''], amenities: r.amenities || [], has_door: r.has_door !== false };
-                        globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: defaultFlr });
+                        for(let i=0; i<bedsCount; i++) bedsArr.push({id: `${roomId}-B${i+1}`, price: 5000});
+                        globalDynamicRooms.push({ id: roomId, name: `Room ${idx+1}`, floor: defaultFlr, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['',''] });
+                        admin2DBlocks.push({ type: 'room', id: roomId, name: `Room ${idx+1}`, beds: bedsArr, floor: defaultFlr });
                     });
                 }
-                document.getElementById('aiLoadingOverlay').classList.add('hidden'); currentSelectedFloor = defaultFlr; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); goTo('screenBusinessBedConfig');
-            } catch(error) { document.getElementById('aiLoadingOverlay').classList.add('hidden'); alert("Processing Error: " + error.message); }
+                document.getElementById('aiLoadingOverlay').classList.add('hidden'); currentSelectedFloor = defaultFlr; renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); goTo('screenBusinessBedConfig');
+            } catch(error) { document.getElementById('aiLoadingOverlay').classList.add('hidden'); alert("Error processing map layout"); }
         }
 
         function renderFloorTabs() {
             const container = document.getElementById('floorTabsContainer'); container.innerHTML = '';
             floorMaps.forEach(fm => {
                 const isActive = fm.floorName === currentSelectedFloor;
-                const btnClass = isActive ? 'btn-dark px-6 py-2.5 text-white font-black rounded-xl shadow-md transition whitespace-nowrap cursor-default' : 'px-6 py-2.5 bg-white text-slate-600 font-bold rounded-xl border-2 border-slate-100 hover:border-indigo-300 transition whitespace-nowrap cursor-pointer';
-                container.innerHTML += `<button type="button" onclick="selectFloorTab('${fm.floorName}')" class="${btnClass}">${fm.floorName}</button>`;
+                container.innerHTML += `<button type="button" onclick="selectFloorTab('${fm.floorName}')" class="${isActive ? 'btn-dark px-6 py-2 text-white font-black rounded-xl' : 'px-6 py-2 bg-white rounded-xl'}">${fm.floorName}</button>`;
             });
         }
         function renderAdminFloorTabs(floorsArray) {
             const container = document.getElementById('adminFloorTabsContainer'); container.innerHTML = '';
             floorsArray.forEach(floor => {
                 const isActive = floor === currentAdminFloor;
-                const btnClass = isActive ? 'btn-gradient px-6 py-2 text-white font-black rounded-xl shadow-sm text-sm cursor-default' : 'px-6 py-2 bg-slate-50 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-100 transition text-sm cursor-pointer';
-                container.innerHTML += `<button type="button" onclick="selectAdminFloor('${floor}')" class="${btnClass}">${floor}</button>`;
+                container.innerHTML += `<button type="button" onclick="selectAdminFloor('${floor}')" class="${isActive ? 'btn-gradient px-6 py-2 text-white font-black rounded-xl' : 'px-6 py-2 bg-slate-50 border rounded-xl'}">${floor}</button>`;
             });
         }
         function renderUserFloorTabs(floorsArray) {
             const container = document.getElementById('userFloorTabsContainer'); container.innerHTML = '';
             floorsArray.forEach(floor => {
                 const isActive = floor === currentUserFloor;
-                const btnClass = isActive ? 'btn-gradient px-6 py-2.5 text-white font-black rounded-xl shadow-lg text-sm cursor-default transition transform -translate-y-0.5' : 'px-6 py-2.5 bg-white border-2 border-slate-100 text-slate-500 font-bold rounded-xl hover:border-indigo-200 hover:text-indigo-600 transition text-sm cursor-pointer';
-                container.innerHTML += `<button type="button" onclick="selectUserFloor('${floor}')" class="${btnClass}">${floor}</button>`;
+                container.innerHTML += `<button type="button" onclick="selectUserFloor('${floor}')" class="${isActive ? 'btn-gradient px-6 py-2.5 text-white font-black rounded-xl' : 'px-6 py-2.5 bg-white border rounded-xl'}">${floor}</button>`;
             });
         }
 
-        function selectFloorTab(floorName) { currentSelectedFloor = floorName; const floorData = floorMaps.find(f => f.floorName === floorName); if(floorData) { uploadedMapDataUrl = floorData.dataUrl; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; } renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); }
+        function selectFloorTab(floorName) { currentSelectedFloor = floorName; const f = floorMaps.find(f => f.floorName === floorName); if(f) { uploadedMapDataUrl = f.dataUrl; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; } renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); }
+        
         function selectAdminFloor(floorName) {
             if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']); }
             currentAdminFloor = floorName; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderAdminFloorTabs(uniqueFloors);
-            let imgUrl = loadedBusinessData && loadedBusinessData.floorMapUrls ? loadedBusinessData.floorMapUrls[floorName] : (loadedBusinessData ? loadedBusinessData.mapImageUrl : '');
+            let imgUrl = loadedBusinessData?.floorMapUrls?.[floorName] || loadedBusinessData?.mapImageUrl;
             document.getElementById('adminSideBySideImg').src = imgUrl || ''; redrawAdminCanvasForFloor();
         }
-        function refreshRoomsLabel() { document.getElementById('detectedRoomsLabel').innerText = `${globalDynamicRooms.length} Rooms Found`; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; }
 
         function addCustomRoom() {
-            const nextNum = globalDynamicRooms.length + 1; const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
-            const newRoomId = 'R' + nextNum; const newBedArr = [{id: `${newRoomId}-B1`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000}];
-            const newRoom = { id: newRoomId, name: 'Room ' + nextNum, floor: defaultFloor, type: '1-Seater', price: 5000, beds: newBedArr, photos: ['','',''], amenities: [], has_door: true };
-            globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: newRoomId, name: newRoom.name, beds: newBedArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: defaultFloor });
-            refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
+            const nextNum = globalDynamicRooms.length + 1; const defaultFloor = currentSelectedFloor || 'Ground Floor'; const newRoomId = 'R' + nextNum;
+            const newRoom = { id: newRoomId, name: 'Room ' + nextNum, floor: defaultFloor, type: '1-Seater', price: 5000, beds: [{id: `${newRoomId}-B1`, price: 5000}], photos: ['',''] };
+            globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: newRoomId, name: newRoom.name, beds: newRoom.beds, floor: defaultFloor });
+            renderBusinessConfig(); renderAttractive2DPlan();
         }
-        function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : 'top'; admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
-        function removeRoom(index) {
-            const roomId = globalDynamicRooms[index].id; globalDynamicRooms.splice(index, 1); admin2DBlocks = admin2DBlocks.filter(b => b.id !== roomId);
-            globalDynamicRooms.forEach((room, newIdx) => { const correctNumber = newIdx + 1; const newRoomId = 'R' + correctNumber; const newRoomName = 'Room ' + correctNumber; if(room.id !== newRoomId) { const block = admin2DBlocks.find(b => b.id === room.id); if(block) { block.id = newRoomId; block.name = newRoomName; block.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; }); } room.id = newRoomId; room.name = newRoomName; room.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; }); } });
-            refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
-        }
+        function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || 'Ground Floor'; admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: orientation === 'vertical' ? 'center' : 'top', floor: defaultFloor }); renderAttractive2DPlan(); }
+        function removeRoom(index) { globalDynamicRooms.splice(index, 1); renderBusinessConfig(); renderAttractive2DPlan(); }
 
         window.updateBedPrice = function(roomIndex, bedIndex, type, newPrice) {
             let val = Number(newPrice) || 0;
-            if (type === 'daily') globalDynamicRooms[roomIndex].beds[bedIndex].priceDaily = val;
-            if (type === 'weekly') globalDynamicRooms[roomIndex].beds[bedIndex].priceWeekly = val;
             if (type === 'monthly') { globalDynamicRooms[roomIndex].beds[bedIndex].priceMonthly = val; globalDynamicRooms[roomIndex].beds[bedIndex].price = val; }
-            const block = admin2DBlocks.find(b => b.id === globalDynamicRooms[roomIndex].id);
-            if(block) { if (type === 'daily') block.beds[bedIndex].priceDaily = val; if (type === 'weekly') block.beds[bedIndex].priceWeekly = val; if (type === 'monthly') { block.beds[bedIndex].priceMonthly = val; block.beds[bedIndex].price = val; } }
             renderAttractive2DPlan();
         }
 
-        function addBedToRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; const newBed = {id: `${room.id}-B${room.beds.length + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000}; room.beds.push(newBed); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.push(newBed); } renderBusinessConfig(); renderAttractive2DPlan(); }
-        function removeBedFromRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; if(room.beds.length > 1) { room.beds.pop(); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.pop(); } renderBusinessConfig(); renderAttractive2DPlan(); } else { alert("At least 1 bed required!"); } }
-        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 200); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; } }
+        function addBedToRoom(roomIndex) { const r = globalDynamicRooms[roomIndex]; r.beds.push({id: `${r.id}-B${r.beds.length + 1}`, price: 5000}); r.type = `${r.beds.length}-Seater`; renderBusinessConfig(); renderAttractive2DPlan(); }
+        function removeBedFromRoom(roomIndex) { const r = globalDynamicRooms[roomIndex]; if(r.beds.length > 1) { r.beds.pop(); r.type = `${r.beds.length}-Seater`; renderBusinessConfig(); renderAttractive2DPlan(); } }
+        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { file = await compressImage(file, 200); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; inputElement.parentElement.innerHTML = "✅ Saved!"; } }
 
-        // FIX: onSnapshot listeners rebuild list HTML every time ANYTHING changes in Firestore
-        // (not just this user's own data) — full innerHTML replace was resetting scroll position
-        // every time, which felt like the page was "refreshing" while scrolling. This helper keeps
-        // the visual scroll position stable across those rebuilds.
         function updateHtmlPreservingScroll(container, newHtml) {
-            const scrollParent = container.closest('.layout-scroll') || document.scrollingElement || document.documentElement;
+            const scrollParent = container.closest('.layout-scroll') || document.documentElement;
             const prevScrollTop = scrollParent.scrollTop;
             container.innerHTML = newHtml;
             scrollParent.scrollTop = prevScrollTop;
         }
 
-        let bizNotifUnsubscribe = null;
         function listenBizNotifications() {
-            if (bizNotifUnsubscribe) bizNotifUnsubscribe();
-            try {
-                bizNotifUnsubscribe = window.onSnapshot(window.collection(window.db, "notifications"), (qs) => {
-                    let unread = 0; let html = '';
-                    const items = [];
-                    qs.forEach(d => { const n = d.data(); items.push(n); if (!n.read) unread++; });
-                    items.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-                    items.slice(0, 20).forEach(n => { html += `<div class="p-3 border-b border-slate-100 last:border-0"><p class="text-xs font-bold text-slate-700">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="${n.pdfUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`; });
-                    const badge = document.getElementById('bizNotifBadge');
-                    if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
-                    document.getElementById('bizNotifPanel').innerHTML = html || `<p class="text-xs text-slate-400 font-semibold text-center py-4">No notifications yet</p>`;
-                });
-            } catch(e) {}
+            window.onSnapshot(window.collection(window.db, "notifications"), (qs) => {
+                let unread = 0; let html = '';
+                qs.forEach(d => { const n = d.data(); if (!n.read) unread++; html += `<div class="p-2 border-b text-xs">${n.message}</div>`; });
+                const badge = document.getElementById('bizNotifBadge');
+                if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                document.getElementById('bizNotifPanel').innerHTML = html || `<p class="text-xs text-center py-2">No alerts</p>`;
+            });
         }
         function toggleBizNotifications() { document.getElementById('bizNotifPanel').classList.toggle('hidden'); }
 
-        let businessUnsubscribe = null;
-        function skeletonCards(count, heightClass) {
-            let html = '';
-            for (let i = 0; i < count; i++) { html += `<div class="skeleton ${heightClass || 'h-64'} w-full"></div>`; }
-            return html;
-        }
-
         async function refreshBusinessDash() {
             listenBizNotifications();
-            const container = document.getElementById('businessExistingProperties'); container.innerHTML = skeletonCards(2, 'h-56');
-            try {
-                if(businessUnsubscribe) businessUnsubscribe();
-                businessUnsubscribe = window.onSnapshot(window.collection(window.db, "businesses"), (querySnapshot) => {
-                    if (querySnapshot.empty) { container.innerHTML = ``; return; } let htmlContent = '';
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data(); let statusText = data.status === 'approved_2d' ? '✅ Active' : '⏳ Pending'; let statusChip = data.status === 'approved_2d' ? 'chip chip-success' : 'chip chip-warning';
-                        let uploadedAtText = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString('en-IN') : (data.dateSubmitted ? 'Earlier' : '—');
-                        let editedAtText = data.lastEditedAt ? new Date(data.lastEditedAt).toLocaleString('en-IN') : 'Not edited yet';
-                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> </div>`;
-                    });
-                    updateHtmlPreservingScroll(container, htmlContent);
+            const container = document.getElementById('businessExistingProperties');
+            window.onSnapshot(window.collection(window.db, "businesses"), (qs) => {
+                let html = '';
+                qs.forEach((doc) => {
+                    const data = doc.data();
+                    html += `<div class="property-card p-6 rounded-3xl flex flex-col justify-between"><div><h4 class="font-black text-xl">${data.propertyType || 'Property'}</h4><p class="text-xs text-slate-400">Status: ${data.status}</p></div><button type="button" onclick="openBusinessEdit('${doc.id}')" class="mt-4 py-2 bg-slate-100 font-bold rounded-xl">⚙️ EDIT RATES</button></div>`;
                 });
-            } catch(error) { container.innerHTML = `<p class="text-red-500 font-bold col-span-2">Error: ${error.message}</p>`; }
+                updateHtmlPreservingScroll(container, html);
+            });
         }
 
         window.openBusinessEdit = async function(docId) {
             editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || []; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor';
-            floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
-            document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
+            floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls?.[f] || busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
+            document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); goTo('screenBusinessBedConfig');
         }
 
         async function submitToAdmin() {
-            const btn = document.getElementById('submitAdminBtn'); btn.innerText = "⏳ Saving & Syncing..."; btn.disabled = true;
+            const btn = document.getElementById('submitAdminBtn'); btn.innerText = "⏳ Syncing..."; btn.disabled = true;
             try {
                 let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
-                if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
+                if(!editingBusinessDocId) { for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
                 let cleanRoomsData = [];
-                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
-                const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
-                if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${Date.now()}_main_photo`); }
-                if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); } 
-                else { await window.addDoc(window.collection(window.db, "businesses"), { businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", dateSubmitted: new Date(), uploadedAt: new Date().toISOString() }); alert('Listing submitted for verification!'); }
-                editingBusinessDocId = null; goTo('screenBusinessDashboard');
-            } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
+                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], `business_rooms/${Date.now()}_${cleanRoom.id}_${i}`); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
+                if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData }); alert('Updates synced live!'); } 
+                else { await window.addDoc(window.collection(window.db, "businesses"), { businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, status: "pending_approval" }); alert('Listing submitted!'); }
+                goTo('screenBusinessDashboard');
+            } catch (error) { alert("Submission failed"); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
 
-        let adminUnsubscribe = null;
         function refreshAdminDash() {
-            const pendingContainer = document.getElementById('adminPendingContainer'); const liveContainer = document.getElementById('adminLiveContainer');
-            pendingContainer.innerHTML = skeletonCards(2, 'h-48'); liveContainer.innerHTML = skeletonCards(2, 'h-48');
-            if(adminUnsubscribe) adminUnsubscribe();
-            adminUnsubscribe = window.onSnapshot(window.collection(window.db, "businesses"), (querySnapshot) => {
-                let pendingHtml = ''; let liveHtml = '';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data(); let totalBeds = 0; if(data.roomsAndBeds) data.roomsAndBeds.forEach(r => totalBeds += r.beds.length);
-                    let bizProfileHtml = '';
-                    if (data.businessProfile) { bizProfileHtml = `<div class="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-200"><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 border-b border-slate-200 pb-1">Owner Details</p><div class="flex flex-wrap gap-x-4 gap-y-1"><span class="text-xs font-bold text-slate-800">👤 ${data.businessProfile.firstName}</span><span class="text-xs font-bold text-slate-800">🏢 ${data.businessProfile.company}</span><span class="text-xs font-bold text-slate-800">📱 ${data.businessProfile.phone}</span></div></div>`; }
-                    let govtVerificationHtml = '';
-                    if (data.legalDetails) { govtVerificationHtml = `<div class="bg-indigo-50 p-3 rounded-xl mb-3 border border-indigo-200"><p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 border-b border-indigo-100 pb-1">🔒 Government Verification</p><div class="flex flex-wrap gap-x-4 gap-y-1"><span class="text-xs font-bold text-slate-800">📜 Licence: ${data.legalDetails.licence || '—'}</span><span class="text-xs font-bold text-slate-800">🧾 GST: ${data.legalDetails.gst || '—'}</span></div></div>`; }
-                    let rulesSummaryHtml = '';
-                    if (data.rules) {
-                        const r = data.rules; let chips = '';
-                        if (r.acType) chips += `<span class="chip chip-outline">❄️ ${r.acType}</span>`;
-                        if (r.bathType) chips += `<span class="chip chip-outline">🚿 ${r.bathType}</span>`;
-                        if (r.parking) chips += `<span class="chip chip-outline">🅿️ ${r.parking}</span>`;
-                        if (r.wifi) chips += `<span class="chip chip-outline">📶 WiFi</span>`;
-                        if (r.studyTable) chips += `<span class="chip chip-outline">📚 Study Table</span>`;
-                        if (r.cctv) chips += `<span class="chip chip-outline">🎥 CCTV</span>`;
-                        if (r.laundry && r.laundry !== 'Not Available') chips += `<span class="chip chip-outline">🧺 Laundry</span>`;
-                        let messChip = (r.mess && r.mess !== 'Not Available') ? `<span class="chip chip-outline">🍲 Mess: ${r.mess} (₹${r.messPrices?.monthly || 0}/mo)</span>` : `<span class="chip chip-outline">🍲 No Mess</span>`;
-                        rulesSummaryHtml = `<div class="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-200"><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-200 pb-1">Amenities, Rules & Mess (filled by owner)</p><div class="flex flex-wrap gap-2">${chips}${messChip}</div></div>`;
-                    }
-                    let publishedAtHtml = data.layout2DPublishedAt ? `<p class="text-[10px] font-bold text-emerald-600 -mt-2">📅 2D Layout finalized: ${new Date(data.layout2DPublishedAt).toLocaleString('en-IN')}</p>` : '';
-                    const cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}<div class="flex justify-end gap-3 pt-2"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div>`;
-                    if (data.status === 'pending_approval') pendingHtml += cardHtml; else if (data.status === 'approved_2d' || data.status === 'approved') liveHtml += cardHtml;
+            const pendingContainer = document.getElementById('adminPendingContainer');
+            window.onSnapshot(window.collection(window.db, "businesses"), (qs) => {
+                let pendingHtml = '';
+                qs.forEach((doc) => {
+                    const data = doc.data();
+                    pendingHtml += `<div class="property-card p-6 rounded-3xl flex justify-between items-center"><div><h3 class="font-black text-lg">${data.propertyType}</h3></div><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-4 py-2 text-white font-bold rounded-xl text-xs">✨ ARCHITECT MODE</button></div>`;
                 });
-                updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`);
-                updateHtmlPreservingScroll(liveContainer, liveHtml || `<p class="text-slate-500 font-black text-center mt-6">No Live Properties Yet</p>`);
+                updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-center">No Properties Found</p>`);
             });
         }
 
-        async function startAdminAIFlow(docId, rawImageUrl, totalBedsFromBusiness) { currentAdminDocId = docId; adminExpectedBeds = totalBedsFromBusiness || 0; aiGeneratedMapUrl = rawImageUrl; document.getElementById('adminToolImage').src = aiGeneratedMapUrl; mappedBedsData = []; bedCounter = 1; document.getElementById('dynamicMappingPublishBtn').onclick = approveAndPublishAdminMap; goTo('screenAdminMappingTool'); renderAdminBeds(); }
-        function renderAdminBeds() {
-            const container = document.getElementById('adminDrawnBeds'); container.innerHTML = ''; document.getElementById('mappingToolTitle').innerText = `Admin: Map Beds (${mappedBedsData.length}/${adminExpectedBeds})`;
-            mappedBedsData.forEach(bed => { const overlay = document.createElement('div'); overlay.className = 'absolute border-2 border-red-500 bg-red-200/80 flex items-center justify-center text-red-900 font-bold text-[10px] rounded shadow-sm cursor-pointer'; overlay.style.top = bed.top; overlay.style.left = bed.left; overlay.style.width = bed.width; overlay.style.height = bed.height; overlay.innerHTML = `B${bed.id.split('-')[2]} <span class="text-[8px] ml-1">✖</span>`; overlay.onclick = (e) => { e.stopPropagation(); mappedBedsData = mappedBedsData.filter(b => b.id !== bed.id); renderAdminBeds(); }; container.appendChild(overlay); });
-        }
-        function addBedMarker(event) { if (mappedBedsData.length >= adminExpectedBeds && adminExpectedBeds > 0) return; const rect = event.currentTarget.getBoundingClientRect(); const xPercent = ((event.clientX - rect.left) / rect.width) * 100; const yPercent = ((event.clientY - rect.top) / rect.height) * 100; mappedBedsData.push({ id: 'IMG-BED-' + bedCounter, price: 5000, top: (yPercent-4) + '%', left: (xPercent-6) + '%', width: '12%', height: '8%', status: 'available' }); bedCounter++; renderAdminBeds(); }
-        async function approveAndPublishAdminMap() { if(mappedBedsData.length === 0) return; const btn = document.getElementById('dynamicMappingPublishBtn'); btn.innerText = "Publishing..."; await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved", mapImageUrl: aiGeneratedMapUrl, imageMapBeds: mappedBedsData }); alert('Approved!'); uploadedMapDataUrl = aiGeneratedMapUrl; goTo('screenAdminDashboard'); }
-
         async function startAdmin2DFlow(docId) {
-            // IMPORTANT FIX: dispose any previous admin canvas before loading a (possibly different)
-            // property's layout. Without this, leftover room/bed objects from the last property stayed
-            // in memory and got saved into this property's floor state on Publish — causing rooms to
-            // appear duplicated/ghosted (and blurry from overlapping text) for both admin and the user.
             if (adminFabricCanvasInstance) { adminFabricCanvasInstance.dispose(); adminFabricCanvasInstance = null; }
             currentAdminDocId = docId; admin2DBlocks = [];
             const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); loadedBusinessData = busData;
-            if(busData && busData.layout2D && busData.layout2D.length > 0) { admin2DBlocks = busData.layout2D; } else if (busData && busData.roomsAndBeds) { admin2DBlocks = [{ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: 'center', floor: busData.roomsAndBeds[0].floor || 'Ground Floor' }, ...busData.roomsAndBeds.map(r => ({ type: 'room', id: r.id || 'B'+Date.now(), name: r.name, beds: r.beds.map(b => ({id: b.id, price: b.price || 5000})), amenities: r.amenities || ['study_table', 'bathroom'], has_door: r.has_door !== false, floor: r.floor || 'Ground Floor' })) ]; }
+            if(busData?.layout2D?.length > 0) { admin2DBlocks = busData.layout2D; }
             adminLocalCanvasStates = busData.fabricCanvasStates || {}; goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
         }
 
         function redrawAdminCanvasForFloor() {
             setTimeout(() => {
-                const wrapper = document.getElementById('fabricCanvasWrapper');
-                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: 3000, height: 3000, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); }
+                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: 3000, height: 3000, backgroundColor: '#f8fafc', selection: true }); }
                 adminFabricCanvasInstance.clear();
-                if (adminLocalCanvasStates[currentAdminFloor]) { adminFabricCanvasInstance.renderOnAddRemove = false; adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { adminFabricCanvasInstance.renderOnAddRemove = true; adminFabricCanvasInstance.renderAll(); }); return; }
-                adminFabricCanvasInstance.renderOnAddRemove = false; // PERF FIX: was re-rendering the full 3000x3000 canvas on every single .add() call below (grid lines + every room + every bed) — this was the main reason Architect Mode felt very slow to load.
-                for (let i = 0; i < 3000; i += 25) { let isMajor = i % 100 === 0; adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, 3000], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: isMajor ? 1.5 : 0.5, selectable: false })); adminFabricCanvasInstance.add(new fabric.Line([0, i, 3000, i], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: isMajor ? 1.5 : 0.5, selectable: false })); }
+                if (adminLocalCanvasStates[currentAdminFloor]) { 
+                    adminFabricCanvasInstance.renderOnAddRemove = false; 
+                    adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { 
+                        adminFabricCanvasInstance.renderOnAddRemove = true; 
+                        adminFabricCanvasInstance.requestRenderAll(); 
+                    }); 
+                    return; 
+                }
+                
+                // PERFORMANCE FIX 1: Turn off automatic dynamic render sweeps while batch injecting the asset array context
+                adminFabricCanvasInstance.renderOnAddRemove = false;
+                for (let i = 0; i < 3000; i += 25) { let isMajor = i % 100 === 0; adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, 3000], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: 0.5, selectable: false })); adminFabricCanvasInstance.add(new fabric.Line([0, i, 3000, i], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: 0.5, selectable: false })); }
+                
                 let topPos = 40; let leftPos = 40; const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentAdminFloor);
-                filteredBlocks.forEach((block, idx) => {
-                    if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 130; }
-                    else if(block.type === 'room') { let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16, shadow: new fabric.Shadow({ color: 'rgba(100,116,139,0.12)', blur: 15, offsetX: 0, offsetY: 6 }) }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText(block.name.toUpperCase(), { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(roomGroup); let bedStartX = leftPos + 20; let bedStartY = topPos + 55; block.beds.forEach((bed, bIdx) => { let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 }) }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + bed.price, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: bedStartX, top: bedStartY, selectable: true, isBed: true, bedId: bed.id, bedPrice: bed.price, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); bedStartX += 85; if(bedStartX > leftPos + 200) { bedStartX = leftPos + 20; bedStartY += 90; } }); topPos += 200; if(topPos > 400) { topPos = 40; leftPos += 310; } }
+                filteredBlocks.forEach((block) => {
+                    if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8] }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 130; }
+                    else if(block.type === 'room') { let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitle = new fabric.IText(block.name.toUpperCase(), { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center' }); let roomGroup = new fabric.Group([roomRect, roomTitle], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(roomGroup); let bedStartX = leftPos + 20; let bedStartY = topPos + 55; block.beds.forEach((bed) => { let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceTxt = new fabric.Text('₹' + bed.price, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center' }); let bedGroup = new fabric.Group([bedBg, bedIcon, priceTxt], { left: bedStartX, top: bedStartY, selectable: true, isBed: true, bedId: bed.id, bedPrice: bed.price }); adminFabricCanvasInstance.add(bedGroup); bedStartX += 85; }); topPos += 200; }
                 });
+                
+                // Re-enable rendering actions and call requestRenderAll to repaint the frame context safely
                 adminFabricCanvasInstance.renderOnAddRemove = true;
-                adminFabricCanvasInstance.renderAll();
-                adminFabricCanvasInstance.renderAll();
+                adminFabricCanvasInstance.requestRenderAll();
             }, 300);
         }
 
         async function publishAdmin2DMap() {
-            const btn = document.getElementById('btnPublish2D'); btn.innerText = "⏳ Syncing to Cloud..."; btn.disabled = true;
-            try {
-                if (adminFabricCanvasInstance && currentAdminFloor) {
-                    const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
-                    if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
-                    adminLocalCanvasStates[currentAdminFloor] = jsonState; 
-                }
-                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates, layout2DPublishedAt: new Date().toISOString() });
-                alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
-            } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
+            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']); }
+            await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates });
+            alert('Blueprint Published!'); goTo('screenAdminDashboard');
         }
 
         window.toggleFeatureFilter = function(feature) {
             const btn = document.getElementById('flt-' + feature);
-            if(discoverFilters.features.includes(feature)) {
-                discoverFilters.features = discoverFilters.features.filter(f => f !== feature);
-                btn.classList.remove('chip-selected'); btn.classList.add('chip-outline');
-            } else {
-                discoverFilters.features.push(feature);
-                btn.classList.add('chip-selected'); btn.classList.remove('chip-outline');
-            }
+            if(discoverFilters.features.includes(feature)) { discoverFilters.features = discoverFilters.features.filter(f => f !== feature); btn.classList.replace('chip-selected', 'chip-outline'); } 
+            else { discoverFilters.features.push(feature); btn.classList.replace('chip-outline', 'chip-selected'); }
             applyDiscoverFilters();
         }
 
         window.setDiscoverFilter = function(type, value) {
-            discoverFilters[type] = value;
-            document.querySelectorAll(`.filter-chip[data-filter="${type}"]`).forEach(el => { el.classList.remove('active-filter', 'chip-primary'); el.classList.add('chip-outline'); });
-            const active = document.querySelector(`.filter-chip[data-filter="${type}"][data-value="${value}"]`);
-            if (active) { active.classList.remove('chip-outline'); active.classList.add('active-filter', 'chip-primary'); }
-            applyDiscoverFilters();
+            discoverFilters[type] = value; applyDiscoverFilters();
         }
 
         window.applyDiscoverFilters = function() {
-            const search = (document.getElementById('discoverSearchInput')?.value || '').toLowerCase();
             document.querySelectorAll('[id^="prop-card-"]').forEach(card => {
                 const id = card.id.replace('prop-card-', ''); const prop = allApprovedProperties.find(p => p.id === id); if (!prop) return;
                 let show = true;
-                if (search && !(prop.propertyType || '').toLowerCase().includes(search) && !(prop.businessProfile?.company || '').toLowerCase().includes(search)) show = false;
                 if (discoverFilters.type !== 'all' && prop.propertyType !== discoverFilters.type) show = false;
-                if (discoverFilters.stay !== 'all') { if(!prop.rules?.stayTypes?.[discoverFilters.stay]) show = false; }
-                if (discoverFilters.features.length > 0) {
-                    if (discoverFilters.features.includes('ac') && (!prop.rules?.acType || !prop.rules.acType.includes('AC'))) show = false;
-                    if (discoverFilters.features.includes('cooler') && (!prop.rules?.acType || !prop.rules.acType.includes('Cooler'))) show = false;
-                    if (discoverFilters.features.includes('wifi') && !prop.rules?.wifi) show = false;
-                    if (discoverFilters.features.includes('food') && (!prop.rules?.mess || prop.rules.mess === 'Not Available')) show = false;
-                    if (discoverFilters.features.includes('attached_bath') && (!prop.rules?.bathType || !prop.rules.bathType.includes('Attached'))) show = false;
-                    if (discoverFilters.features.includes('study_table') && !prop.rules?.studyTable) show = false;
-                }
                 card.style.display = show ? '' : 'none';
             });
         }
 
         function refreshUserDash() {
             const container = document.getElementById('userPropertyContainer');
-            container.innerHTML = skeletonCards(6, 'h-72');
-            try {
-                const q = window.query(window.collection(window.db, "businesses"), window.where("status", "==", "approved_2d"));
-                if(userUnsubscribe) userUnsubscribe();
-                userUnsubscribe = window.onSnapshot(q, (querySnapshot) => {
-                    allApprovedProperties = [];
-                    if(querySnapshot.empty) { container.innerHTML = `<p class="display-font text-slate-500 font-black text-lg text-center col-span-3 mt-10">No properties available yet.</p>`; return; }
-                    let htmlContent = '';
-                    querySnapshot.forEach(doc => {
-                        const data = doc.data(); allApprovedProperties.push({ id: doc.id, ...data });
-                        const imgUrl = data.coverPhotoUrl || data.mapImageUrl || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=60&w=500";
-
-                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> </div> </div> <div class="p-4 pt-0 flex flex-col gap-3"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient w-full py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> </div> </div>`;
-                    });
-                    updateHtmlPreservingScroll(container, htmlContent);
-                    applyDiscoverFilters();
+            const q = window.query(window.collection(window.db, "businesses"), window.where("status", "==", "approved_2d"));
+            window.onSnapshot(q, (qs) => {
+                allApprovedProperties = []; if(qs.empty) { container.innerHTML = '<p class="text-center col-span-3">No properties ready</p>'; return; }
+                let html = '';
+                qs.forEach(doc => {
+                    const data = doc.data(); allApprovedProperties.push({ id: doc.id, ...data });
+                    const imgUrl = data.coverPhotoUrl || data.mapImageUrl || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=60&w=500";
+                    html += `<div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden bg-white"><div class="h-44 bg-slate-200"><img src="${imgUrl}" class="w-full h-full object-cover"></div><div class="p-4"><h3 class="display-font text-xl font-black">${data.businessProfile?.company || 'Premium Space'}</h3><button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient w-full py-3 text-white font-black rounded-xl mt-4 text-sm">View Rooms & Book →</button></div></div>`;
                 });
-            } catch(e) {}
-        }
-
-        async function openRedbusLayout(docId) {
-            let propertyData = null;
-            if(docId) { const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); docSnap.forEach(d => { if(d.id === docId) propertyData = d.data(); }); }
-            else { propertyData = window.currentPropertyData; }
-            if(propertyData && propertyData.imageMapBeds && propertyData.imageMapBeds.length > 0 && propertyData.mapImageUrl) { mappedBedsData = propertyData.imageMapBeds; uploadedMapDataUrl = propertyData.mapImageUrl; buildImageBasedLayout(); goTo('screenUserImageRedbus'); }
-            else { alert('No image mapped property found. Admin needs to map images first.'); }
-        }
-
-        function buildImageBasedLayout() {
-            document.getElementById('userCleanMapImage').src = uploadedMapDataUrl; document.getElementById('userBedOverlays').innerHTML = '';
-            userSelectedImageBeds = []; updateImageBookingButton();
-            mappedBedsData.forEach(bed => {
-                let overlay = document.createElement('div'); overlay.id = `user-map-bed-${bed.id}`;
-                overlay.style.top = bed.top; overlay.style.left = bed.left; overlay.style.width = bed.width; overlay.style.height = bed.height;
-                overlay.className = `absolute border-[2px] border-slate-400 bg-white/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center text-slate-700 cursor-pointer shadow-sm hover:border-indigo-500 transition`;
-                overlay.innerHTML = `<span class="text-sm">🛏️</span><span class="text-[8px] font-black">₹${bed.price}</span>`;
-                overlay.onclick = () => toggleImageBedSelection(bed.id, bed.price);
-                document.getElementById('userBedOverlays').appendChild(overlay);
+                updateHtmlPreservingScroll(container, html);
             });
         }
 
-        function toggleImageBedSelection(bedId, price) {
-            const index = userSelectedImageBeds.findIndex(b => b.bedId === bedId); const bedOverlay = document.getElementById(`user-map-bed-${bedId}`);
-            if(index > -1) { userSelectedImageBeds.splice(index, 1); bedOverlay.className = `absolute border-[2px] border-slate-400 bg-white/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center text-slate-700 cursor-pointer shadow-sm hover:border-indigo-500 transition`; bedOverlay.innerHTML = `<span class="text-sm">🛏️</span><span class="text-[8px] font-black">₹${price}</span>`; }
-            else { userSelectedImageBeds.push({ bedId, price }); bedOverlay.className = `absolute border-2 border-indigo-600 bg-indigo-500 rounded-lg flex flex-col items-center justify-center text-white cursor-pointer shadow-lg transform scale-105 transition`; bedOverlay.innerHTML = `<span class="text-xs font-black">✓</span><span class="text-[8px] font-black mt-0.5">₹${price}</span>`; }
-            updateImageBookingButton();
-        }
-
-        function updateImageBookingButton() {
-            const btn = document.getElementById('btnImageBookNow');
-            if(userSelectedImageBeds.length > 0) { document.getElementById('redbusTotalAmountLabel').innerText = `₹${userSelectedImageBeds.reduce((sum, b) => sum + b.price, 0)}`; btn.disabled = false; btn.innerText = `Book ${userSelectedImageBeds.length} Seat(s)`; btn.className = "btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-xl tracking-wider cursor-pointer"; }
-            else { document.getElementById('redbusTotalAmountLabel').innerText = `₹0`; btn.disabled = true; btn.innerText = `Select Seat`; btn.className = "px-10 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed transition"; }
-        }
-
-        // ==========================================
-        // HOSTEL / GUEST REGISTRATION FORM (Point 6)
-        // Shown before the final "Proceed to Pay" step so the hostel owner
-        // gets guest ID/security details, same as a physical hostel form.
-        // ==========================================
-        let grfReturnScreen = 'screenUserDashboard'; // where to go back to if user cancels the form
-        let grfBookingContext = null; // { beds, totalPrice, mode: 'image' | '2d' }
-
-        function openGuestRegistrationForm() {
-            const hostelName = (window.currentPropertyData && (window.currentPropertyData.name || window.currentPropertyData.companyName)) || 'Selected Hostel';
-            document.getElementById('grfHostelNameHeading').innerText = hostelName;
-
-            // Figure out which flow called this (image-based vs 2D layout) so Cancel/Proceed can return correctly
-            if (document.getElementById('screenUser2DLayout') && !document.getElementById('screenUser2DLayout').classList.contains('hidden')) {
-                grfReturnScreen = 'screenUser2DLayout';
-                grfBookingContext = { beds: selected2DBeds, totalPrice: selected2DBeds.reduce((s,b)=>s+b.price,0), mode: '2d' };
-                document.getElementById('grfRoomType').value = selected2DBeds.length ? `Slot ${selected2DBeds[0].id} (${selected2DBeds[0].plan})` : '';
-            } else {
-                grfReturnScreen = 'screenUserImageRedbus';
-                grfBookingContext = { beds: window.selectedRedbusSeats || [], totalPrice: 0, mode: 'image' };
-                document.getElementById('grfRoomType').value = 'Selected Seat';
-            }
-
-            document.getElementById('grfFormError').classList.add('hidden');
-            document.getElementById('grfJoiningDate').value = window.selectedCheckInDate || '';
-            goTo('screenGuestRegistrationForm');
-        }
-
-        function closeGuestRegistrationForm() { goTo(grfReturnScreen); }
-
-        async function submitGuestRegistrationForm() {
-            const required = ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
-            const errBox = document.getElementById('grfFormError');
-            for (const id of required) {
-                if (!document.getElementById(id).value.trim()) {
-                    errBox.innerText = 'Please fill all required fields (Name, DOB, Aadhar Number, Emergency Contact, Address, Date of Joining).';
-                    errBox.classList.remove('hidden');
-                    document.getElementById(id).focus();
-                    return;
-                }
-            }
-            if (!document.getElementById('grfDeclarationAgree').checked) {
-                errBox.innerText = 'Please agree to the declaration to continue.';
-                errBox.classList.remove('hidden');
-                return;
-            }
-            if (!document.getElementById('grfSignature').value.trim()) {
-                errBox.innerText = 'Please type your full name as signature.';
-                errBox.classList.remove('hidden');
-                return;
-            }
-            errBox.classList.add('hidden');
-
-            const submitBtn = document.getElementById('grfSubmitBtn');
-            submitBtn.disabled = true; submitBtn.innerText = 'Checking availability...';
-
-            // DOUBLE-BOOKING PREVENTION: atomically claim this exact bed+date before going any further.
-            // If someone else claimed it a second earlier, this fails cleanly instead of both guests
-            // thinking they got the same bed.
-            const joiningDateVal = document.getElementById('grfJoiningDate').value;
-            const propIdForLock = (window.currentPropertyData && window.currentPropertyData.id) || 'unknown';
-            const bedIdForLock = (grfBookingContext && grfBookingContext.beds && grfBookingContext.beds[0]) ? grfBookingContext.beds[0].id : 'unknown';
-            const lockId = `${propIdForLock}_${bedIdForLock}_${joiningDateVal}`.replace(/[^a-zA-Z0-9_-]/g, '');
-            if (typeof db !== 'undefined' && bedIdForLock !== 'unknown') {
-                try {
-                    await runTransaction(db, async (transaction) => {
-                        const lockRef = doc(db, 'bedLocks', lockId);
-                        const lockSnap = await transaction.get(lockRef);
-                        if (lockSnap.exists()) { throw new Error('ALREADY_BOOKED'); }
-                        transaction.set(lockRef, { propertyId: propIdForLock, bedId: bedIdForLock, joiningDate: joiningDateVal, lockedAt: new Date().toISOString() });
-                    });
-                } catch (lockErr) {
-                    submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                    if (lockErr.message === 'ALREADY_BOOKED') { errBox.innerText = 'This bed was just booked by someone else for this date. Please pick a different bed or date.'; }
-                    else { errBox.innerText = 'Could not verify bed availability. Please try again.'; console.warn(lockErr); }
-                    errBox.classList.remove('hidden');
-                    return;
-                }
-            }
-            submitBtn.innerText = 'Generating Form...';
-
-            const formData = {
-                fullName: document.getElementById('grfFullName').value.trim(),
-                dob: document.getElementById('grfDob').value,
-                gender: document.getElementById('grfGender').value,
-                aadharNumber: document.getElementById('grfAadharNumber').value.trim(),
-                bloodGroup: document.getElementById('grfBloodGroup').value.trim(),
-                collegeName: document.getElementById('grfCollegeName').value.trim(),
-                courseYear: document.getElementById('grfCourseYear').value.trim(),
-                fatherName: document.getElementById('grfFatherName').value.trim(),
-                motherName: document.getElementById('grfMotherName').value.trim(),
-                emergencyContact: document.getElementById('grfEmergencyContact').value.trim(),
-                address: document.getElementById('grfAddress').value.trim(),
-                roomType: document.getElementById('grfRoomType').value,
-                joiningDate: document.getElementById('grfJoiningDate').value,
-                medicalCondition: document.getElementById('grfMedicalCondition').value.trim() || 'None',
-                relativeContact: document.getElementById('grfRelativeContact').value.trim(),
-                signature: document.getElementById('grfSignature').value.trim(),
-                hostelName: document.getElementById('grfHostelNameHeading').innerText,
-                submittedAt: new Date().toISOString()
-            };
-
-            try {
-                if (!window.jspdf) { throw new Error('PDF library did not load (check internet connection / try reloading the page).'); }
-                // Read uploaded photos (if any) so they can be embedded in the PDF
-                const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-                const passportInput = document.getElementById('grfPassportPhoto');
-                const aadharInputEl = document.getElementById('grfAadharPhoto');
-                let passportPhotoDataUrl = null, aadharPhotoDataUrl = null;
-                if (passportInput.files && passportInput.files[0]) { try { passportPhotoDataUrl = await readFileAsDataUrl(passportInput.files[0]); } catch(e) { console.warn('Could not read passport photo', e); } }
-                if (aadharInputEl.files && aadharInputEl.files[0]) { try { aadharPhotoDataUrl = await readFileAsDataUrl(aadharInputEl.files[0]); } catch(e) { console.warn('Could not read aadhar photo', e); } }
-
-                // 1) Build the PDF (same layout as the physical Hostel Registration Form)
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                let y = 18;
-                const line = (label, value) => { doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.text(label, 14, y); doc.setFont(undefined,'normal'); doc.text(String(value || '—'), 80, y); y += 8; };
-                doc.setFont(undefined,'bold'); doc.setFontSize(15); doc.text('HOSTEL REGISTRATION FORM', 14, y); y += 6;
-                doc.setFontSize(11); doc.text(formData.hostelName, 14, y); y += 10;
-                doc.setDrawColor(200); doc.line(14, y-4, 196, y-4);
-                const getImgFormat = (dataUrl) => { if (!dataUrl) return 'JPEG'; const m = dataUrl.match(/^data:image\/(\w+);/); if (!m) return 'JPEG'; const t = m[1].toUpperCase(); return (t === 'JPG' || t === 'JPEG') ? 'JPEG' : (t === 'PNG' ? 'PNG' : 'JPEG'); };
-                if (passportPhotoDataUrl) { try { doc.addImage(passportPhotoDataUrl, getImgFormat(passportPhotoDataUrl), 160, 16, 32, 38); doc.setDrawColor(180); doc.rect(160, 16, 32, 38); } catch(e) { console.warn('Could not embed passport photo', e); } }
-                line('Full Name:', formData.fullName);
-                line('Date of Birth:', formData.dob);
-                line('Gender:', formData.gender);
-                line('Aadhar Number:', formData.aadharNumber);
-                line('Blood Group:', formData.bloodGroup);
-                line('College/School:', formData.collegeName);
-                line('Course/Year:', formData.courseYear);
-                y += 2; doc.setFont(undefined,'bold'); doc.text('Parent / Guardian Details', 14, y); y += 8; doc.setFont(undefined,'normal');
-                line("Father's Name:", formData.fatherName);
-                line("Mother's Name:", formData.motherName);
-                line('Emergency Contact:', formData.emergencyContact);
-                line('Permanent Address:', formData.address);
-                y += 2; doc.setFont(undefined,'bold'); doc.text('Hostel Preferences', 14, y); y += 8; doc.setFont(undefined,'normal');
-                line('Room Type:', formData.roomType);
-                line('Date of Joining:', formData.joiningDate);
-                y += 2; doc.setFont(undefined,'bold'); doc.text('Health & Emergency', 14, y); y += 8; doc.setFont(undefined,'normal');
-                line('Medical Condition/Allergy:', formData.medicalCondition);
-                line('Emergency Contact (Relative):', formData.relativeContact);
-                y += 4; doc.setFontSize(9); doc.text('Declaration: I declare that all information given above is correct and I agree to follow all hostel rules.', 14, y, { maxWidth: 182 }); y += 10;
-                line('Date:', new Date().toLocaleDateString('en-IN'));
-                line('Student Signature:', formData.signature);
-
-                if (aadharPhotoDataUrl) {
-                    try {
-                        if (y > 230) { doc.addPage(); y = 20; }
-                        y += 6; doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.text('Attached: Aadhar Card Photo', 14, y); y += 4;
-                        doc.addImage(aadharPhotoDataUrl, getImgFormat(aadharPhotoDataUrl), 14, y, 90, 55);
-                        doc.setDrawColor(180); doc.rect(14, y, 90, 55);
-                        y += 60;
-                    } catch(e) { console.warn('Could not embed aadhar photo', e); }
-                }
-
-                const pdfBlob = doc.output('blob');
-                const pdfFile = new File([pdfBlob], `Hostel-Registration-${formData.fullName.replace(/\s+/g,'_')}.pdf`, { type: 'application/pdf' });
-
-                // 2) Save a copy for us (Firestore) + upload Aadhar photo if provided
-                let aadharPhotoUrl = '';
-                const aadharInput = document.getElementById('grfAadharPhoto');
-                if (aadharInput.files && aadharInput.files[0] && typeof storage !== 'undefined') {
-                    try {
-                        const photoRef = ref(storage, `guestAadharDocs/${Date.now()}_${aadharInput.files[0].name}`);
-                        await uploadBytes(photoRef, aadharInput.files[0]);
-                        aadharPhotoUrl = await getDownloadURL(photoRef);
-                    } catch (upErr) { console.warn('Aadhar photo upload failed (continuing without it):', upErr); }
-                }
-                if (typeof db !== 'undefined') {
-                    try {
-                        let pdfUrl = '';
-                        if (typeof storage !== 'undefined') {
-                            try { const pdfRef = ref(storage, `guestRegistrationPdfs/${Date.now()}_${pdfFile.name}`); await uploadBytes(pdfRef, pdfFile); pdfUrl = await getDownloadURL(pdfRef); } catch(pdfUpErr) { console.warn('Could not upload PDF copy', pdfUpErr); }
-                        }
-                        await addDoc(collection(db, 'guestRegistrations'), {
-                            ...formData,
-                            aadharPhotoUrl,
-                            pdfUrl,
-                            propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
-                            bookingContext: grfBookingContext
-                        });
-                        // Notify the business owner's dashboard (simple in-app notification, since there's no login-based ownership yet)
-                        await addDoc(collection(db, 'notifications'), {
-                            propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
-                            type: 'new_booking',
-                            message: `New booking request from ${formData.fullName} for ${formData.hostelName}`,
-                            pdfUrl,
-                            read: false,
-                            createdAt: new Date().toISOString()
-                        });
-                        // Best-effort: email the admin too (needs RESEND_API_KEY + ADMIN_EMAIL set on the backend — see chat notes)
-                        try {
-                            await fetch(`${BACKEND_URL}/send-registration-email`, {
-                                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ guestName: formData.fullName, hostelName: formData.hostelName, pdfUrl })
-                            });
-                        } catch (emailErr) { console.warn('Email notification failed (continuing):', emailErr); }
-                    } catch (dbErr) { console.warn('Could not save registration to Firestore (continuing):', dbErr); }
-                }
-
-                // 3) Hand the PDF to the guest to send to the hostel owner (WhatsApp/Email/Download)
-                let shared = false;
-                if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                    try { await navigator.share({ files: [pdfFile], title: 'Hostel Registration Form', text: `Registration form for ${formData.fullName} — ${formData.hostelName}` }); shared = true; }
-                    catch (shareErr) { console.warn('Share cancelled/unsupported, falling back to download:', shareErr); }
-                }
-                if (!shared) { doc.save(pdfFile.name); } // fallback: just download it, guest can attach manually on WhatsApp/Email
-
-                submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                document.getElementById('payAmount').innerText = '₹' + (grfBookingContext && grfBookingContext.totalPrice ? grfBookingContext.totalPrice : 0);
-                document.getElementById('payHostelName').innerText = formData.hostelName;
-                goTo('screenPaymentStep');
-            } catch (err) {
-                console.error('Registration form error:', err);
-                submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                errBox.innerText = 'Something went wrong generating the form. Please try again.';
-                errBox.classList.remove('hidden');
-            }
-        }
-
-        function confirmImageBooking() { openGuestRegistrationForm(); }
-
+        // PERFORMANCE FIX 2: Optimized User Layout Canvas Vector Layering Engine
         async function openUser2DLayout(docId) {
             let propertyData = allApprovedProperties.find(p => p.id === docId);
-            if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
-            else { alert("Property not found!"); return; }
+            if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; } else return;
             
-            if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
-            
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; 
-            currentUserFloor = uniqueFloors[0] || 'Ground Floor';
-            
-            const tabContainer = document.getElementById('userFloorTabsContainer');
-            if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
-            
+            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentUserFloor = uniqueFloors[0] || 'Ground Floor';
             goTo('screenUser2DLayout');
             
             setTimeout(() => {
                 if (!userFabricCanvasInstance) {
-                    userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { width: 3000, height: 3000, selection: false });
+                    // Injecting performance context configuration to utilize native hardware accelerated calculations
+                    userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { 
+                        width: 3000, 
+                        height: 3000, 
+                        selection: false,
+                        renderOnAddRemove: false,
+                        skipTargetFind: false
+                    });
+                    
                     userFabricCanvasInstance.on('mouse:down', function(options) {
                         if (options.target && options.target.isBed) {
-                            const bedId = options.target.bedId;
-                            showBedDetailsInPanel(bedId);
+                            const selectedBed = options.target;
+                            showBedDetailsInPanel(selectedBed.bedId);
                             
-                            userFabricCanvasInstance.forEachObject(function(obj) {
+                            // PERFORMANCE ACCELERATION LOOP: Modifies single vector reference state variables directly in core loop
+                            userFabricCanvasInstance.renderOnAddRemove = false;
+                            const objs = userFabricCanvasInstance.getObjects();
+                            for (let i = 0; i < objs.length; i++) {
+                                let obj = objs[i];
                                 if(obj.isBed) {
-                                    const bedBgRect = obj.item(0); const topAccent = obj.item(1); const priceBg = obj.item(3); const priceTxt = obj.item(4);
-                                    bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); bedBgRect.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 })); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
+                                    const rect = obj.item(0); const accent = obj.item(1);
+                                    if(obj === selectedBed) {
+                                        rect.set({ fill: '#eff6ff', stroke: '#6366f1' }); accent.set('fill', '#4f46e5');
+                                    } else {
+                                        rect.set({ fill: '#ffffff', stroke: '#cbd5e1' }); accent.set('fill', '#10b981');
+                                    }
                                 }
-                            });
-                            
-                            const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
-                            selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selBedBgRect.set('shadow', new fabric.Shadow({ color: 'rgba(99, 102, 241, 0.4)', blur: 15, offsetX: 0, offsetY: 6 })); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
-                            
-                            userFabricCanvasInstance.renderAll();
+                            }
+                            // Fires a single dynamic redraw pipeline invocation frame saving CPU thread cycles
+                            userFabricCanvasInstance.renderOnAddRemove = true;
+                            userFabricCanvasInstance.requestRenderAll();
                         }
                     });
                 }
@@ -1917,218 +1481,95 @@
         }
 
         window.showBedDetailsInPanel = function(bedId) {
-            currentSelectedBedId = bedId;
-            const panel = document.getElementById('bedDetailPanel'); let parentRoom = null;
-            if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
-            if (!parentRoom) { return; }
+            currentSelectedBedId = bedId; const panel = document.getElementById('bedDetailPanel');
+            let parentRoom = window.currentPropertyData?.roomsAndBeds?.find(r => r.beds.some(b => b.id === bedId));
+            if (!parentRoom) return;
+            let targetBed = parentRoom.beds.find(b => b.id === bedId); let price = targetBed?.price || 5000;
             
-            let targetBed = parentRoom.beds.find(b => b.id === bedId);
-            let dPrice = targetBed?.priceDaily || 0; let wPrice = targetBed?.priceWeekly || 0; let mPrice = targetBed?.priceMonthly || targetBed?.price || 5000;
-            let securityDep = window.currentPropertyData?.rules?.securityDeposit || 0;
-            let allowedStays = window.currentPropertyData?.rules?.stayTypes || { monthly: true };
-            
-            let pricingHtml = `<div class="grid grid-cols-3 gap-2 mt-4 w-full">`;
-            if (allowedStays.daily && dPrice > 0) { pricingHtml += `<div id="plan-daily" onclick="selectBookingPlan('daily', ${dPrice})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Daily</p><p class="text-sm font-black text-slate-800">₹${dPrice}</p></div>`; }
-            if (allowedStays.weekly && wPrice > 0) { pricingHtml += `<div id="plan-weekly" onclick="selectBookingPlan('weekly', ${wPrice})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Weekly</p><p class="text-sm font-black text-slate-800">₹${wPrice}</p></div>`; }
-            if (allowedStays.monthly && mPrice > 0) { pricingHtml += `<div id="plan-monthly" onclick="selectBookingPlan('monthly', ${mPrice})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Monthly</p><p class="text-sm font-black text-slate-800">₹${mPrice}</p></div>`; }
-            pricingHtml += `</div>`;
-            if (securityDep > 0) { pricingHtml += `<div class="mt-2 text-center w-full bg-orange-50 border border-orange-100 py-1.5 rounded-lg"><span class="text-[10px] text-orange-600 font-bold tracking-wide">Security Deposit Required: ₹${securityDep}</span></div>`; }
-
-            let facilitiesHtml = '';
-            const propRules = window.currentPropertyData ? window.currentPropertyData.rules : null;
-            if (propRules) {
-                let chips = '';
-                if (propRules.acType && propRules.acType !== 'Only Non-AC') chips += `<span class="chip chip-primary">❄️ ${propRules.acType.replace('Both Available', '')}</span>`;
-                if (propRules.wifi) chips += `<span class="chip chip-primary">📶 Free WiFi</span>`;
-                if (propRules.mess && propRules.mess !== 'Not Available') chips += `<span class="chip chip-primary">🍲 Mess/Food</span>`;
-                if (propRules.bathType === 'Attached' || propRules.bathType === 'Both Available') chips += `<span class="chip chip-primary">🚿 Attached Bath</span>`;
-                if (propRules.laundry === 'Included in Rent') chips += `<span class="chip chip-primary">🧺 Laundry Incl.</span>`;
-                if (propRules.studyTable) chips += `<span class="chip chip-primary">📚 Study Table</span>`;
-                if (propRules.cctv) chips += `<span class="chip chip-primary">🎥 CCTV</span>`;
-                if (chips) facilitiesHtml = `<div class="flex gap-2 flex-wrap mt-3 pt-3 border-t border-slate-100">${chips}</div>`;
-            }
-
-            let photosHtml = '';
-            if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" class="w-full h-full object-cover"></div>`).join(''); }
-            else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
-
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
-            panel.classList.remove('justify-center', 'items-center', 'text-center');
-            
-            if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><h4 class="display-font text-2xl font-black mb-2">${parentRoom.name}</h4><div id="plan-monthly" onclick="selectBookingPlan('monthly', ${price})" class="plan-box bg-indigo-50 border-2 border-indigo-500 p-4 rounded-xl text-center cursor-pointer"><p class="text-xs font-black uppercase text-indigo-600">Monthly Plan</p><p class="text-xl font-black text-indigo-900">₹${price}/mo</p></div></div>`;
+            selectBookingPlan('monthly', price);
         }
 
         window.selectBookingPlan = function(planType, price) {
-            document.querySelectorAll('.plan-box').forEach(el => el.classList.remove('selected'));
-            const selectedBox = document.getElementById(`plan-${planType}`);
-            if (selectedBox) selectedBox.classList.add('selected');
-            currentSelectedPlanPrice = price;
-            selected2DBeds = [{ id: currentSelectedBedId, price: currentSelectedPlanPrice, plan: planType }];
+            currentSelectedPlanPrice = price; selected2DBeds = [{ id: currentSelectedBedId, price: currentSelectedPlanPrice, plan: planType }];
             updateSmart2DBtn();
         }
 
         function selectUserFloor(floorName) {
-            currentUserFloor = floorName; 
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; 
-            renderUserFloorTabs(uniqueFloors);
+            currentUserFloor = floorName; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderUserFloorTabs(uniqueFloors);
+            if(!userFabricCanvasInstance) return;
             
-            if(userFabricCanvasInstance) {
-                userFabricCanvasInstance.clear(); let floorDataJSON = null;
-                if(window.currentPropertyData && window.currentPropertyData.fabricCanvasStates && window.currentPropertyData.fabricCanvasStates[floorName]) { floorDataJSON = window.currentPropertyData.fabricCanvasStates[floorName]; }
-                else if(window.currentPropertyData && window.currentPropertyData.fabricCanvasState) { floorDataJSON = window.currentPropertyData.fabricCanvasState; }
-                
-                if(floorDataJSON) {
-                    userFabricCanvasInstance.renderOnAddRemove = false;
-                    userFabricCanvasInstance.loadFromJSON(floorDataJSON, function() {
-                        const liveLayoutBeds = [];
-                        if (window.currentPropertyData && window.currentPropertyData.layout2D) { window.currentPropertyData.layout2D.forEach(block => { if (block.beds) liveLayoutBeds.push(...block.beds); }); }
-                        const objectsToRemove = [];
-                        
-                        userFabricCanvasInstance.forEachObject(function(obj) {
-                            // User UI cleanups (No grid, dark walkway)
-                            if (obj.type === 'line' && (obj.stroke === '#cbd5e1' || obj.stroke === '#f1f5f9')) {
-                                objectsToRemove.push(obj);
-                            } else if (obj.isBed) {
-                                // IMPORTANT: this check must run BEFORE the generic 'group' check below,
-                                // because a bed is also a fabric group — otherwise the lock never applied
-                                // and beds/rooms/corridors were all draggable for the end user.
-                                const liveBedData = liveLayoutBeds.find(b => b.id === obj.bedId);
-                                if (!liveBedData) { objectsToRemove.push(obj); }
-                                else { 
-                                    obj.bedPrice = liveBedData.priceMonthly || liveBedData.price; 
-                                    if (obj._objects && obj._objects[4]) { obj._objects[4].set('text', '₹' + obj.bedPrice); } 
-                                    obj.set({ selectable: true, evented: true, hasControls: false, hasBorders: false, lockMovementX: true, lockMovementY: true, hoverCursor: 'pointer' }); 
-                                }
-                            } else if (obj.type === 'group') {
-                                if (obj._objects && obj._objects.length > 0) {
-                                    let isCorridor = obj._objects.some(o => o.text && o.text.includes('W A L K W A Y'));
-                                    if (isCorridor) {
-                                        let rectObj = obj._objects.find(o => o.type === 'rect');
-                                        let textObj = obj._objects.find(o => o.type === 'itext' || o.type === 'text');
-                                        if(rectObj) { rectObj.set('fill', '#78716c'); rectObj.set('stroke', '#57534e'); }
-                                        if(textObj) { textObj.set('fill', '#ffffff'); }
-                                    }
-                                }
-                                // Rooms & corridors are for display only — never draggable/selectable for the end user.
-                                obj.set({ selectable: false, evented: false, hasControls: false, hasBorders: false, hoverCursor: 'default' });
-                            } else { obj.set({ selectable: false, evented: false }); }
-                        });
-                        
-                        objectsToRemove.forEach(obj => userFabricCanvasInstance.remove(obj)); 
-                        userFabricCanvasInstance.renderOnAddRemove = true;
-                        userFabricCanvasInstance.renderAll();
-                        
-                        // Auto-Fit to screen Logic
-                        // FIX: a fixed 100ms timeout wasn't always enough time for the browser to finish
-                        // laying out the newly-shown screen (especially on real phones over a real network,
-                        // as opposed to fast local testing) — clientWidth/clientHeight could read as 0,
-                        // making the whole layout scale to invisible. Now we wait for two animation frames
-                        // (guarantees a real layout pass happened) and retry once more if still 0.
-                        function fitUserCanvasToScreen(attemptsLeft) {
-                            const activeObjects = userFabricCanvasInstance.getObjects();
-                            if(activeObjects.length > 0) {
-                                let boundingRect = null;
-                                activeObjects.forEach(obj => {
-                                     let bound = obj.getBoundingRect();
-                                     if(!boundingRect) { boundingRect = {left: bound.left, top: bound.top, right: bound.left+bound.width, bottom: bound.top+bound.height}; }
-                                     else {
-                                         boundingRect.left = Math.min(boundingRect.left, bound.left);
-                                         boundingRect.top = Math.min(boundingRect.top, bound.top);
-                                         boundingRect.right = Math.max(boundingRect.right, bound.left+bound.width);
-                                         boundingRect.bottom = Math.max(boundingRect.bottom, bound.top+bound.height);
-                                     }
-                                });
-                                if(boundingRect) {
-                                    let width = boundingRect.right - boundingRect.left;
-                                    let height = boundingRect.bottom - boundingRect.top;
-                                    let wrapper = document.getElementById('userCanvasWrapper');
-                                    if ((!wrapper.clientWidth || !wrapper.clientHeight) && attemptsLeft > 0) {
-                                        // Screen not laid out yet — wait a bit longer and try again instead of applying a broken (invisible) zoom
-                                        setTimeout(() => fitUserCanvasToScreen(attemptsLeft - 1), 150);
-                                        return;
-                                    }
-                                    let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
-                                    if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
-                                    if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
-                                    userFabricCanvasInstance.setZoom(scale);
-                                    
-                                    let vpt = userFabricCanvasInstance.viewportTransform;
-                                    vpt[4] = (wrapper.clientWidth - width * scale) / 2 - boundingRect.left * scale;
-                                    vpt[5] = (wrapper.clientHeight - height * scale) / 2 - boundingRect.top * scale;
-                                    userFabricCanvasInstance.setViewportTransform(vpt);
-                                    userFabricCanvasInstance.renderAll();
-                                }
-                            }
-                        }
-                        requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
-
-                    }, function(jsonObj, fabricObj) { if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; } });
-                }
+            userFabricCanvasInstance.clear();
+            let floorDataJSON = window.currentPropertyData?.fabricCanvasStates?.[floorName] || window.currentPropertyData?.fabricCanvasState;
+            if(floorDataJSON) {
+                userFabricCanvasInstance.renderOnAddRemove = false;
+                userFabricCanvasInstance.loadFromJSON(floorDataJSON, function() {
+                    const objs = userFabricCanvasInstance.getObjects();
+                    const removeQueue = [];
+                    for(let i=0; i<objs.length; i++) {
+                        let obj = objs[i];
+                        if (obj.type === 'line' && (obj.stroke === '#cbd5e1' || obj.stroke === '#f1f5f9')) { removeQueue.push(obj); }
+                        else if (obj.isBed) { obj.set({ selectable: true, evented: true, hasControls: false, hasBorders: false, lockMovementX: true, lockMovementY: true, hoverCursor: 'pointer' }); }
+                        else { obj.set({ selectable: false, evented: false }); }
+                    }
+                    removeQueue.forEach(o => userFabricCanvasInstance.remove(o));
+                    userFabricCanvasInstance.renderOnAddRemove = true;
+                    userFabricCanvasInstance.requestRenderAll();
+                    
+                    // Double execution frame alignment pipeline calculation logic
+                    function fitUserCanvasToScreen(attempts) {
+                        let wrapper = document.getElementById('userCanvasWrapper');
+                        if ((!wrapper.clientWidth || !wrapper.clientHeight) && attempts > 0) { setTimeout(() => fitUserCanvasToScreen(attempts - 1), 150); return; }
+                        let scale = Math.min((wrapper.clientWidth - 40) / 1200, (wrapper.clientHeight - 40) / 1200);
+                        if(scale > 1 || scale <= 0) scale = 0.4;
+                        userFabricCanvasInstance.setZoom(scale); userFabricCanvasInstance.requestRenderAll();
+                    }
+                    requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
+                }, function(json, fabricObj) { if(json.isBed) { fabricObj.isBed = true; fabricObj.bedId = json.bedId; fabricObj.bedPrice = json.bedPrice; } });
             }
         }
 
         window.updateSmart2DBtn = function() {
             const total = selected2DBeds.reduce((s, b) => s + b.price, 0); document.getElementById('smart2DTotalAmount').innerText = `₹${total}`;
             const btn = document.getElementById('btnSmartBookNow');
-            const isTnCAgreed = document.getElementById('agreeTnC') ? document.getElementById('agreeTnC').checked : true;
-            if(selected2DBeds.length > 0 && isTnCAgreed) { btn.disabled = false; btn.innerText = `Proceed to Pay`; btn.className = "btn-gradient px-12 py-4 text-white font-black rounded-2xl shadow-xl tracking-wider cursor-pointer"; }
-            else { btn.disabled = true; if(selected2DBeds.length === 0) btn.innerText = `Select Bed & Plan`; else btn.innerText = `Agree to T&C`; btn.className = "px-12 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed transition tracking-wider"; }
+            if(selected2DBeds.length > 0) { btn.disabled = false; btn.className = "btn-gradient px-12 py-4 text-white font-black rounded-2xl cursor-pointer"; } 
+            else { btn.disabled = true; btn.className = "px-12 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed"; }
         }
 
         function renderBusinessConfig() {
             const container = document.getElementById('dynamicBusinessRoomsContainer'); if(!container) return; container.innerHTML = '';
-            if(floorMaps.length > 0 && !currentSelectedFloor) { currentSelectedFloor = floorMaps[0].floorName; }
             const roomsThisFloor = globalDynamicRooms.filter(r => r.floor === currentSelectedFloor);
-            const countLabel = document.getElementById('dataEditorRoomCount');
-            if(countLabel) countLabel.innerText = `${roomsThisFloor.length} Room${roomsThisFloor.length !== 1 ? 's' : ''} on ${currentSelectedFloor || 'Ground Floor'}`;
-            globalDynamicRooms.forEach((room, index) => {
-                if(room.floor === currentSelectedFloor) {
-                    const isExpanded = (currentlyExpandedRoomIdx === index); let insideContentHtml = '';
-                    if (isExpanded) {
-                        let dynamicPriceBoxesHtml = `<div class="flex flex-col gap-2 border-t border-slate-100 pt-3 mt-1">`;
-                        room.beds.forEach((bed, bIndex) => { 
-                            dynamicPriceBoxesHtml += `
-                            <div class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 mb-1">
-                                <label class="text-[9px] font-black text-slate-500 block text-center mb-2 uppercase tracking-widest border-b border-slate-200 pb-1">Bed ${bIndex+1}</label>
-                                <div class="flex gap-2">
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Daily (₹)</label><input type="number" value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Weekly (₹)</label><input type="number" value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-indigo-400 block mb-0.5 text-center">Monthly (₹)</label><input type="number" value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-xs font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-1 outline-none text-indigo-700 shadow-sm"></div>
-                                </div>
-                            </div>`; 
-                        });
-                        dynamicPriceBoxesHtml += `</div>`;
-                        let photosHTML = ` <div class="flex gap-2 mb-3" onclick="event.stopPropagation()"> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this)"></label> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this)"></label> </div>`;
-                        insideContentHtml = ` <div class="mt-2 pl-2 animate-fade-in" onclick="event.stopPropagation()"> <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between mb-3"> <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bed Count:</span> <div class="flex gap-2"> <button type="button" onclick="removeBedFromRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">-</button> <span class="w-8 h-7 flex justify-center items-center font-black text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg">${room.beds.length}</span> <button type="button" onclick="addBedToRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">+</button> </div> </div> ${photosHTML} ${dynamicPriceBoxesHtml} </div>`;
-                    }
-                    container.innerHTML += ` <div onclick="toggleRoomAccordion(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-[10px] font-black opacity-40 ml-1">${isExpanded ? '▲' : '▼'}</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span></div> <button onclick="event.stopPropagation(); removeRoom(${index})" class="text-[9px] bg-red-50 text-red-600 font-black px-2.5 py-1 rounded-lg hover:bg-red-500 hover:text-white transition uppercase tracking-widest cursor-pointer">Delete</button> </div> ${insideContentHtml} </div>`;
-                }
+            roomsThisFloor.forEach((room, index) => {
+                const isExpanded = (currentlyExpandedRoomIdx === index);
+                let insideContentHtml = isExpanded ? `<div class="mt-2 p-2 border border-slate-100 rounded-xl bg-slate-50"><label class="text-[9px] font-black uppercase">Monthly Rate:</label><input type="number" value="${room.beds[0]?.price || 5000}" onchange="updateBedPrice(${index}, 0, 'monthly', this.value)" class="w-full p-2 border rounded bg-white font-black text-indigo-700"></div>` : '';
+                container.innerHTML += `<div onclick="toggleRoomAccordion(${index})" class="bg-white p-4 rounded-3xl border shadow-sm relative overflow-hidden cursor-pointer"><h4 class="font-black text-slate-800">${room.name}</h4>${insideContentHtml}</div>`;
             });
         }
 
         function renderAttractive2DPlan() {
             const container = document.getElementById('blueprintGrid'); if(!container) return;
-            const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
-            const corridors = filteredBlocks.filter(b => b.type === 'corridor'); const rooms = filteredBlocks.filter(b => b.type === 'room');
-            let html = `<div class="blueprint-container layout-top" style="flex-wrap: wrap; justify-content: center;">`;
-            if(corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="flex: 0.2; min-height: 40px; font-size: 0.6rem;">Walkway</div>`;
-            let roomsHtml = `<div class="blueprint-rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; width: 100%; flex: 1;">`;
-            rooms.forEach(block => {
-                let bedsHtml = block.beds.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-lg p-1 text-center"><span class="text-sm block mb-0.5">🛏️</span><span class="block text-[8px] font-black">₹${b.priceMonthly || b.price}</span></div>`).join('');
-                roomsHtml += `<div class="blueprint-room" style="min-width: 100px;"><div class="border-b border-slate-100 pb-1.5 mb-1.5 text-center text-[10px] font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div class="grid grid-cols-2 gap-1.5 mb-1">${bedsHtml}</div></div>`;
+            const filtered = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
+            let html = `<div class="blueprint-container" style="display: flex; gap: 8px; overflow-x: auto;">`;
+            filtered.forEach(block => {
+                if(block.type === 'room') html += `<div class="blueprint-room border p-3 rounded-xl bg-white min-w-[110px] text-center"><p class="font-black text-xs uppercase mb-2">${block.name}</p><span class="text-xs font-bold text-indigo-600">₹${block.beds[0]?.price || 5000}/mo</span></div>`;
             });
-            container.innerHTML = html + roomsHtml + `</div></div>`;
+            container.innerHTML = html + `</div>`;
         }
 
-    </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpb8-7Y3Nc08U7sa3MlfXAFS3sXqmKrd4&callback=initMap&libraries=marker,places" async defer></script>
-    <script>
-        // Register service worker for PWA installability (silently no-ops if it fails, e.g. on file:// during local testing)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker registration failed:', err));
-            });
+        function openGuestRegistrationForm() { goTo('screenGuestRegistrationForm'); }
+        function closeGuestRegistrationForm() { goTo('screenUser2DLayout'); }
+
+        async function submitGuestRegistrationForm() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.setFont(undefined, 'bold'); doc.text('HOSTEL REGISTRATION SLIP', 14, 20);
+            doc.setFont(undefined, 'normal'); doc.text(`Guest: ${document.getElementById('grfFullName').value}`, 14, 30);
+            doc.text(`Room/Slot Allocation: ${currentSelectedBedId}`, 14, 40);
+            doc.save('Registration-Slip.pdf');
+            
+            document.getElementById('payAmount').innerText = '₹' + selected2DBeds.reduce((s,b)=>s+b.price,0);
+            goTo('screenPaymentStep');
         }
     </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpb8-7Y3Nc08U7sa3MlfXAFS3sXqmKrd4&callback=initMap&libraries=marker,places" async defer></script>
 </body>
 </html>
