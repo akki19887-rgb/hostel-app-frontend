@@ -699,7 +699,7 @@
 
         <div id="floorTabsContainer" class="flex gap-2 mb-3 overflow-x-auto pb-1 layout-scroll empty:hidden shrink-0"></div>
 
-        <div id="bizPreviewPanel" class="flex flex-col md:flex-row gap-4 mb-4 h-48 shrink-0 transition-all duration-300">
+        <div id="bizPreviewPanel" class="flex flex-col md:flex-row gap-4 mb-4 h-[420px] md:h-48 shrink-0 transition-all duration-300">
             <div class="w-full md:w-1/3 bg-white border border-slate-200 rounded-2xl flex flex-col overflow-hidden relative shadow-sm h-full cursor-zoom-in" onclick="openZoomModal(document.getElementById('businessRawImageDisplay').src)">
                 <div class="bg-slate-100 text-slate-500 text-[10px] font-black uppercase px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 tracking-widest shrink-0"><span>🖼️</span> Original Map (Click to Zoom)</div>
                 <div class="flex-1 p-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden"><img id="businessRawImageDisplay" src="" class="max-w-full max-h-full object-contain mix-blend-multiply"></div>
@@ -2019,7 +2019,12 @@
                         userFabricCanvasInstance.renderAll();
                         
                         // Auto-Fit to screen Logic
-                        setTimeout(() => {
+                        // FIX: a fixed 100ms timeout wasn't always enough time for the browser to finish
+                        // laying out the newly-shown screen (especially on real phones over a real network,
+                        // as opposed to fast local testing) — clientWidth/clientHeight could read as 0,
+                        // making the whole layout scale to invisible. Now we wait for two animation frames
+                        // (guarantees a real layout pass happened) and retry once more if still 0.
+                        function fitUserCanvasToScreen(attemptsLeft) {
                             const activeObjects = userFabricCanvasInstance.getObjects();
                             if(activeObjects.length > 0) {
                                 let boundingRect = null;
@@ -2037,7 +2042,13 @@
                                     let width = boundingRect.right - boundingRect.left;
                                     let height = boundingRect.bottom - boundingRect.top;
                                     let wrapper = document.getElementById('userCanvasWrapper');
+                                    if ((!wrapper.clientWidth || !wrapper.clientHeight) && attemptsLeft > 0) {
+                                        // Screen not laid out yet — wait a bit longer and try again instead of applying a broken (invisible) zoom
+                                        setTimeout(() => fitUserCanvasToScreen(attemptsLeft - 1), 150);
+                                        return;
+                                    }
                                     let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
+                                    if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
                                     if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
                                     userFabricCanvasInstance.setZoom(scale);
                                     
@@ -2048,7 +2059,8 @@
                                     userFabricCanvasInstance.renderAll();
                                 }
                             }
-                        }, 100);
+                        }
+                        requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
 
                     }, function(jsonObj, fabricObj) { if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; } });
                 }
