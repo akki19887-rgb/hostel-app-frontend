@@ -2010,7 +2010,8 @@
                                     }
                                 }
                                 // Rooms & corridors are for display only — never draggable/selectable for the end user.
-                                obj.set({ selectable: false, evented: false, hasControls: false, hasBorders: false, hoverCursor: 'default' });
+                                // skipTargetFind = Fabric won't waste time hit-testing these on every tap (only beds need that)
+                                obj.set({ selectable: false, evented: false, hasControls: false, hasBorders: false, hoverCursor: 'default', skipTargetFind: true });
                             } else { obj.set({ selectable: false, evented: false }); }
                         });
                         
