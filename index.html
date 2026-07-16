@@ -854,6 +854,7 @@
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
+                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:24px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
             </div>
 
@@ -1047,6 +1048,7 @@
         let adminFabricCanvasInstance = null;
         let userFabricCanvasInstance = null;
         let adminLocalCanvasStates = {};
+        let adminLayoutSnapshotUrls = {};
         let currentlyExpandedRoomIdx = null;
 
         window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { goTo('screenOptions'); }, 2500); });
@@ -1579,6 +1581,13 @@
             }, 300);
         }
 
+        async function uploadCanvasSnapshot(dataUrl, path) {
+            const blob = await (await fetch(dataUrl)).blob();
+            const storageRef = window.ref(window.storage, path);
+            await window.uploadBytes(storageRef, blob);
+            return await window.getDownloadURL(storageRef);
+        }
+
         async function publishAdmin2DMap() {
             const btn = document.getElementById('btnPublish2D'); btn.innerText = "⏳ Syncing to Cloud..."; btn.disabled = true;
             try {
@@ -1586,11 +1595,25 @@
                     const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
                     if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
                     adminLocalCanvasStates[currentAdminFloor] = jsonState;
+
+                    // PERF: also save a compressed static snapshot (JPEG) of the finalized layout.
+                    // User dashboard shows this instantly while the full interactive canvas JSON
+                    // (heavier — read from Firestore) loads underneath, then swaps to it for bed clicks.
+                    try {
+                        btn.innerText = "⏳ Generating fast preview...";
+                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.6 });
+                        const snapUrl = await uploadCanvasSnapshot(snapshotDataUrl, `layoutSnapshots/${currentAdminDocId}/${currentAdminFloor}.jpg`);
+                        adminLayoutSnapshotUrls[currentAdminFloor] = snapUrl;
+                    } catch (snapErr) {
+                        console.warn('Snapshot generation failed — publishing without fast-preview image:', snapErr);
+                    }
+                    btn.innerText = "⏳ Syncing to Cloud...";
                 }
-                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates, layout2DPublishedAt: new Date().toISOString() });
+                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, layout2DPublishedAt: new Date().toISOString() });
                 alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
             } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
         }
+
 
         window.toggleFeatureFilter = function(feature) {
             const btn = document.getElementById('flt-' + feature);
@@ -1945,7 +1968,8 @@
             if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
 
             goTo('screenUser2DLayout');
-            setUserCanvasStatus('loading', 'Loading layout...');
+            const firstFloorSnapshotUrl = propertyData.layoutSnapshotUrls ? propertyData.layoutSnapshotUrls[currentUserFloor] : null;
+            if (!firstFloorSnapshotUrl) setUserCanvasStatus('loading', 'Loading layout...');
 
             // If this property was approved but never had its 2D layout actually published
             // (no fabricCanvasStates saved), tell the user immediately instead of showing a
@@ -2041,6 +2065,15 @@
             const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
             renderUserFloorTabs(uniqueFloors);
 
+            // PERF: show the fast static snapshot (if published) immediately, while the heavier
+            // interactive canvas JSON loads underneath from Firestore. Swaps over once ready.
+            const snapImg = document.getElementById('userLayoutSnapshotImg');
+            const snapshotUrl = window.currentPropertyData && window.currentPropertyData.layoutSnapshotUrls ? window.currentPropertyData.layoutSnapshotUrls[floorName] : null;
+            if (snapImg) {
+                if (snapshotUrl) { snapImg.src = snapshotUrl; snapImg.classList.remove('hidden'); }
+                else { snapImg.classList.add('hidden'); snapImg.removeAttribute('src'); }
+            }
+
             if(userFabricCanvasInstance) {
                 userFabricCanvasInstance.clear(); let floorDataJSON = null;
                 if(window.currentPropertyData && window.currentPropertyData.fabricCanvasStates && window.currentPropertyData.fabricCanvasStates[floorName]) { floorDataJSON = window.currentPropertyData.fabricCanvasStates[floorName]; }
@@ -2048,7 +2081,7 @@
 
                 if(!floorDataJSON) {
                     // No saved layout for this specific floor — tell the user instead of leaving a blank canvas.
-                    setUserCanvasStatus('empty', 'No layout available for this floor yet.');
+                    if (!snapshotUrl) setUserCanvasStatus('empty', 'No layout available for this floor yet.');
                     return;
                 }
 
@@ -2138,6 +2171,8 @@
                                 vpt[5] = (wrapper.clientHeight - height * scale) / 2 - boundingRect.top * scale;
                                 userFabricCanvasInstance.setViewportTransform(vpt);
                                 userFabricCanvasInstance.renderAll();
+                                // Interactive canvas is now correctly scaled & ready for bed taps — swap away from the static preview.
+                                if (snapImg) snapImg.classList.add('hidden');
                             }
                         }
                         requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
