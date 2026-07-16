@@ -14,17 +14,19 @@
     <!-- REVERTED: output.css wasn't found (build step not completed yet), which broke all styling. Back to CDN for now — safe/working. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SENTRY ERROR LOGGING: paste your DSN below (from sentry.io project settings). Leave as-is until you have one — it just won't send anything. -->
-    <script src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
     <script>
-        if (window.Sentry) {
-            Sentry.init({
-                dsn: "PASTE_YOUR_SENTRY_DSN_HERE", // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
-                tracesSampleRate: 0.2,
-                beforeSend(event) { if (!event.exception) return null; return event; } // sirf real errors bhejo, sab kuch nahi
-            });
-        }
+        window.addEventListener('load', function() {
+            if (window.Sentry) {
+                Sentry.init({
+                    dsn: "PASTE_YOUR_SENTRY_DSN_HERE", // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
+                    tracesSampleRate: 0.2,
+                    beforeSend(event) { if (!event.exception) return null; return event; } // sirf real errors bhejo, sab kuch nahi
+                });
+            }
+        });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -87,44 +89,44 @@
         .skeleton { background: linear-gradient(90deg, #eef0f4 25%, #f7f8fa 37%, #eef0f4 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 1rem; }
         @keyframes skeleton-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
+
         .blueprint-container { display: flex; gap: 4px; padding: 12px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 2px solid rgba(203, 213, 225, 0.5); border-radius: 16px; width: max-content; min-width: 100%; box-shadow: inset 0 2px 10px rgba(0,0,0,0.03); }
         .blueprint-corridor { background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 12px); border: 2px dashed #94a3b8; display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; border-radius: 10px; }
         .blueprint-rooms-grid { display: grid; gap: 6px; flex: 1; }
         .blueprint-room { background: white; border: 2px solid #e2e8f0; border-radius: 14px; padding: 8px; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .blueprint-room:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -8px rgba(99, 102, 241, 0.2); border-color: #818cf8; }
-        
+
         .location-search-container { display: flex; gap: 10px; margin-bottom: 12px; width: 100%; z-index: 10; position: relative; }
         .search-input-wrapper { display: flex; align-items: center; flex-grow: 1; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border: 2px solid rgba(226, 232, 240, 0.6); border-radius: 16px; padding: 4px 18px; box-shadow: 0 8px 20px -8px rgba(0,0,0,0.08); transition: all 0.3s ease; }
         .search-input-wrapper:focus-within { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), 0 8px 24px -6px rgba(99, 102, 241, 0.2); background: white; }
         .search-icon { font-size: 20px; color: #94a3b8; margin-right: 10px; }
         .location-search-input { width: 100%; border: none; padding: 12px 0; font-size: 14px; outline: none; color: #0f172a; font-weight: 600; background: transparent; }
         .location-search-input::placeholder { color: #94a3b8; font-weight: 500; }
-        
+
         input, select, textarea { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
         .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); }
-        
+
         .tab-pill-active { background: white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.25), 0 2px 4px rgba(0,0,0,0.05); color: #4f46e5; }
         .tab-pill-inactive { color: #64748b; }
         .tab-pill-inactive:hover { color: #4f46e5; background: rgba(255,255,255,0.5); }
         .method-option { background: rgba(255,255,255,0.6); border: 2px solid rgba(226, 232, 240, 0.5); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .method-option:hover { background: white; border-color: #818cf8; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(99, 102, 241, 0.25); }
         .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-        
+
         /* Compact Property Cards */
         .property-card { background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; will-change: transform; box-shadow: 0 4px 20px -8px rgba(0,0,0,0.08); }
         .property-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.2); border-color: rgba(129, 140, 248, 0.5); }
         .property-card img { transition: transform 0.4s ease; }
         .property-card:hover img { transform: scale(1.05); }
-        
+
         .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 9px; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
         .chip-primary { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.2); }
         .chip-success { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1)); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); }
         .chip-warning { background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1)); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
         .chip-outline { background: transparent; color: #64748b; border: 1px solid #cbd5e1; }
         .chip-selected { background: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
-        
+
         .icon-container { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 4px rgba(0,0,0,0.02); }
         .zoom-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .zoom-content { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 16px; border: 4px solid white; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
@@ -132,7 +134,7 @@
 
         .star-rating span { cursor: pointer; transition: color 0.2s; }
         .star-rating span:hover, .star-rating span.active { color: #f59e0b; }
-        
+
         .plan-box { cursor: pointer; transition: all 0.2s; border-width: 2px;}
         .plan-box:hover { border-color: #818cf8; background-color: #eef2ff; }
         .plan-box.selected { border-color: #4f46e5; background-color: #4f46e5; color: white; }
@@ -144,6 +146,10 @@
         .anim-float-1 { animation: float-1 3.5s ease-in-out infinite; }
         .anim-float-2 { animation: float-2 4.5s ease-in-out infinite; }
         .anim-progress { animation: progress 2.5s ease-out forwards; }
+
+        /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
+           load never looks identical to a frozen blank screen. */
+        .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -354,7 +360,7 @@
             </div>
             <button type="button" onclick="toggleUserMap()" class="px-4 py-2 bg-white/80 text-indigo-600 font-black text-xs rounded-xl border border-indigo-100 hover:bg-white transition shadow-sm tracking-wide">📍 TOGGLE MAP</button>
         </div>
-        <div id="userMapWrapper" class="w-full mb-6">
+        <div id="userMapWrapper" class="w-full mb-6 hidden">
             <div class="location-search-container">
                 <div class="search-input-wrapper">
                     <span class="search-icon">🔍</span>
@@ -379,7 +385,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- ADVANCED FILTERS -->
         <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl mb-4 shadow-inner space-y-2">
             <div class="flex gap-1.5 flex-wrap items-center">
@@ -389,7 +395,7 @@
                 <button onclick="setDiscoverFilter('type', 'Boys Hostel')" data-filter="type" data-value="Boys Hostel" class="filter-chip chip chip-outline hover:border-blue-300 transition">👨 Boys</button>
                 <button onclick="setDiscoverFilter('type', 'House/Flat')" data-filter="type" data-value="House/Flat" class="filter-chip chip chip-outline hover:border-amber-300 transition">🏡 House</button>
             </div>
-            
+
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Stay:</span>
                 <button onclick="setDiscoverFilter('stay', 'all')" data-filter="stay" data-value="all" class="filter-chip chip chip-primary active-filter">Any</button>
@@ -397,7 +403,7 @@
                 <button onclick="setDiscoverFilter('stay', 'weekly')" data-filter="stay" data-value="weekly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Weekly</button>
                 <button onclick="setDiscoverFilter('stay', 'monthly')" data-filter="stay" data-value="monthly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Monthly</button>
             </div>
-            
+
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Amenities:</span>
                 <button onclick="toggleFeatureFilter('ac')" id="flt-ac" class="chip chip-outline hover:border-indigo-400 transition cursor-pointer">❄️ AC</button>
@@ -427,7 +433,7 @@
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 border border-slate-200/60 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm">Logout</button>
             </div>
         </div>
-        
+
         <div class="flex gap-4 mb-6 border-b border-slate-200 pb-2">
             <button onclick="switchAdminTab('pending')" id="adminTabPending" class="pb-2 text-sm font-black border-b-2 border-indigo-600 text-indigo-700 transition">⏳ Pending Verifications</button>
             <button onclick="switchAdminTab('live')" id="adminTabLive" class="pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">✅ Live Properties</button>
@@ -553,10 +559,10 @@
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">GST Number</label><input type="text" id="formGst" placeholder="Enter GST" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70 uppercase"></div>
                 </div>
             </div>
-            
+
             <div class="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-3xl border border-blue-100/60">
                 <h3 class="text-xs font-black text-blue-900 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">2</span> Property Amenities & Rules</h3>
-                
+
                 <div class="mb-4 bg-white p-4 rounded-2xl border border-blue-100 shadow-sm">
                     <h4 class="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest">Available Stay Types</h4>
                     <div class="flex gap-4 mb-4">
@@ -613,7 +619,7 @@
                     <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-slate-200"><input type="checkbox" id="formCctv" class="accent-indigo-600 w-4 h-4"><span class="text-xs font-bold text-slate-700">🎥 CCTV Installed</span></label>
                     <label class="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-slate-200"><input type="checkbox" id="formNoRestriction" class="accent-indigo-600 w-4 h-4"><span class="text-xs font-bold text-slate-700">No Restrictions (Open Entry)</span></label>
                 </div>
-                
+
                 <div class="space-y-4 mt-4">
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Curfew / Deadline</label><select id="formCurfew" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option value="No Restriction">No Restriction</option><option value="10:00 PM">10:00 PM</option><option value="11:00 PM">11:00 PM</option></select></div>
                     <div class="grid grid-cols-2 gap-3">
@@ -663,7 +669,7 @@
         <div class="border-2 border-dashed border-indigo-200 rounded-3xl p-6 text-center bg-gradient-to-br from-indigo-50/50 to-purple-50/50 relative">
             <div id="uploadPrompt" class="mb-6"><span class="text-4xl block mb-3 text-indigo-300">📥</span></div>
             <div id="multiFloorContainer" class="mt-2 text-left mb-6 empty:hidden"></div>
-            
+
             <div class="bg-white/90 backdrop-blur p-5 rounded-2xl border border-slate-200/60 text-left shadow-sm mb-4">
                 <h4 class="font-black text-slate-800 text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><span class="text-indigo-500">📸</span> Upload Cover Photo</h4>
                 <p class="text-[10px] text-slate-400 font-bold mb-3">This premium image will appear on the User Dashboard</p>
@@ -714,7 +720,7 @@
             <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">📝 Data Editor <span class="text-[10px] text-slate-400 font-bold normal-case tracking-normal ml-2">Click Room strip below to expand</span></h3>
             <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100" id="dataEditorRoomCount"></span>
         </div>
-        
+
         <div id="dynamicBusinessRoomsContainer" class="flex-1 overflow-y-auto layout-scroll grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24 pr-2 min-h-[300px]"></div>
 
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 rounded-b-[2rem] flex justify-between items-center shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] z-20">
@@ -751,7 +757,7 @@
                     <p class="text-[10px] gradient-text font-black uppercase tracking-widest mt-1">Premium Architectural Canvas</p>
                 </div>
             </div>
-            
+
             <div class="flex gap-2 bg-slate-50/80 p-2 border border-slate-200/60 rounded-2xl flex-wrap">
                 <button onclick="addFabricBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🛏️ Bed</button>
                 <button onclick="addFabricRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
@@ -784,7 +790,7 @@
                 <div class="bg-slate-50 border-b border-slate-100 p-3 text-center text-xs font-black uppercase tracking-widest text-slate-500">Original Floor Plan (Click to Zoom)</div>
                 <div id="adminMapDragContainer" class="flex-1 p-4 flex items-center justify-center overflow-auto bg-slate-100"><img id="adminSideBySideImg" src="" class="max-w-full max-h-full object-contain mix-blend-multiply origin-center"></div>
             </div>
-            
+
             <div id="adminCanvasPanel" class="flex-1 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative transition-all duration-300">
                 <div class="btn-gradient text-white p-3 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10 flex justify-between items-center px-4">
                     <span>Architectural HD Canvas</span>
@@ -833,15 +839,19 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
         <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-32">
             <!-- FIXED CANVAS WRAPPER -->
-            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-auto layout-scroll flex justify-start items-start p-6" id="userCanvasWrapper" style="min-height: 500px;">
+            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-auto layout-scroll flex justify-start items-start p-6 relative" id="userCanvasWrapper" style="min-height: 500px;">
+                <div id="userCanvasStatus" class="canvas-status-overlay hidden">
+                    <div class="loader mb-4"></div>
+                    <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
+                </div>
                 <canvas id="userFabricCanvas"></canvas>
             </div>
-            
+
             <div class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative">
                 <div class="btn-gradient text-white p-4 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10">Room Overview</div>
                 <div id="bedDetailPanel" class="flex-1 p-8 flex flex-col items-center justify-center text-slate-400 text-center overflow-y-auto layout-scroll bg-slate-50/50">
@@ -991,11 +1001,11 @@
         let userDashRenderTimer = null;
         let userMapInitTimer = null;
         let globalBizProfile = { firstName: '', phone: '', company: '', role: '' };
-        let businessRules = { 
+        let businessRules = {
             stayTypes: { daily: false, weekly: false, monthly: true },
             securityDeposit: 5000, acType: 'AC & Non-AC Both', bathType: 'Attached', parking: 'Bike Only',
             laundry: 'Not Available', laundryCharge: 0, wifi: true, studyTable: true, noRestriction: false,
-            mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0 
+            mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0
         };
         let discoverFilters = { type: 'all', stay: 'all', search: '', features: [] };
         let accountMode = 'user';
@@ -1020,8 +1030,8 @@
         let aiGeneratedMapUrl = "";
         let adminExpectedBeds = 0;
         let admin2DBlocks = [];
-        let selected2DBeds = []; 
-        let currentSelectedBedId = null; 
+        let selected2DBeds = [];
+        let currentSelectedBedId = null;
         let currentSelectedPlanPrice = 0;
         let selectedPropertyType = '';
         let googleMap;
@@ -1031,7 +1041,7 @@
         let userMapMarkers = [];
         let adminFabricCanvasInstance = null;
         let userFabricCanvasInstance = null;
-        let adminLocalCanvasStates = {}; 
+        let adminLocalCanvasStates = {};
         let currentlyExpandedRoomIdx = null;
 
         window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { goTo('screenOptions'); }, 2500); });
@@ -1039,7 +1049,7 @@
         window.toggleDeposit = function() {
             const isMonthly = document.getElementById('stayMonthly').checked;
             const depInput = document.getElementById('formDeposit');
-            if(isMonthly) { depInput.disabled = false; depInput.classList.remove('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.add('bg-white'); } 
+            if(isMonthly) { depInput.disabled = false; depInput.classList.remove('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.add('bg-white'); }
             else { depInput.disabled = true; depInput.classList.add('opacity-50', 'bg-slate-100', 'cursor-not-allowed'); depInput.classList.remove('bg-white'); depInput.value = ''; }
         }
         window.toggleMessCharges = function() {
@@ -1091,7 +1101,7 @@
 
         function deleteSelectedFabricElement() {
             if(!adminFabricCanvasInstance) return; const activeObjects = adminFabricCanvasInstance.getActiveObjects();
-            if(activeObjects.length > 0) { if(confirm(`Delete ${activeObjects.length} element(s)?`)) { activeObjects.forEach(obj => { adminFabricCanvasInstance.remove(obj); }); adminFabricCanvasInstance.discardActiveObject(); adminFabricCanvasInstance.requestRenderAll(); } } 
+            if(activeObjects.length > 0) { if(confirm(`Delete ${activeObjects.length} element(s)?`)) { activeObjects.forEach(obj => { adminFabricCanvasInstance.remove(obj); }); adminFabricCanvasInstance.discardActiveObject(); adminFabricCanvasInstance.requestRenderAll(); } }
             else { alert("Please click/select an item on the canvas first to delete it."); }
         }
         function selectAllFabricElements() {
@@ -1103,12 +1113,12 @@
         let adminCanvasZoom = 1;
         function zoomFabricCanvas(factor) {
             if(!adminFabricCanvasInstance) return; adminCanvasZoom = Math.max(0.2, Math.min(3, adminCanvasZoom * factor));
-            adminFabricCanvasInstance.setZoom(adminCanvasZoom); adminFabricCanvasInstance.setWidth(3000 * adminCanvasZoom); adminFabricCanvasInstance.setHeight(3000 * adminCanvasZoom); adminFabricCanvasInstance.requestRenderAll();
+            adminFabricCanvasInstance.setZoom(adminCanvasZoom); adminFabricCanvasInstance.setWidth(adminCanvasBaseSize.w * adminCanvasZoom); adminFabricCanvasInstance.setHeight(adminCanvasBaseSize.h * adminCanvasZoom); adminFabricCanvasInstance.requestRenderAll();
         }
         function fitFabricCanvas() {
             if(!adminFabricCanvasInstance) return; const wrapper = document.getElementById('fabricCanvasWrapper'); if(!wrapper) return;
-            const availWidth = wrapper.clientWidth - 40; const availHeight = wrapper.clientHeight - 40; const scale = Math.min(availWidth / 3000, availHeight / 3000);
-            adminCanvasZoom = scale; adminFabricCanvasInstance.setZoom(scale); adminFabricCanvasInstance.setWidth(3000 * scale); adminFabricCanvasInstance.setHeight(3000 * scale); adminFabricCanvasInstance.requestRenderAll();
+            const availWidth = wrapper.clientWidth - 40; const availHeight = wrapper.clientHeight - 40; const scale = Math.min(availWidth / adminCanvasBaseSize.w, availHeight / adminCanvasBaseSize.h);
+            adminCanvasZoom = scale; adminFabricCanvasInstance.setZoom(scale); adminFabricCanvasInstance.setWidth(adminCanvasBaseSize.w * scale); adminFabricCanvasInstance.setHeight(adminCanvasBaseSize.h * scale); adminFabricCanvasInstance.requestRenderAll();
         }
 
         function toggleBusinessPreviewPanel() { const panel = document.getElementById('bizPreviewPanel'); const btn = document.getElementById('bizPreviewToggleBtn'); if (!panel) return; if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); if (btn) btn.innerText = '🔽 Hide Preview'; } else { panel.classList.add('hidden'); if (btn) btn.innerText = '🔼 Show Preview'; } }
@@ -1124,11 +1134,16 @@
             else if (e.key === '0') { fitFabricCanvas(); }
         });
 
-        function addFabricBathroom() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 60, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 8, ry: 8, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.05)', blur: 6, offsetX: 0, offsetY: 3 }) }); let iconText = new fabric.IText('🚿 BATH', { left: 40, top: 30, fontSize: 13, fill: '#1d4ed8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricTable() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 45, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 8, ry: 8, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.05)', blur: 6, offsetX: 0, offsetY: 3 }) }); let iconText = new fabric.IText('📚 TABLE', { left: 40, top: 22.5, fontSize: 12, fill: '#b45309', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 150, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        // PERF: removed heavy drop-shadows from every bed/room/bath/table element. Shadows are
+        // one of the most expensive things a canvas has to paint, and a layout can easily have
+        // 30-60+ of these objects — each with its own shadow — which was the single biggest
+        // contributor to slow rendering, especially on lower-end phones. Flat borders keep the
+        // same premium look at a fraction of the paint cost.
+        function addFabricBathroom() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 60, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('🚿 BATH', { left: 40, top: 30, fontSize: 13, fill: '#1d4ed8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricTable() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 45, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('📚 TABLE', { left: 40, top: 22.5, fontSize: 12, fill: '#b45309', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 150, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
         function addFabricText() { if(!adminFabricCanvasInstance) return; let text = new fabric.IText('Double Click to Edit', { left: 150, top: 120, fontSize: 18, fill: '#334155', fontWeight: '800', fontFamily: 'Plus Jakarta Sans' }); adminFabricCanvasInstance.add(text); }
-        function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 }) }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
-        function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16, shadow: new fabric.Shadow({ color: 'rgba(100,116,139,0.12)', blur: 15, offsetX: 0, offsetY: 6 }) }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
+        function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
+        function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
         function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
         function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 100, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 50, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
 
@@ -1147,14 +1162,14 @@
             }
         }
 
-        function toggleUserMap() { 
-            const mapWrap = document.getElementById('userMapWrapper'); 
-            if(mapWrap.classList.contains('hidden')) { 
-                mapWrap.classList.remove('hidden'); 
-                initUserMap(); 
-            } else { 
-                mapWrap.classList.add('hidden'); 
-            } 
+        function toggleUserMap() {
+            const mapWrap = document.getElementById('userMapWrapper');
+            if(mapWrap.classList.contains('hidden')) {
+                mapWrap.classList.remove('hidden');
+                initUserMap();
+            } else {
+                mapWrap.classList.add('hidden');
+            }
         }
 
         async function initUserMap() {
@@ -1214,16 +1229,13 @@
             const targetScreen = document.getElementById(screenId);
             if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
             if (screenId !== 'screenUserDashboard' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
-            
+
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
             if(screenId === 'screenUserDashboard') {
                 refreshUserDash();
-                setTimeout(() => {
-                    const mapWrap = document.getElementById('userMapWrapper');
-                    if (mapWrap && !mapWrap.classList.contains('hidden')) {
-                        initUserMap();
-                    }
-                }, 300);
+                // Map is now off by default and only initializes when the user taps "Toggle Map" —
+                // loading Google Maps + fetching/plotting markers on every dashboard visit was
+                // unnecessary work most users never looked at.
             }
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
             if(screenId === 'screenGoogleMap' && googleMap) { setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150); }
@@ -1233,8 +1245,8 @@
             accountMode = mode;
             ['User', 'Business', 'Admin'].forEach(t => { let tab = document.getElementById('tab' + t); if(tab) tab.className = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive cursor-pointer"; });
             let activeClass = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active cursor-pointer";
-            if (mode === 'user') { document.getElementById('tabUser').className = activeClass; document.getElementById('mainHeading').innerText = "Welcome Back"; document.getElementById('mainSubheading').innerText = "Log in to book verified properties"; } 
-            else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerText = "Manage your properties and layouts"; } 
+            if (mode === 'user') { document.getElementById('tabUser').className = activeClass; document.getElementById('mainHeading').innerText = "Welcome Back"; document.getElementById('mainSubheading').innerText = "Log in to book verified properties"; }
+            else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerText = "Manage your properties and layouts"; }
             else { document.getElementById('tabAdmin').className = activeClass; document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
 
@@ -1258,7 +1270,7 @@
 
         function toggleBizIdInput() {
             const isChecked = document.getElementById('bizIdLater').checked; const idInput = document.getElementById('bizIdValue'); const idType = document.getElementById('bizIdType');
-            if(isChecked) { idInput.disabled = true; idType.disabled = true; idInput.classList.add('bg-slate-100', 'opacity-50'); idType.classList.add('bg-slate-100', 'opacity-50'); } 
+            if(isChecked) { idInput.disabled = true; idType.disabled = true; idInput.classList.add('bg-slate-100', 'opacity-50'); idType.classList.add('bg-slate-100', 'opacity-50'); }
             else { idInput.disabled = false; idType.disabled = false; idInput.classList.remove('bg-slate-100', 'opacity-50'); idType.classList.remove('bg-slate-100', 'opacity-50'); }
         }
 
@@ -1459,7 +1471,7 @@
                 for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
                 if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${Date.now()}_main_photo`); }
-                if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); } 
+                if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); }
                 else { await window.addDoc(window.collection(window.db, "businesses"), { businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", dateSubmitted: new Date(), uploadedAt: new Date().toISOString() }); alert('Listing submitted for verification!'); }
                 editingBusinessDocId = null; goTo('screenBusinessDashboard');
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
@@ -1520,22 +1532,37 @@
             adminLocalCanvasStates = busData.fabricCanvasStates || {}; goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
         }
 
+        // PERF: canvas is now sized to fit the actual content (with padding), instead of always
+        // being a fixed 3000x3000 working area. A property with 2 rooms no longer pays the paint
+        // cost of a 3000x3000 surface — this was a big, unnecessary cost on every load.
+        let adminCanvasBaseSize = { w: 1200, h: 900 };
         function redrawAdminCanvasForFloor() {
             setTimeout(() => {
                 const wrapper = document.getElementById('fabricCanvasWrapper');
-                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: 3000, height: 3000, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); }
+                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: adminCanvasBaseSize.w, height: adminCanvasBaseSize.h, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); }
                 adminFabricCanvasInstance.clear();
-                if (adminLocalCanvasStates[currentAdminFloor]) { adminFabricCanvasInstance.renderOnAddRemove = false; adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { adminFabricCanvasInstance.renderOnAddRemove = true; adminFabricCanvasInstance.renderAll(); }); return; }
-                adminFabricCanvasInstance.renderOnAddRemove = false; // PERF FIX: was re-rendering the full 3000x3000 canvas on every single .add() call below (grid lines + every room + every bed) — this was the main reason Architect Mode felt very slow to load.
-                for (let i = 0; i < 3000; i += 25) { let isMajor = i % 100 === 0; adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, 3000], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: isMajor ? 1.5 : 0.5, selectable: false })); adminFabricCanvasInstance.add(new fabric.Line([0, i, 3000, i], { stroke: isMajor ? '#cbd5e1' : '#f1f5f9', strokeWidth: isMajor ? 1.5 : 0.5, selectable: false })); }
-                let topPos = 40; let leftPos = 40; const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentAdminFloor);
+                if (adminLocalCanvasStates[currentAdminFloor]) {
+                    adminFabricCanvasInstance.renderOnAddRemove = false;
+                    adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { adminFabricCanvasInstance.renderOnAddRemove = true; adminFabricCanvasInstance.renderAll(); setTimeout(fitFabricCanvas, 50); });
+                    return;
+                }
+                const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentAdminFloor);
+                // Work out how much room this floor's blocks actually need, then size the canvas to that
+                // (plus padding) instead of a fixed 3000x3000 — this is what makes the grid + render cost
+                // scale with the number of rooms instead of always being maximal.
+                const roomCols = Math.max(1, Math.ceil(filteredBlocks.filter(b => b.type === 'room').length / 2));
+                adminCanvasBaseSize = { w: Math.max(1200, 80 + roomCols * 310), h: 900 };
+                adminFabricCanvasInstance.renderOnAddRemove = false; // PERF FIX: was re-rendering the full canvas on every single .add() call below (grid lines + every room + every bed) — this was the main reason Architect Mode felt very slow to load.
+                for (let i = 0; i <= adminCanvasBaseSize.w; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, adminCanvasBaseSize.h], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
+                for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
+                let topPos = 40; let leftPos = 40;
                 filteredBlocks.forEach((block, idx) => {
                     if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 130; }
-                    else if(block.type === 'room') { let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16, shadow: new fabric.Shadow({ color: 'rgba(100,116,139,0.12)', blur: 15, offsetX: 0, offsetY: 6 }) }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText(block.name.toUpperCase(), { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(roomGroup); let bedStartX = leftPos + 20; let bedStartY = topPos + 55; block.beds.forEach((bed, bIdx) => { let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12, shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 }) }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + bed.price, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: bedStartX, top: bedStartY, selectable: true, isBed: true, bedId: bed.id, bedPrice: bed.price, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); bedStartX += 85; if(bedStartX > leftPos + 200) { bedStartX = leftPos + 20; bedStartY += 90; } }); topPos += 200; if(topPos > 400) { topPos = 40; leftPos += 310; } }
+                    else if(block.type === 'room') { let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText(block.name.toUpperCase(), { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(roomGroup); let bedStartX = leftPos + 20; let bedStartY = topPos + 55; block.beds.forEach((bed, bIdx) => { let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + bed.price, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: bedStartX, top: bedStartY, selectable: true, isBed: true, bedId: bed.id, bedPrice: bed.price, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); bedStartX += 85; if(bedStartX > leftPos + 200) { bedStartX = leftPos + 20; bedStartY += 90; } }); topPos += 200; if(topPos > 400) { topPos = 40; leftPos += 310; } }
                 });
                 adminFabricCanvasInstance.renderOnAddRemove = true;
                 adminFabricCanvasInstance.renderAll();
-                adminFabricCanvasInstance.renderAll();
+                setTimeout(fitFabricCanvas, 50);
             }, 300);
         }
 
@@ -1545,7 +1572,7 @@
                 if (adminFabricCanvasInstance && currentAdminFloor) {
                     const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
                     if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
-                    adminLocalCanvasStates[currentAdminFloor] = jsonState; 
+                    adminLocalCanvasStates[currentAdminFloor] = jsonState;
                 }
                 await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates, layout2DPublishedAt: new Date().toISOString() });
                 alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
@@ -1611,7 +1638,10 @@
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
                 });
-            } catch(e) {}
+            } catch(e) {
+                console.error('refreshUserDash failed:', e);
+                container.innerHTML = `<p class="text-red-500 font-bold col-span-3 text-center mt-10">Could not load properties. Please check your connection and try again.</p>`;
+            }
         }
 
         async function openRedbusLayout(docId) {
@@ -1874,40 +1904,64 @@
 
         function confirmImageBooking() { openGuestRegistrationForm(); }
 
+        // NEW: visible status helper for the user-facing 2D layout screen — a slow network or a
+        // property with no published layout now SAYS SO instead of leaving a silent blank canvas
+        // that looks exactly like "still loading" for as long as the user is willing to wait.
+        function setUserCanvasStatus(mode, text) {
+            const overlay = document.getElementById('userCanvasStatus');
+            const textEl = document.getElementById('userCanvasStatusText');
+            if (!overlay) return;
+            if (mode === 'hidden') { overlay.classList.add('hidden'); return; }
+            overlay.classList.remove('hidden');
+            overlay.querySelector('.loader').style.display = (mode === 'loading') ? '' : 'none';
+            textEl.innerText = text;
+        }
+
         async function openUser2DLayout(docId) {
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
-            
+
             if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
-            
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; 
+
+            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
             currentUserFloor = uniqueFloors[0] || 'Ground Floor';
-            
+
             const tabContainer = document.getElementById('userFloorTabsContainer');
             if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
-            
+
             goTo('screenUser2DLayout');
-            
+            setUserCanvasStatus('loading', 'Loading layout...');
+
+            // If this property was approved but never had its 2D layout actually published
+            // (no fabricCanvasStates saved), tell the user immediately instead of showing a
+            // canvas that will stay blank forever.
+            const hasAnyFloorState = propertyData.fabricCanvasStates && Object.keys(propertyData.fabricCanvasStates).length > 0;
+            const hasLegacyState = !!propertyData.fabricCanvasState;
+            if (!hasAnyFloorState && !hasLegacyState) {
+                setUserCanvasStatus('empty', 'Layout not published yet for this property. Please check back later.');
+                return;
+            }
+
             setTimeout(() => {
                 if (!userFabricCanvasInstance) {
-                    userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { width: 3000, height: 3000, selection: false });
+                    userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { width: 1200, height: 900, selection: false });
                     userFabricCanvasInstance.on('mouse:down', function(options) {
                         if (options.target && options.target.isBed) {
                             const bedId = options.target.bedId;
                             showBedDetailsInPanel(bedId);
-                            
+
                             userFabricCanvasInstance.forEachObject(function(obj) {
                                 if(obj.isBed) {
                                     const bedBgRect = obj.item(0); const topAccent = obj.item(1); const priceBg = obj.item(3); const priceTxt = obj.item(4);
-                                    bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); bedBgRect.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.08)', blur: 8, offsetX: 0, offsetY: 4 })); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
+                                    bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
                                 }
                             });
-                            
+
                             const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
-                            selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selBedBgRect.set('shadow', new fabric.Shadow({ color: 'rgba(99, 102, 241, 0.4)', blur: 15, offsetX: 0, offsetY: 6 })); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
-                            
+                            selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
+
                             userFabricCanvasInstance.renderAll();
                         }
                     });
@@ -1921,12 +1975,12 @@
             const panel = document.getElementById('bedDetailPanel'); let parentRoom = null;
             if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
             if (!parentRoom) { return; }
-            
+
             let targetBed = parentRoom.beds.find(b => b.id === bedId);
             let dPrice = targetBed?.priceDaily || 0; let wPrice = targetBed?.priceWeekly || 0; let mPrice = targetBed?.priceMonthly || targetBed?.price || 5000;
             let securityDep = window.currentPropertyData?.rules?.securityDeposit || 0;
             let allowedStays = window.currentPropertyData?.rules?.stayTypes || { monthly: true };
-            
+
             let pricingHtml = `<div class="grid grid-cols-3 gap-2 mt-4 w-full">`;
             if (allowedStays.daily && dPrice > 0) { pricingHtml += `<div id="plan-daily" onclick="selectBookingPlan('daily', ${dPrice})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Daily</p><p class="text-sm font-black text-slate-800">₹${dPrice}</p></div>`; }
             if (allowedStays.weekly && wPrice > 0) { pricingHtml += `<div id="plan-weekly" onclick="selectBookingPlan('weekly', ${wPrice})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Weekly</p><p class="text-sm font-black text-slate-800">₹${wPrice}</p></div>`; }
@@ -1949,12 +2003,12 @@
             }
 
             let photosHtml = '';
-            if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" class="w-full h-full object-cover"></div>`).join(''); }
+            if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
             panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
-            
+
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
         }
 
@@ -1968,22 +2022,27 @@
         }
 
         function selectUserFloor(floorName) {
-            currentUserFloor = floorName; 
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; 
+            currentUserFloor = floorName;
+            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
             renderUserFloorTabs(uniqueFloors);
-            
+
             if(userFabricCanvasInstance) {
                 userFabricCanvasInstance.clear(); let floorDataJSON = null;
                 if(window.currentPropertyData && window.currentPropertyData.fabricCanvasStates && window.currentPropertyData.fabricCanvasStates[floorName]) { floorDataJSON = window.currentPropertyData.fabricCanvasStates[floorName]; }
                 else if(window.currentPropertyData && window.currentPropertyData.fabricCanvasState) { floorDataJSON = window.currentPropertyData.fabricCanvasState; }
-                
-                if(floorDataJSON) {
-                    userFabricCanvasInstance.renderOnAddRemove = false;
-                    userFabricCanvasInstance.loadFromJSON(floorDataJSON, function() {
+
+                if(!floorDataJSON) {
+                    // No saved layout for this specific floor — tell the user instead of leaving a blank canvas.
+                    setUserCanvasStatus('empty', 'No layout available for this floor yet.');
+                    return;
+                }
+
+                userFabricCanvasInstance.renderOnAddRemove = false;
+                userFabricCanvasInstance.loadFromJSON(floorDataJSON, function() {
                         const liveLayoutBeds = [];
                         if (window.currentPropertyData && window.currentPropertyData.layout2D) { window.currentPropertyData.layout2D.forEach(block => { if (block.beds) liveLayoutBeds.push(...block.beds); }); }
                         const objectsToRemove = [];
-                        
+
                         userFabricCanvasInstance.forEachObject(function(obj) {
                             // User UI cleanups (No grid, dark walkway)
                             if (obj.type === 'line' && (obj.stroke === '#cbd5e1' || obj.stroke === '#f1f5f9')) {
@@ -1994,10 +2053,10 @@
                                 // and beds/rooms/corridors were all draggable for the end user.
                                 const liveBedData = liveLayoutBeds.find(b => b.id === obj.bedId);
                                 if (!liveBedData) { objectsToRemove.push(obj); }
-                                else { 
-                                    obj.bedPrice = liveBedData.priceMonthly || liveBedData.price; 
-                                    if (obj._objects && obj._objects[4]) { obj._objects[4].set('text', '₹' + obj.bedPrice); } 
-                                    obj.set({ selectable: true, evented: true, hasControls: false, hasBorders: false, lockMovementX: true, lockMovementY: true, hoverCursor: 'pointer' }); 
+                                else {
+                                    obj.bedPrice = liveBedData.priceMonthly || liveBedData.price;
+                                    if (obj._objects && obj._objects[4]) { obj._objects[4].set('text', '₹' + obj.bedPrice); }
+                                    obj.set({ selectable: true, evented: true, hasControls: false, hasBorders: false, lockMovementX: true, lockMovementY: true, hoverCursor: 'pointer' });
                                 }
                             } else if (obj.type === 'group') {
                                 if (obj._objects && obj._objects.length > 0) {
@@ -2014,57 +2073,61 @@
                                 obj.set({ selectable: false, evented: false, hasControls: false, hasBorders: false, hoverCursor: 'default', skipTargetFind: true });
                             } else { obj.set({ selectable: false, evented: false }); }
                         });
-                        
-                        objectsToRemove.forEach(obj => userFabricCanvasInstance.remove(obj)); 
+
+                        objectsToRemove.forEach(obj => userFabricCanvasInstance.remove(obj));
                         userFabricCanvasInstance.renderOnAddRemove = true;
                         userFabricCanvasInstance.renderAll();
-                        
+                        setUserCanvasStatus('hidden');
+
                         // Auto-Fit to screen Logic
                         // FIX: a fixed 100ms timeout wasn't always enough time for the browser to finish
                         // laying out the newly-shown screen (especially on real phones over a real network,
                         // as opposed to fast local testing) — clientWidth/clientHeight could read as 0,
                         // making the whole layout scale to invisible. Now we wait for two animation frames
-                        // (guarantees a real layout pass happened) and retry once more if still 0.
+                        // (guarantees a real layout pass happened) and retry once more if still 0, and if it
+                        // STILL fails after all retries we show an explicit error instead of a silent blank canvas.
                         function fitUserCanvasToScreen(attemptsLeft) {
                             const activeObjects = userFabricCanvasInstance.getObjects();
-                            if(activeObjects.length > 0) {
-                                let boundingRect = null;
-                                activeObjects.forEach(obj => {
-                                     let bound = obj.getBoundingRect();
-                                     if(!boundingRect) { boundingRect = {left: bound.left, top: bound.top, right: bound.left+bound.width, bottom: bound.top+bound.height}; }
-                                     else {
-                                         boundingRect.left = Math.min(boundingRect.left, bound.left);
-                                         boundingRect.top = Math.min(boundingRect.top, bound.top);
-                                         boundingRect.right = Math.max(boundingRect.right, bound.left+bound.width);
-                                         boundingRect.bottom = Math.max(boundingRect.bottom, bound.top+bound.height);
-                                     }
-                                });
-                                if(boundingRect) {
-                                    let width = boundingRect.right - boundingRect.left;
-                                    let height = boundingRect.bottom - boundingRect.top;
-                                    let wrapper = document.getElementById('userCanvasWrapper');
-                                    if ((!wrapper.clientWidth || !wrapper.clientHeight) && attemptsLeft > 0) {
-                                        // Screen not laid out yet — wait a bit longer and try again instead of applying a broken (invisible) zoom
-                                        setTimeout(() => fitUserCanvasToScreen(attemptsLeft - 1), 150);
-                                        return;
-                                    }
-                                    let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
-                                    if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
-                                    if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
-                                    userFabricCanvasInstance.setZoom(scale);
-                                    
-                                    let vpt = userFabricCanvasInstance.viewportTransform;
-                                    vpt[4] = (wrapper.clientWidth - width * scale) / 2 - boundingRect.left * scale;
-                                    vpt[5] = (wrapper.clientHeight - height * scale) / 2 - boundingRect.top * scale;
-                                    userFabricCanvasInstance.setViewportTransform(vpt);
-                                    userFabricCanvasInstance.renderAll();
+                            if(activeObjects.length === 0) { setUserCanvasStatus('empty', 'This floor has no rooms/beds published yet.'); return; }
+                            let boundingRect = null;
+                            activeObjects.forEach(obj => {
+                                 let bound = obj.getBoundingRect();
+                                 if(!boundingRect) { boundingRect = {left: bound.left, top: bound.top, right: bound.left+bound.width, bottom: bound.top+bound.height}; }
+                                 else {
+                                     boundingRect.left = Math.min(boundingRect.left, bound.left);
+                                     boundingRect.top = Math.min(boundingRect.top, bound.top);
+                                     boundingRect.right = Math.max(boundingRect.right, bound.left+bound.width);
+                                     boundingRect.bottom = Math.max(boundingRect.bottom, bound.top+bound.height);
+                                 }
+                            });
+                            if(boundingRect) {
+                                let width = boundingRect.right - boundingRect.left;
+                                let height = boundingRect.bottom - boundingRect.top;
+                                let wrapper = document.getElementById('userCanvasWrapper');
+                                if ((!wrapper.clientWidth || !wrapper.clientHeight) && attemptsLeft > 0) {
+                                    // Screen not laid out yet — wait a bit longer and try again instead of applying a broken (invisible) zoom
+                                    setTimeout(() => fitUserCanvasToScreen(attemptsLeft - 1), 150);
+                                    return;
                                 }
+                                if (!wrapper.clientWidth || !wrapper.clientHeight) {
+                                    setUserCanvasStatus('error', 'Could not display the layout on this screen. Please try reloading.');
+                                    return;
+                                }
+                                let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
+                                if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
+                                if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
+                                userFabricCanvasInstance.setZoom(scale);
+
+                                let vpt = userFabricCanvasInstance.viewportTransform;
+                                vpt[4] = (wrapper.clientWidth - width * scale) / 2 - boundingRect.left * scale;
+                                vpt[5] = (wrapper.clientHeight - height * scale) / 2 - boundingRect.top * scale;
+                                userFabricCanvasInstance.setViewportTransform(vpt);
+                                userFabricCanvasInstance.renderAll();
                             }
                         }
                         requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
 
-                    }, function(jsonObj, fabricObj) { if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; } });
-                }
+                }, function(jsonObj, fabricObj) { if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; } });
             }
         }
 
@@ -2087,7 +2150,7 @@
                     const isExpanded = (currentlyExpandedRoomIdx === index); let insideContentHtml = '';
                     if (isExpanded) {
                         let dynamicPriceBoxesHtml = `<div class="flex flex-col gap-2 border-t border-slate-100 pt-3 mt-1">`;
-                        room.beds.forEach((bed, bIndex) => { 
+                        room.beds.forEach((bed, bIndex) => {
                             dynamicPriceBoxesHtml += `
                             <div class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 mb-1">
                                 <label class="text-[9px] font-black text-slate-500 block text-center mb-2 uppercase tracking-widest border-b border-slate-200 pb-1">Bed ${bIndex+1}</label>
@@ -2096,7 +2159,7 @@
                                     <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Weekly (₹)</label><input type="number" value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm"></div>
                                     <div class="flex-1"><label class="text-[8px] font-bold text-indigo-400 block mb-0.5 text-center">Monthly (₹)</label><input type="number" value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-xs font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-1 outline-none text-indigo-700 shadow-sm"></div>
                                 </div>
-                            </div>`; 
+                            </div>`;
                         });
                         dynamicPriceBoxesHtml += `</div>`;
                         let photosHTML = ` <div class="flex gap-2 mb-3" onclick="event.stopPropagation()"> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this)"></label> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this)"></label> </div>`;
