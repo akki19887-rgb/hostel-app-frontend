@@ -150,6 +150,9 @@
         /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
            load never looks identical to a frozen blank screen. */
         .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
+        @media (max-width: 1023px) {
+            #userCanvasWrapper { min-height: 340px !important; max-height: 55vh; }
+        }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -834,20 +837,20 @@
     </div>
 
     <!-- UPDATE: Fixed Layout Wrapper height -->
-    <div id="screenUser2DLayout" class="hidden premium-card pt-4 pb-0 rounded-[2rem] max-w-7xl w-full relative h-[95vh] flex flex-col overflow-hidden screen-panel">
+    <div id="screenUser2DLayout" class="hidden premium-card pt-4 pb-0 rounded-[2rem] max-w-7xl w-full relative h-[95vh] flex flex-col overflow-hidden screen-panel" style="height: 95dvh;">
         <div class="bg-white/90 backdrop-blur px-8 py-5 border-b border-slate-200/60 shadow-sm z-10 flex justify-between items-center rounded-t-[2rem] flex-wrap gap-4">
             <div class="flex items-center gap-5">
                 <button type="button" onclick="goTo('screenUserDashboard')" class="w-12 h-12 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center text-xl font-bold text-slate-600 transition">←</button>
                 <div>
-                    <h2 class="display-font text-3xl font-black text-slate-900 tracking-tight">Interactive 2D Layout</h2>
-                    <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest">Tap on a bed to select booking plan</p>
+                    <h2 class="display-font text-3xl font-black text-slate-900 tracking-tight">Choose Your Bed</h2>
+                    <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest">Tap any bed to see photos, price & amenities</p>
                 </div>
             </div>
         </div>
 
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-32">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-44">
             <!-- FIXED CANVAS WRAPPER -->
             <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-auto layout-scroll flex justify-start items-start p-6 relative" id="userCanvasWrapper" style="min-height: 500px;">
                 <div id="userCanvasStatus" class="canvas-status-overlay hidden">
@@ -867,7 +870,7 @@
                 </div>
             </div>
         </div>
-        <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0">
+        <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between flex-wrap gap-4 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));">
             <div>
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Payable</p>
                 <h3 id="smart2DTotalAmount" class="display-font text-3xl font-black text-slate-900">₹0</h3>
@@ -1002,6 +1005,13 @@
 
     <script>
         const BACKEND_URL = 'https://hostel-backend-5hsf.onrender.com';
+        // Turns a hostel/company name into a safe, readable slug for Firestore doc IDs and
+        // Storage folder paths — e.g. "DCMM Boys Hostel" -> "dcmm-boys-hostel". This is what
+        // makes documents/files identifiable by hostel name in the Firebase console.
+        function slugify(str) {
+            return (str || 'hostel').toString().trim().toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '').slice(0, 40) || 'hostel';
+        }
         let globalDynamicRooms = [];
         let userUnsubscribe = null;
         let userDashRenderTimer = null;
@@ -1158,8 +1168,8 @@
         function addFabricText() { if(!adminFabricCanvasInstance) return; let text = new fabric.IText('Double Click to Edit', { left: 150, top: 120, fontSize: 18, fill: '#334155', fontWeight: '800', fontFamily: 'Plus Jakarta Sans' }); adminFabricCanvasInstance.add(text); }
         function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
         function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
-        function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 100, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 50, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 65, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 32, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
 
         function initMap() {
             const bizMapEl = document.getElementById("map");
@@ -1480,14 +1490,25 @@
         async function submitToAdmin() {
             const btn = document.getElementById('submitAdminBtn'); btn.innerText = "⏳ Saving & Syncing..."; btn.disabled = true;
             try {
+                // Hostel-name slug used to prefix Storage paths & (for new listings) the Firestore doc ID,
+                // so anyone browsing Firebase console can tell which hostel a file/document belongs to.
+                const hostelSlug = editingBusinessDocId
+                    ? slugify((loadedBusinessData && loadedBusinessData.businessName) || (loadedBusinessData && loadedBusinessData.businessProfile && loadedBusinessData.businessProfile.company))
+                    : slugify(globalBizProfile.company);
+
                 let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
-                if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
+                if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
                 let cleanRoomsData = [];
-                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
+                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
-                if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${Date.now()}_main_photo`); }
+                if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
                 if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); }
-                else { await window.addDoc(window.collection(window.db, "businesses"), { businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", dateSubmitted: new Date(), uploadedAt: new Date().toISOString() }); alert('Listing submitted for verification!'); }
+                else {
+                    const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
+                    currentAdminDocId = newDocId;
+                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+                    alert('Listing submitted for verification!');
+                }
                 editingBusinessDocId = null; goTo('screenBusinessDashboard');
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
@@ -1572,7 +1593,7 @@
                 for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
                 let topPos = 40; let leftPos = 40;
                 filteredBlocks.forEach((block, idx) => {
-                    if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 100, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 50, top: 225, fontSize: 16, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 6 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 130; }
+                    if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 95; }
                     else if(block.type === 'room') { let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText(block.name.toUpperCase(), { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(roomGroup); let bedStartX = leftPos + 20; let bedStartY = topPos + 55; block.beds.forEach((bed, bIdx) => { let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + bed.price, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: bedStartX, top: bedStartY, selectable: true, isBed: true, bedId: bed.id, bedPrice: bed.price, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); bedStartX += 85; if(bedStartX > leftPos + 200) { bedStartX = leftPos + 20; bedStartY += 90; } }); topPos += 200; if(topPos > 400) { topPos = 40; leftPos += 310; } }
                 });
                 adminFabricCanvasInstance.renderOnAddRemove = true;
@@ -1723,7 +1744,7 @@
         let grfBookingContext = null; // { beds, totalPrice, mode: 'image' | '2d' }
 
         function openGuestRegistrationForm() {
-            const hostelName = (window.currentPropertyData && (window.currentPropertyData.name || window.currentPropertyData.companyName)) || 'Selected Hostel';
+            const hostelName = (window.currentPropertyData && (window.currentPropertyData.businessName || window.currentPropertyData.name || window.currentPropertyData.companyName || (window.currentPropertyData.businessProfile && window.currentPropertyData.businessProfile.company))) || 'Selected Hostel';
             document.getElementById('grfHostelNameHeading').innerText = hostelName;
 
             // Figure out which flow called this (image-based vs 2D layout) so Cancel/Proceed can return correctly
@@ -1881,7 +1902,8 @@
                 const aadharInput = document.getElementById('grfAadharPhoto');
                 if (aadharInput.files && aadharInput.files[0] && typeof storage !== 'undefined') {
                     try {
-                        const photoRef = ref(storage, `guestAadharDocs/${Date.now()}_${aadharInput.files[0].name}`);
+                        const hostelSlugForGuest = slugify(formData.hostelName);
+                        const photoRef = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_${aadharInput.files[0].name}`);
                         await uploadBytes(photoRef, aadharInput.files[0]);
                         aadharPhotoUrl = await getDownloadURL(photoRef);
                     } catch (upErr) { console.warn('Aadhar photo upload failed (continuing without it):', upErr); }
@@ -1890,7 +1912,7 @@
                     try {
                         let pdfUrl = '';
                         if (typeof storage !== 'undefined') {
-                            try { const pdfRef = ref(storage, `guestRegistrationPdfs/${Date.now()}_${pdfFile.name}`); await uploadBytes(pdfRef, pdfFile); pdfUrl = await getDownloadURL(pdfRef); } catch(pdfUpErr) { console.warn('Could not upload PDF copy', pdfUpErr); }
+                            try { const hostelSlugForGuest = slugify(formData.hostelName); const pdfRef = ref(storage, `guestRegistrationPdfs/${hostelSlugForGuest}/${Date.now()}_${pdfFile.name}`); await uploadBytes(pdfRef, pdfFile); pdfUrl = await getDownloadURL(pdfRef); } catch(pdfUpErr) { console.warn('Could not upload PDF copy', pdfUpErr); }
                         }
                         await addDoc(collection(db, 'guestRegistrations'), {
                             ...formData,
@@ -2049,6 +2071,12 @@
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
+
+            // On mobile the Room Overview panel sits below the (tall) canvas — scroll it into
+            // view so tapping a bed doesn't look like nothing happened.
+            if (window.innerWidth < 1024) {
+                setTimeout(() => { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+            }
         }
 
         window.selectBookingPlan = function(planType, price) {
