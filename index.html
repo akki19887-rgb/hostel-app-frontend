@@ -109,6 +109,8 @@
         .tab-pill-active { background: white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.25), 0 2px 4px rgba(0,0,0,0.05); color: #4f46e5; }
         .tab-pill-inactive { color: #64748b; }
         .tab-pill-inactive:hover { color: #4f46e5; background: rgba(255,255,255,0.5); }
+        .corner-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(226,232,240,0.8); transition: all 0.25s; }
+        .corner-btn:hover { background: white; box-shadow: 0 6px 16px -4px rgba(0,0,0,0.12); transform: translateY(-1px); }
         .method-option { background: rgba(255,255,255,0.6); border: 2px solid rgba(226, 232, 240, 0.5); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .method-option:hover { background: white; border-color: #818cf8; transform: translateY(-2px); box-shadow: 0 12px 30px -8px rgba(99, 102, 241, 0.25); }
         .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -149,45 +151,18 @@
         /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
            load never looks identical to a frozen blank screen. */
         .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
-        /* FIX: 2D bed-selection map — mobile now uses the FULL available viewport height for the
-           canvas (no side-by-side detail panel), so bed tap targets are large & readable on phones.
-           Room details slide up as a bottom sheet on tap. Desktop keeps the existing 2/3 + 1/3 split. */
-        #userCanvasWrapper { height: calc(100dvh - 260px); min-height: 380px; touch-action: none; }
+        /* FIX: 2D bed-selection map — no scrollbars, canvas always exactly fills its box
+           (JS resizes the Fabric canvas to match this box on every render, see fitUserCanvasToScreen) */
+        #userCanvasWrapper { height: 46vh; }
         #userFabricCanvas { display: block; }
-        #userDetailPanelDesktop { display: none; }
         @media (min-width: 1024px) {
-            #userCanvasWrapper { height: 100%; min-height: 0; }
-            #userDetailPanelDesktop { display: flex; }
-            #userDetailSheet { display: none !important; }
-        }
-
-        /* Mobile bottom sheet for room/bed details */
-        #userDetailSheet {
-            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-            background: white; border-top-left-radius: 24px; border-top-right-radius: 24px;
-            box-shadow: 0 -20px 50px -10px rgba(15, 23, 42, 0.25);
-            transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 82dvh; display: flex; flex-direction: column;
-        }
-        #userDetailSheet.open { transform: translateY(0); }
-        #userDetailSheetBackdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        #userDetailSheetBackdrop.open { opacity: 1; pointer-events: auto; }
-        .sheet-grabber { width: 40px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 10px auto 6px; }
-
-        /* Floor tabs sticky on mobile so user can switch without scrolling up */
-        @media (max-width: 1023px) {
-            #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; }
-            #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
-            #screenUser2DLayout .glass-panel h3 { font-size: 1.5rem !important; }
+            #userCanvasWrapper { height: 100%; }
         }
     </style>
-    <!-- Razorpay Checkout for real payments -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
             authDomain: "hostel-om.firebaseapp.com",
@@ -199,13 +174,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
-        const auth = getAuth(app);
         window.db = db;
         window.storage = storage;
-        window.auth = auth;
-        window.RecaptchaVerifier = RecaptchaVerifier;
-        window.signInWithPhoneNumber = signInWithPhoneNumber;
-        window.firebaseSignOut = signOut;
         window.collection = collection;
         window.addDoc = addDoc;
         window.getDocs = getDocs;
@@ -274,50 +244,41 @@
         </div>
     </div>
 
-    <div id="screenOptions" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel relative">
-        <!-- Discreet admin entry — intentionally unlabeled (just a search icon) so it doesn't
-             invite guests to poke at it, but still routes through the same login flow/data as before. -->
-        <button type="button" onclick="switchAccountMode('admin')" class="absolute top-5 right-5 w-9 h-9 rounded-xl bg-slate-100/70 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition text-sm">🔍</button>
+    <!-- Logo moved out of the card, sits as a small header above it -->
+    <div id="screenOptionsLogoHeader" class="hidden fixed top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20 screen-panel">
+        <div class="w-9 h-9 rounded-xl btn-gradient flex items-center justify-center text-white text-base shadow-lg">🏠</div>
+        <span class="display-font font-black text-lg text-slate-800">Hostel<span class="gradient-text">OM</span></span>
+    </div>
 
-        <div class="flex items-center justify-center gap-2 mb-3">
-            <div class="w-11 h-11 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">🏠</div>
-            <span class="display-font font-black text-2xl text-slate-800">Hostel<span class="gradient-text">OM</span></span>
-        </div>
-        <p class="text-center text-[11px] font-bold text-slate-400 tracking-wide mb-6 px-2">Verified Hostels & PGs — Welcome, Guests & Property Owners Alike</p>
-        <div class="flex border border-white/60 mb-8 bg-slate-100/60 backdrop-blur rounded-2xl p-1.5 gap-1 shadow-inner">
-            <button type="button" id="tabUser" onclick="switchAccountMode('user')" class="flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active">User</button>
-            <button type="button" id="tabBusiness" onclick="switchAccountMode('business')" class="flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive">Business</button>
-        </div>
-        <h2 id="mainHeading" class="display-font text-4xl font-black text-center text-slate-900 mb-2">Welcome Back</h2>
-        <p id="mainSubheading" class="text-sm text-center text-slate-500 mb-8 font-medium">Sign in to continue your journey</p>
+    <div id="screenOptions" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel relative mt-16">
+        <!-- Business — corner entry point -->
+        <button type="button" onclick="switchAccountMode('business')" class="corner-btn absolute top-4 right-4 px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+            <span class="text-sm">💼</span><span class="display-font font-extrabold text-xs text-slate-700 tracking-tight">HO-Om <span class="gradient-text">Bizz</span></span>
+        </button>
+
+        <h2 id="mainHeading" class="display-font text-4xl font-black text-center text-slate-900 mb-2 mt-10">Welcome</h2>
+        <p id="mainSubheading" class="display-font text-base text-center text-slate-500 mb-8 font-semibold tracking-tight">Sign in to <span class="gradient-text font-bold">Ho-Om</span></p>
         <div class="space-y-3">
             <button type="button" onclick="selectMethod('Mobile')" class="method-option w-full flex items-center justify-between p-4 rounded-2xl group">
                 <div class="flex items-center gap-4">
-                    <div class="icon-container text-2xl">📱</div>
+                    <div class="icon-container"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="2" width="12" height="20" rx="2.5" stroke="#6366f1" stroke-width="1.8"/><line x1="6" y1="18" x2="18" y2="18" stroke="#6366f1" stroke-width="1.8"/><circle cx="12" cy="19.6" r="0.9" fill="#6366f1"/></svg></div>
                     <div class="text-left"><div id="labelMobile" class="font-black text-slate-800">Continue with Mobile</div><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Instant OTP Verification</div></div>
                 </div>
                 <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
             </button>
             <button type="button" onclick="selectMethod('Google')" class="method-option w-full flex items-center justify-between p-4 rounded-2xl group">
                 <div class="flex items-center gap-4">
-                    <div class="icon-container text-2xl">🌐</div>
+                    <div class="icon-container"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/><path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/><path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/></svg></div>
                     <div class="text-left"><div class="font-black text-slate-800">Continue with Google</div><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Fast & Secure Sign-in</div></div>
                 </div>
                 <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
             </button>
-            <button type="button" onclick="selectMethod('Mail')" class="method-option w-full flex items-center justify-between p-4 rounded-2xl group">
-                <div class="flex items-center gap-4">
-                    <div class="icon-container text-2xl">✉️</div>
-                    <div class="text-left"><div class="font-black text-slate-800">Continue with Email</div><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Verify via inbox link</div></div>
-                </div>
-                <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
-            </button>
         </div>
-        <div class="mt-6 flex justify-center">
-            <button type="button" onclick="skipToSearch()" class="w-full px-6 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-black rounded-2xl transition text-xs uppercase tracking-widest border-2 border-slate-200">Skip & Search Hostels →</button>
-        </div>
-        <div class="mt-3 flex justify-center">
-            <button type="button" onclick="bypassLogin()" class="px-6 py-2.5 text-slate-400 font-bold hover:bg-white/50 rounded-xl transition text-[10px] uppercase tracking-widest">⚡ Quick Test Login</button>
+
+        <!-- Admin (unlabeled globe icon, discreet) + Skip & Search — both inside the card, bottom row -->
+        <div class="flex items-center justify-between mt-8">
+            <button type="button" onclick="switchAccountMode('admin')" class="corner-btn w-11 h-11 rounded-xl flex items-center justify-center text-lg">🌍</button>
+            <button type="button" onclick="skipToSearch()" class="corner-btn px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600">Skip & Search →</button>
         </div>
     </div>
 
@@ -325,30 +286,14 @@
         <div class="text-center mb-6">
             <div class="w-16 h-16 mx-auto rounded-2xl btn-gradient flex items-center justify-center text-white text-3xl shadow-xl mb-4">📱</div>
             <h2 class="display-font text-3xl font-black text-slate-900">Mobile Verification</h2>
-            <p class="text-xs text-slate-500 font-semibold mt-2" id="otpStepLabel">Enter your 10-digit mobile number</p>
         </div>
         <div id="sendOtpSection" class="space-y-4">
             <div>
                 <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Mobile Number</label>
-                <div class="flex gap-2">
-                    <div class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 w-20"><span class="font-bold text-slate-800">+91</span></div>
-                    <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
-                </div>
+                <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
             </div>
-            <button type="button" id="btnSendOtp" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
+            <button type="button" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
         </div>
-        <div id="verifyOtpSection" class="hidden space-y-4">
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Enter 6-digit OTP</label>
-                <input type="tel" id="authOtpInput" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="______" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-2xl text-center tracking-[0.5em] text-slate-800 bg-white/70">
-                <p class="text-[10px] text-slate-400 font-semibold mt-2 text-center">OTP sent to +91 <span id="otpSentToNumber">-</span> · <button type="button" onclick="resetOtpFlow()" class="text-indigo-600 font-black underline">Change</button></p>
-            </div>
-            <button type="button" id="btnVerifyOtp" onclick="verifyOtpFromBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">VERIFY OTP</button>
-            <button type="button" id="btnResendOtp" onclick="sendOtpToBackend(true)" class="w-full text-xs font-bold text-slate-500 hover:text-indigo-600 py-2 transition">🔄 Resend OTP</button>
-        </div>
-        <p id="otpErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
-        <!-- Invisible reCAPTCHA container required by Firebase Phone Auth -->
-        <div id="recaptcha-container"></div>
         <button type="button" onclick="goTo('screenOptions')" class="w-full mt-6 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back to Options</button>
     </div>
 
@@ -899,24 +844,20 @@
 
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-3 lg:p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-40 lg:pb-44">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-44">
             <!-- FIXED CANVAS WRAPPER: no internal scroll — the layout is always fully visible,
                  scaled and centered to fit exactly (see fitUserCanvasToScreen). -->
-            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-hidden flex justify-center items-center p-2 lg:p-4 relative" id="userCanvasWrapper">
+            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-hidden flex justify-center items-center p-4 relative" id="userCanvasWrapper">
                 <div id="userCanvasStatus" class="canvas-status-overlay hidden">
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
-                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:12px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
+                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:24px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
-                <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
-                <div id="userCanvasHint" class="lg:hidden absolute top-3 left-3 right-3 z-10 bg-white/90 backdrop-blur rounded-xl px-3 py-2 text-[10px] font-bold text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 pointer-events-none">
-                    <span>👆</span> Tap bed to book · Pinch to zoom · Drag to pan
-                </div>
+                <div id="userBedTapIndicator" class="hidden" style="position:absolute; border:3px solid #4f46e5; background:rgba(99,102,241,0.18); border-radius:12px; pointer-events:none; z-index:6; box-shadow:0 0 0 4px rgba(99,102,241,0.15);"></div>
             </div>
 
-            <!-- Desktop-only right panel -->
-            <div id="userDetailPanelDesktop" class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex-col overflow-hidden relative">
+            <div class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative">
                 <div class="btn-gradient text-white p-4 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10">Room Overview</div>
                 <div id="bedDetailPanel" class="flex-1 p-8 flex flex-col items-center justify-center text-slate-400 text-center overflow-y-auto layout-scroll bg-slate-50/50">
                     <span class="text-6xl mb-4 animate-bounce">👆</span>
@@ -925,27 +866,16 @@
                 </div>
             </div>
         </div>
-
-        <!-- Mobile Bottom Sheet — shows on tap, closes on backdrop tap or drag-down -->
-        <div id="userDetailSheetBackdrop" onclick="closeDetailSheet()"></div>
-        <div id="userDetailSheet" role="dialog" aria-modal="true" aria-label="Room details">
-            <div class="sheet-grabber" onclick="closeDetailSheet()"></div>
-            <div class="flex items-center justify-between px-5 pb-2">
-                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Room Details</span>
-                <button type="button" onclick="closeDetailSheet()" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full font-bold text-slate-600 text-sm">✕</button>
-            </div>
-            <div id="bedDetailPanelMobile" class="flex-1 px-5 pb-6 overflow-y-auto layout-scroll bg-white"></div>
-        </div>
-        <div class="glass-panel p-4 md:p-6 border-t border-slate-200/60 rounded-b-[2rem] z-30 flex items-center justify-between flex-wrap gap-3 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));">
-            <div class="flex-1 min-w-0">
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Total Payable</p>
-                <h3 id="smart2DTotalAmount" class="display-font text-2xl md:text-3xl font-black text-slate-900">₹0</h3>
-                <div class="flex items-start gap-2 mt-1.5">
-                    <input type="checkbox" id="agreeTnC" onchange="updateSmart2DBtn()" class="w-4 h-4 mt-0.5 accent-indigo-600 cursor-pointer shrink-0">
-                    <label for="agreeTnC" class="text-[11px] font-bold text-slate-600 cursor-pointer leading-tight">I agree to <span class="text-indigo-600 underline" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')">Booking & Refund Policy</span></label>
+        <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between flex-wrap gap-4 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));">
+            <div>
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Payable</p>
+                <h3 id="smart2DTotalAmount" class="display-font text-3xl font-black text-slate-900">₹0</h3>
+                <div class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="agreeTnC" onchange="updateSmart2DBtn()" class="w-4 h-4 accent-indigo-600 cursor-pointer">
+                    <label for="agreeTnC" class="text-xs font-bold text-slate-600 cursor-pointer">I agree to <span class="text-indigo-600 underline" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')">Booking & Refund Policy</span></label>
                 </div>
             </div>
-            <button type="button" onclick="openGuestRegistrationForm()" id="btnSmartBookNow" disabled class="px-6 md:px-12 py-3 md:py-4 bg-slate-200 text-slate-400 font-black text-sm md:text-base rounded-2xl transition cursor-not-allowed shrink-0">Select Bed to Book</button>
+            <button type="button" onclick="openGuestRegistrationForm()" id="btnSmartBookNow" disabled class="px-12 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl transition cursor-not-allowed">Select Bed to Book</button>
         </div>
     </div>
 
@@ -1064,7 +994,7 @@
         </div>
     </div>
 
-    <!-- PAYMENT STEP — Razorpay integration -->
+    <!-- PAYMENT STEP (placeholder — no real payment gateway wired in yet, see chat notes) -->
     <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
@@ -1075,31 +1005,8 @@
             <p class="display-font text-4xl font-black text-slate-900" id="payAmount">₹0</p>
             <p class="text-xs text-slate-500 font-semibold mt-1">Registration form saved & sent successfully</p>
         </div>
-
-        <!-- Order Summary -->
-        <div id="payOrderSummary" class="bg-white border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
-            <div class="flex justify-between"><span>Bed(s)</span><span id="paySumBeds" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between"><span>Plan</span><span id="paySumPlan" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Payable</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
-        </div>
-
-        <button type="button" id="btnPayNow" onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
-        <button type="button" onclick="goTo('screenUserDashboard')" class="w-full mt-3 text-xs font-bold text-slate-500 hover:text-slate-700 py-2 transition">Cancel Payment</button>
-        <p id="payErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
-        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Secured by Razorpay · UPI · Cards · Netbanking · Wallets</p>
-    </div>
-
-    <!-- BOOKING CONFIRMATION -->
-    <div id="screenBookingSuccess" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel text-center">
-        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-5xl mb-4">✅</div>
-        <h2 class="display-font text-3xl font-black text-slate-900 mb-2">Booking Confirmed!</h2>
-        <p class="text-sm text-slate-500 font-semibold mb-6">Your bed is reserved. Confirmation sent to your registered contact.</p>
-        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
-            <div class="flex justify-between"><span>Booking ID</span><span id="successBookingId" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between"><span>Payment ID</span><span id="successPaymentId" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between"><span>Amount Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
-        </div>
-        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
+        <button type="button" onclick="alert('Payment gateway not connected yet — this is a placeholder. See chat for setup steps.'); goTo('screenUserDashboard');" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
+        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">Secured by [Payment Partner]</p>
     </div>
 
     <script>
@@ -1156,6 +1063,7 @@
         let currentSelectedFloor = '';
         let currentAdminFloor = '';
         let currentUserFloor = '';
+        let currentFloorSnapshotPrimary = false; // true when the real photo is the primary view and the canvas is an invisible tap layer
         let loadedBusinessData = null;
         let editingBusinessDocId = null;
         let mappedBedsData = [];
@@ -1373,6 +1281,7 @@
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
             if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
+            if (screenId === 'screenOptions') { document.getElementById('screenOptionsLogoHeader').classList.remove('hidden'); }
             if (screenId !== 'screenUserDashboard' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
 
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
@@ -1428,142 +1337,18 @@
 
         function switchAccountMode(mode) {
             accountMode = mode;
-            ['User', 'Business', 'Admin'].forEach(t => { let tab = document.getElementById('tab' + t); if(tab) tab.className = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive cursor-pointer"; });
-            let activeClass = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active cursor-pointer";
-            if (mode === 'user') { document.getElementById('tabUser').className = activeClass; document.getElementById('mainHeading').innerText = "Welcome Back"; document.getElementById('mainSubheading').innerText = "Log in to book verified properties"; }
-            else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerText = "Manage your properties and layouts"; }
-            else { const adminTab = document.getElementById('tabAdmin'); if (adminTab) adminTab.className = activeClass; document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
+            if (mode === 'user') { document.getElementById('mainHeading').innerText = "Welcome"; document.getElementById('mainSubheading').innerHTML = 'Sign in to <span class="gradient-text font-bold">Ho-Om</span>'; }
+            else if (mode === 'business') { document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">Ho-Om Bizz</span>'; }
+            else { document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
 
         // Lets a guest browse/search properties immediately, with no login at all —
         // the "Skip & Search" option from the welcome screen.
         function skipToSearch() { accountMode = 'user'; goTo('screenUserDashboard'); }
 
-        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); } else { goTo('screenProfileCompletion'); } }
-
-        // ==== REAL OTP FLOW (Firebase Phone Authentication) ====
-        // Requirements before this works in production:
-        //   1. Firebase Console → Authentication → Sign-in method → Enable "Phone"
-        //   2. Add your domain to Authentication → Settings → Authorized domains
-        //   3. On localhost, add 127.0.0.1 & localhost to authorized domains
-        // Cost: Firebase Phone Auth is FREE for first 10K verifications/month, then paid.
-        let _recaptchaVerifier = null;
-        let _confirmationResult = null;
-
-        function showOtpError(msg) {
-            const el = document.getElementById('otpErrorMsg');
-            if (!el) return;
-            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
-            el.classList.remove('hidden'); el.innerText = msg;
-        }
-
-        function resetOtpFlow() {
-            _confirmationResult = null;
-            fullFormattedMobile = '';
-            const sendSec = document.getElementById('sendOtpSection');
-            const verSec = document.getElementById('verifyOtpSection');
-            const otpIn = document.getElementById('authOtpInput');
-            const mobIn = document.getElementById('authMobileNumber');
-            const stepLbl = document.getElementById('otpStepLabel');
-            if (sendSec) sendSec.classList.remove('hidden');
-            if (verSec) verSec.classList.add('hidden');
-            if (otpIn) otpIn.value = '';
-            if (mobIn) mobIn.value = '';
-            if (stepLbl) stepLbl.innerText = 'Enter your 10-digit mobile number';
-            showOtpError('');
-        }
-
-        function ensureRecaptcha() {
-            // Lazy-create the invisible reCAPTCHA verifier once. Reusing the same instance for
-            // resend keeps the flow smooth and avoids the "reCAPTCHA already rendered" error.
-            if (_recaptchaVerifier) return _recaptchaVerifier;
-            if (!window.RecaptchaVerifier || !window.auth) {
-                throw new Error('Firebase Auth not loaded yet. Please refresh the page.');
-            }
-            _recaptchaVerifier = new window.RecaptchaVerifier(window.auth, 'recaptcha-container', {
-                size: 'invisible',
-                callback: () => { /* reCAPTCHA solved — allow signInWithPhoneNumber */ }
-            });
-            return _recaptchaVerifier;
-        }
-
-        async function sendOtpToBackend(isResend) {
-            showOtpError('');
-            const mobileInput = document.getElementById('authMobileNumber');
-            const raw = (mobileInput.value || '').trim().replace(/\D/g, '');
-            if (raw.length !== 10) { showOtpError('Please enter a valid 10-digit mobile number.'); return; }
-            const phoneE164 = '+91' + raw;
-            fullFormattedMobile = phoneE164;
-
-            const btn = document.getElementById('btnSendOtp');
-            const resendBtn = document.getElementById('btnResendOtp');
-            const targetBtn = isResend ? resendBtn : btn;
-            const originalText = targetBtn ? targetBtn.innerText : '';
-            if (targetBtn) { targetBtn.disabled = true; targetBtn.innerText = '⏳ Sending...'; }
-
-            try {
-                const verifier = ensureRecaptcha();
-                _confirmationResult = await window.signInWithPhoneNumber(window.auth, phoneE164, verifier);
-                // Success — reveal OTP input section
-                document.getElementById('sendOtpSection').classList.add('hidden');
-                document.getElementById('verifyOtpSection').classList.remove('hidden');
-                document.getElementById('otpSentToNumber').innerText = raw;
-                document.getElementById('otpStepLabel').innerText = 'Enter the 6-digit OTP sent via SMS';
-                document.getElementById('authOtpInput').focus();
-            } catch (err) {
-                console.error('OTP send failed', err);
-                let userMsg = 'Failed to send OTP. Please try again.';
-                if (err && err.code) {
-                    if (err.code === 'auth/invalid-phone-number') userMsg = 'Invalid phone number format.';
-                    else if (err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again after some time.';
-                    else if (err.code === 'auth/quota-exceeded') userMsg = 'Daily OTP quota exceeded. Contact support.';
-                    else if (err.code === 'auth/billing-not-enabled') userMsg = 'Phone Auth not enabled on this project yet.';
-                }
-                showOtpError(userMsg);
-                // Reset verifier so a fresh reCAPTCHA is created on retry
-                try { if (_recaptchaVerifier) { _recaptchaVerifier.clear(); } } catch(e) {}
-                _recaptchaVerifier = null;
-            } finally {
-                if (targetBtn) { targetBtn.disabled = false; targetBtn.innerText = originalText || (isResend ? '🔄 Resend OTP' : 'SEND OTP'); }
-            }
-        }
-
-        async function verifyOtpFromBackend() {
-            showOtpError('');
-            const otp = (document.getElementById('authOtpInput').value || '').trim();
-            if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { showOtpError('Please enter the 6-digit OTP.'); return; }
-            if (!_confirmationResult) { showOtpError('OTP session expired. Please request a new OTP.'); return; }
-
-            const btn = document.getElementById('btnVerifyOtp');
-            const originalText = btn ? btn.innerText : '';
-            if (btn) { btn.disabled = true; btn.innerText = '⏳ Verifying...'; }
-
-            try {
-                const cred = await _confirmationResult.confirm(otp);
-                // cred.user is a signed-in Firebase user. Store minimal profile locally so
-                // the rest of the app knows who is logged in.
-                const user = cred.user;
-                try {
-                    localStorage.setItem('hostelom_user', JSON.stringify({
-                        uid: user.uid,
-                        phone: user.phoneNumber || fullFormattedMobile,
-                        loggedInAt: new Date().toISOString()
-                    }));
-                } catch(e) {}
-                _confirmationResult = null;
-                // New users → profile completion. Returning users could skip, but we keep the
-                // flow simple and always route through profile (matches original behavior).
-                goTo('screenProfileCompletion');
-            } catch (err) {
-                console.error('OTP verify failed', err);
-                let userMsg = 'Incorrect OTP. Please try again.';
-                if (err && err.code === 'auth/code-expired') userMsg = 'OTP expired. Please request a new one.';
-                showOtpError(userMsg);
-            } finally {
-                if (btn) { btn.disabled = false; btn.innerText = originalText || 'VERIFY OTP'; }
-            }
-        }
-
+        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') goTo('screenOtpVerification'); else { goTo('screenProfileCompletion'); } }
+        function sendOtpToBackend() { goTo('screenProfileCompletion'); }
+        function verifyOtpFromBackend() { goTo('screenProfileCompletion'); }
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
         function routeToDashboard() {
@@ -1591,164 +1376,7 @@
             goTo('screenBusinessDashboard');
         }
 
-        function logout() {
-            try { if (window.firebaseSignOut && window.auth) { window.firebaseSignOut(window.auth); } } catch(e) {}
-            try { localStorage.removeItem('hostelom_user'); } catch(e) {}
-            resetOtpFlow();
-            goTo('screenOptions');
-        }
-
-        // ==== REAL PAYMENT FLOW (Razorpay) ====
-        // Two modes:
-        //  A) BACKEND MODE (recommended, secure): server creates a Razorpay order and returns
-        //     { orderId, keyId }. Signature is verified server-side after payment.
-        //     Endpoints expected on BACKEND_URL:
-        //       POST /razorpay/create-order  { amount, currency, notes } -> { orderId, keyId }
-        //       POST /razorpay/verify        { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingContext } -> { ok:true, bookingId }
-        //  B) FALLBACK / TEST MODE: if backend order creation fails, we open Razorpay with a
-        //     test key in "amount-only" mode. NEVER ship this to production — it skips
-        //     signature verification and anyone can fake a success client-side.
-        const RAZORPAY_TEST_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay's public sample test key
-        function showPayError(msg) {
-            const el = document.getElementById('payErrorMsg');
-            if (!el) return;
-            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
-            el.classList.remove('hidden'); el.innerText = msg;
-        }
-
-        async function createRazorpayOrder(amount) {
-            // Talks to your backend to create an order on Razorpay's side. Backend must call
-            // Razorpay's Orders API with your KEY_SECRET (secret must NEVER live in the frontend).
-            const res = await fetch(`${BACKEND_URL}/razorpay/create-order`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: Math.round(amount * 100), currency: 'INR', notes: { app: 'HostelOM' } })
-            });
-            if (!res.ok) throw new Error('Order creation failed: ' + res.status);
-            return await res.json();
-        }
-
-        async function verifyRazorpayPayment(payload) {
-            const res = await fetch(`${BACKEND_URL}/razorpay/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error('Verification failed: ' + res.status);
-            return await res.json();
-        }
-
-        async function startRazorpayCheckout() {
-            showPayError('');
-            const pending = window._pendingPayment;
-            if (!pending || !pending.amount || pending.amount <= 0) {
-                showPayError('No pending payment found. Please restart the booking.');
-                return;
-            }
-            if (typeof Razorpay === 'undefined') {
-                showPayError('Payment SDK not loaded. Check your internet connection and reload.');
-                return;
-            }
-
-            const btn = document.getElementById('btnPayNow');
-            const originalText = btn ? btn.innerText : '';
-            if (btn) { btn.disabled = true; btn.innerText = '⏳ Opening secure checkout...'; }
-
-            let orderInfo = null;
-            let usingBackend = true;
-            try {
-                orderInfo = await createRazorpayOrder(pending.amount);
-            } catch (err) {
-                // Backend not wired yet → fall back to test-key checkout so the UX is still testable.
-                console.warn('Backend order creation unavailable, falling back to test key.', err);
-                usingBackend = false;
-                orderInfo = { keyId: RAZORPAY_TEST_KEY, orderId: null };
-            }
-
-            const options = {
-                key: orderInfo.keyId || RAZORPAY_TEST_KEY,
-                amount: Math.round(pending.amount * 100), // in paise
-                currency: 'INR',
-                name: 'HostelOM',
-                description: `Booking at ${pending.hostelName || 'Hostel'}`,
-                image: 'icon-192.png',
-                order_id: orderInfo.orderId || undefined,
-                prefill: {
-                    name: pending.guestName || '',
-                    contact: pending.guestPhone || '',
-                    email: pending.guestEmail || ''
-                },
-                notes: {
-                    hostel: pending.hostelName || '',
-                    beds: ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id).join(',')
-                },
-                theme: { color: '#6366f1' },
-                handler: async function (response) {
-                    // response = { razorpay_payment_id, razorpay_order_id, razorpay_signature }
-                    try {
-                        let verifyResult = { ok: true, bookingId: 'BK-' + Date.now().toString(36).toUpperCase() };
-                        if (usingBackend) {
-                            verifyResult = await verifyRazorpayPayment({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                bookingContext: pending.bookingContext,
-                                guest: pending.formSnapshot
-                            });
-                            if (!verifyResult.ok) throw new Error(verifyResult.message || 'Signature verification failed');
-                        }
-                        // Save booking record in Firestore for admin dashboard
-                        try {
-                            await window.addDoc(window.collection(window.db, 'bookings'), {
-                                bookingId: verifyResult.bookingId,
-                                paymentId: response.razorpay_payment_id,
-                                orderId: response.razorpay_order_id || null,
-                                amount: pending.amount,
-                                currency: 'INR',
-                                hostelName: pending.hostelName,
-                                guestName: pending.guestName,
-                                guestPhone: pending.guestPhone,
-                                bookingContext: pending.bookingContext,
-                                status: usingBackend ? 'paid_verified' : 'paid_unverified_test',
-                                createdAt: new Date().toISOString()
-                            });
-                        } catch (fsErr) { console.warn('Firestore booking save failed:', fsErr); }
-
-                        // Show success screen
-                        document.getElementById('successBookingId').innerText = verifyResult.bookingId;
-                        document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
-                        document.getElementById('successAmount').innerText = '₹' + pending.amount;
-                        window._pendingPayment = null;
-                        goTo('screenBookingSuccess');
-                    } catch (err) {
-                        console.error('Post-payment error:', err);
-                        showPayError('Payment received but confirmation failed. Please contact support with Payment ID: ' + response.razorpay_payment_id);
-                    } finally {
-                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
-                    }
-                },
-                modal: {
-                    ondismiss: function () {
-                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
-                        showPayError('Payment cancelled. You can retry anytime.');
-                    }
-                }
-            };
-
-            try {
-                const rzp = new Razorpay(options);
-                rzp.on('payment.failed', function (resp) {
-                    console.error('Razorpay failure', resp.error);
-                    showPayError('Payment failed: ' + (resp.error && resp.error.description ? resp.error.description : 'Unknown error'));
-                    if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
-                });
-                rzp.open();
-            } catch (err) {
-                console.error('Razorpay open failed', err);
-                showPayError('Unable to open payment window. Please try again.');
-                if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
-            }
-        }
+        function logout() { goTo('screenOptions'); }
 
         function saveLegalAndNext() {
             businessLegalData.licence = document.getElementById('formLicence').value || 'LIC-OM-9942'; businessLegalData.gst = document.getElementById('formGst').value || '22AAAAA0000A1Z5';
@@ -1852,7 +1480,18 @@
         function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : 'top'; admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
         function removeRoom(index) {
             const roomId = globalDynamicRooms[index].id; globalDynamicRooms.splice(index, 1); admin2DBlocks = admin2DBlocks.filter(b => b.id !== roomId);
-            globalDynamicRooms.forEach((room, newIdx) => { const correctNumber = newIdx + 1; const newRoomId = 'R' + correctNumber; const newRoomName = 'Room ' + correctNumber; if(room.id !== newRoomId) { const block = admin2DBlocks.find(b => b.id === room.id); if(block) { block.id = newRoomId; block.name = newRoomName; block.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; }); } room.id = newRoomId; room.name = newRoomName; room.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; }); } });
+            // Any room that was synced FROM the one just deleted goes back to independent/editable.
+            globalDynamicRooms.forEach(r => { if (r.syncPhotoFrom === roomId) r.syncPhotoFrom = null; if (r.syncRateFrom === roomId) r.syncRateFrom = null; });
+            globalDynamicRooms.forEach((room, newIdx) => {
+                const correctNumber = newIdx + 1; const newRoomId = 'R' + correctNumber; const newRoomName = 'Room ' + correctNumber;
+                if(room.id !== newRoomId) {
+                    const oldId = room.id;
+                    const block = admin2DBlocks.find(b => b.id === room.id); if(block) { block.id = newRoomId; block.name = newRoomName; block.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; }); }
+                    room.id = newRoomId; room.name = newRoomName; room.beds.forEach((bed, bIdx) => { bed.id = `${newRoomId}-B${bIdx + 1}`; });
+                    // Keep sync links pointing at this room valid after its ID changes.
+                    globalDynamicRooms.forEach(r => { if (r.syncPhotoFrom === oldId) r.syncPhotoFrom = newRoomId; if (r.syncRateFrom === oldId) r.syncRateFrom = newRoomId; });
+                }
+            });
             refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
         }
 
@@ -1863,12 +1502,49 @@
             if (type === 'monthly') { globalDynamicRooms[roomIndex].beds[bedIndex].priceMonthly = val; globalDynamicRooms[roomIndex].beds[bedIndex].price = val; }
             const block = admin2DBlocks.find(b => b.id === globalDynamicRooms[roomIndex].id);
             if(block) { if (type === 'daily') block.beds[bedIndex].priceDaily = val; if (type === 'weekly') block.beds[bedIndex].priceWeekly = val; if (type === 'monthly') { block.beds[bedIndex].priceMonthly = val; block.beds[bedIndex].price = val; } }
+            propagateRoomSync(roomIndex, 'rate'); // push this change out to any rooms linked to this one, on this floor
+            renderAttractive2DPlan();
+            renderBusinessConfig();
+        }
+
+        // ROOM SYNC ("Same as Room 1") — works independently per floor. The first room shown on
+        // each floor acts as that floor's reference room; the admin picks exactly which other rooms
+        // on the SAME floor should mirror its photos and/or rates, and it stays live: editing the
+        // reference room's photo or price afterwards updates every linked room automatically.
+        let openSyncPanel = null; // { roomIndex, type: 'photo' | 'rate' }
+        function toggleSyncPanel(roomIndex, type) {
+            openSyncPanel = (openSyncPanel && openSyncPanel.roomIndex === roomIndex && openSyncPanel.type === type) ? null : { roomIndex, type };
+            renderBusinessConfig();
+        }
+        function applyRoomSync(refRoom, targetRoom, type) {
+            if (type === 'photo') {
+                targetRoom.photos = [...(refRoom.photos || [])];
+                targetRoom.rawFiles = refRoom.rawFiles ? [...refRoom.rawFiles] : [];
+            } else {
+                targetRoom.beds.forEach((bed, i) => {
+                    const refBed = refRoom.beds[i] || refRoom.beds[refRoom.beds.length - 1];
+                    if (refBed) { bed.priceDaily = refBed.priceDaily; bed.priceWeekly = refBed.priceWeekly; bed.priceMonthly = refBed.priceMonthly; bed.price = refBed.priceMonthly; }
+                });
+                const block = admin2DBlocks.find(b => b.id === targetRoom.id);
+                if (block) targetRoom.beds.forEach((bed, i) => { if (block.beds[i]) { block.beds[i].priceDaily = bed.priceDaily; block.beds[i].priceWeekly = bed.priceWeekly; block.beds[i].priceMonthly = bed.priceMonthly; block.beds[i].price = bed.price; } });
+            }
+        }
+        function propagateRoomSync(sourceRoomIndex, type) {
+            const sourceRoom = globalDynamicRooms[sourceRoomIndex];
+            const key = type === 'photo' ? 'syncPhotoFrom' : 'syncRateFrom';
+            globalDynamicRooms.forEach(r => { if (r.floor === sourceRoom.floor && r[key] === sourceRoom.id) applyRoomSync(sourceRoom, r, type); });
+        }
+        function setRoomSyncLink(targetRoomIndex, type, refRoomId, checked) {
+            const key = type === 'photo' ? 'syncPhotoFrom' : 'syncRateFrom';
+            globalDynamicRooms[targetRoomIndex][key] = checked ? refRoomId : null;
+            if (checked) { const refRoom = globalDynamicRooms.find(r => r.id === refRoomId); if (refRoom) applyRoomSync(refRoom, globalDynamicRooms[targetRoomIndex], type); }
+            renderBusinessConfig();
             renderAttractive2DPlan();
         }
 
         function addBedToRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; const newBed = {id: `${room.id}-B${room.beds.length + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000}; room.beds.push(newBed); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.push(newBed); } renderBusinessConfig(); renderAttractive2DPlan(); }
         function removeBedFromRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; if(room.beds.length > 1) { room.beds.pop(); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.pop(); } renderBusinessConfig(); renderAttractive2DPlan(); } else { alert("At least 1 bed required!"); } }
-        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 200); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; } }
+        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 200); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; propagateRoomSync(roomIndex, 'photo'); renderBusinessConfig(); } }
 
         // FIX: onSnapshot listeners rebuild list HTML every time ANYTHING changes in Firestore
         // (not just this user's own data) — full innerHTML replace was resetting scroll position
@@ -2413,24 +2089,8 @@
                 if (!shared) { doc.save(pdfFile.name); } // fallback: just download it, guest can attach manually on WhatsApp/Email
 
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                const totalPrice = (grfBookingContext && grfBookingContext.totalPrice) ? grfBookingContext.totalPrice : 0;
-                const beds = (grfBookingContext && grfBookingContext.beds) ? grfBookingContext.beds : [];
-                const planLabel = (grfBookingContext && grfBookingContext.planLabel) ? grfBookingContext.planLabel : (formData.roomType || 'Booking');
-                document.getElementById('payAmount').innerText = '₹' + totalPrice;
+                document.getElementById('payAmount').innerText = '₹' + (grfBookingContext && grfBookingContext.totalPrice ? grfBookingContext.totalPrice : 0);
                 document.getElementById('payHostelName').innerText = formData.hostelName;
-                document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
-                document.getElementById('paySumPlan').innerText = planLabel;
-                document.getElementById('paySumTotal').innerText = '₹' + totalPrice;
-                // Cache the payment context so the Razorpay handler can read it
-                window._pendingPayment = {
-                    amount: totalPrice,
-                    hostelName: formData.hostelName,
-                    guestName: formData.fullName,
-                    guestPhone: formData.emergencyContact || '',
-                    guestEmail: formData.email || '',
-                    bookingContext: grfBookingContext || {},
-                    formSnapshot: formData
-                };
                 goTo('screenPaymentStep');
             } catch (err) {
                 console.error('Registration form error:', err);
@@ -2504,82 +2164,35 @@
                             const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
                             selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
 
+                            // The colour highlight above only shows on the fabric canvas itself — invisible
+                            // when a snapshot photo is the primary view (see currentFloorSnapshotPrimary).
+                            // Draw a matching highlight ring directly on top of the photo instead, so a tap
+                            // always gives clear, immediate confirmation of exactly which bed was picked.
+                            const tapIndicator = document.getElementById('userBedTapIndicator');
+                            if (tapIndicator) {
+                                if (currentFloorSnapshotPrimary) {
+                                    const r = options.target.getBoundingRect(true);
+                                    tapIndicator.style.left = r.left + 'px';
+                                    tapIndicator.style.top = r.top + 'px';
+                                    tapIndicator.style.width = r.width + 'px';
+                                    tapIndicator.style.height = r.height + 'px';
+                                    tapIndicator.classList.remove('hidden');
+                                } else {
+                                    tapIndicator.classList.add('hidden');
+                                }
+                            }
+
                             userFabricCanvasInstance.renderAll();
                         }
                     });
-
-                    // ==== Pinch-to-zoom + drag-to-pan on mobile ====
-                    // Small canvases on phones make it hard to tap a specific bed. Native touch
-                    // gestures were also being swallowed by the wrapper (touch-action: none).
-                    // Here we add proper 2-finger pinch zoom AND single-finger drag panning,
-                    // similar to how Google Maps / Zomato table maps behave.
-                    const canvasEl = userFabricCanvasInstance.upperCanvasEl;
-                    let touchState = { mode: null, startDist: 0, startZoom: 1, lastX: 0, lastY: 0, movedEnough: false, downTarget: null };
-
-                    function getDist(t1, t2) { const dx = t1.clientX - t2.clientX; const dy = t1.clientY - t2.clientY; return Math.sqrt(dx*dx + dy*dy); }
-                    function getMid(t1, t2, rect) { return { x: (t1.clientX + t2.clientX)/2 - rect.left, y: (t1.clientY + t2.clientY)/2 - rect.top }; }
-
-                    canvasEl.addEventListener('touchstart', function(e) {
-                        touchState.movedEnough = false;
-                        if (e.touches.length === 2) {
-                            e.preventDefault();
-                            touchState.mode = 'pinch';
-                            touchState.startDist = getDist(e.touches[0], e.touches[1]);
-                            touchState.startZoom = userFabricCanvasInstance.getZoom();
-                        } else if (e.touches.length === 1) {
-                            touchState.mode = 'pan';
-                            touchState.lastX = e.touches[0].clientX;
-                            touchState.lastY = e.touches[0].clientY;
-                        }
-                    }, { passive: false });
-
-                    canvasEl.addEventListener('touchmove', function(e) {
-                        if (touchState.mode === 'pinch' && e.touches.length === 2) {
-                            e.preventDefault();
-                            const newDist = getDist(e.touches[0], e.touches[1]);
-                            let newZoom = touchState.startZoom * (newDist / touchState.startDist);
-                            newZoom = Math.max(0.3, Math.min(4, newZoom));
-                            const rect = canvasEl.getBoundingClientRect();
-                            const mid = getMid(e.touches[0], e.touches[1], rect);
-                            userFabricCanvasInstance.zoomToPoint({ x: mid.x, y: mid.y }, newZoom);
-                            touchState.movedEnough = true;
-                        } else if (touchState.mode === 'pan' && e.touches.length === 1) {
-                            const dx = e.touches[0].clientX - touchState.lastX;
-                            const dy = e.touches[0].clientY - touchState.lastY;
-                            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                                e.preventDefault();
-                                touchState.movedEnough = true;
-                                const vpt = userFabricCanvasInstance.viewportTransform;
-                                vpt[4] += dx; vpt[5] += dy;
-                                userFabricCanvasInstance.setViewportTransform(vpt);
-                            }
-                            touchState.lastX = e.touches[0].clientX;
-                            touchState.lastY = e.touches[0].clientY;
-                        }
-                    }, { passive: false });
-
-                    canvasEl.addEventListener('touchend', function() { touchState.mode = null; }, { passive: true });
                 }
                 selectUserFloor(currentUserFloor);
             }, 150);
         }
 
-        window.openDetailSheet = function() {
-            const sheet = document.getElementById('userDetailSheet');
-            const bd = document.getElementById('userDetailSheetBackdrop');
-            if (sheet && bd) { sheet.classList.add('open'); bd.classList.add('open'); }
-        }
-        window.closeDetailSheet = function() {
-            const sheet = document.getElementById('userDetailSheet');
-            const bd = document.getElementById('userDetailSheetBackdrop');
-            if (sheet && bd) { sheet.classList.remove('open'); bd.classList.remove('open'); }
-        }
-
         window.showBedDetailsInPanel = function(bedId) {
             currentSelectedBedId = bedId;
-            const isMobile = window.innerWidth < 1024;
-            const panel = isMobile ? document.getElementById('bedDetailPanelMobile') : document.getElementById('bedDetailPanel');
-            let parentRoom = null;
+            const panel = document.getElementById('bedDetailPanel'); let parentRoom = null;
             if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
             if (!parentRoom) { return; }
 
@@ -2615,18 +2228,15 @@
             if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
 
-            // Mobile: slide the bottom sheet up so guest immediately sees details without scrolling.
-            // Desktop: content is already visible in the right panel, no scroll needed.
-            if (isMobile) {
-                openDetailSheet();
-                // Hide the pinch-zoom hint once user has interacted with a bed
-                const hint = document.getElementById('userCanvasHint');
-                if (hint) hint.style.display = 'none';
+            // On mobile the Room Overview panel sits below the (tall) canvas — scroll it into
+            // view so tapping a bed doesn't look like nothing happened.
+            if (window.innerWidth < 1024) {
+                setTimeout(() => { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
             }
         }
 
@@ -2652,6 +2262,9 @@
             // becomes an invisible tap layer on top of it purely for detecting which bed was tapped.
             // Falls back to showing the interactive canvas itself only when no snapshot was published.
             const useSnapshotPrimary = !!snapshotUrl;
+            currentFloorSnapshotPrimary = useSnapshotPrimary;
+            const tapIndicator = document.getElementById('userBedTapIndicator');
+            if (tapIndicator) tapIndicator.classList.add('hidden'); // clear any leftover indicator from the previous floor
             if (snapImg) {
                 if (snapshotUrl) { snapImg.src = snapshotUrl; snapImg.classList.remove('hidden'); }
                 else { snapImg.classList.add('hidden'); snapImg.removeAttribute('src'); }
@@ -2794,29 +2407,70 @@
             const container = document.getElementById('dynamicBusinessRoomsContainer'); if(!container) return; container.innerHTML = '';
             if(floorMaps.length > 0 && !currentSelectedFloor) { currentSelectedFloor = floorMaps[0].floorName; }
             const roomsThisFloor = globalDynamicRooms.filter(r => r.floor === currentSelectedFloor);
+            const refRoom = roomsThisFloor[0] || null; // this floor's reference room ("Same as Room 1" source) — independent per floor
             const countLabel = document.getElementById('dataEditorRoomCount');
             if(countLabel) countLabel.innerText = `${roomsThisFloor.length} Room${roomsThisFloor.length !== 1 ? 's' : ''} on ${currentSelectedFloor || 'Ground Floor'}`;
             globalDynamicRooms.forEach((room, index) => {
                 if(room.floor === currentSelectedFloor) {
                     const isExpanded = (currentlyExpandedRoomIdx === index); let insideContentHtml = '';
+                    const isRefRoom = refRoom && room.id === refRoom.id;
+                    const otherRoomsOnFloor = roomsThisFloor.filter(r => r.id !== room.id);
                     if (isExpanded) {
+                        // ---- Photo section: sync controls for the ref room, locked badge for a linked room ----
+                        let photosHTML;
+                        if (room.syncPhotoFrom) {
+                            const src = globalDynamicRooms.find(r => r.id === room.syncPhotoFrom);
+                            photosHTML = `<div class="flex items-center justify-between gap-2 mb-3 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5" onclick="event.stopPropagation()"><span class="text-[10px] font-black text-indigo-600">🔗 Photos linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'photo', null, false)" class="text-[9px] font-black text-red-500 bg-white px-2 py-1 rounded-lg border border-red-100">Unlink</button></div>`;
+                        } else {
+                            photosHTML = ` <div class="flex gap-2 mb-3" onclick="event.stopPropagation()"> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this)"></label> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this)"></label> </div>`;
+                            if (isRefRoom && otherRoomsOnFloor.length > 0) {
+                                const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'photo';
+                                photosHTML += `<div onclick="event.stopPropagation()" class="mb-3"><button type="button" onclick="toggleSyncPanel(${index}, 'photo')" class="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                                if (open) {
+                                    photosHTML += `<div class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">` + otherRoomsOnFloor.map(r => {
+                                        const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
+                                        const checked = r.syncPhotoFrom === room.id;
+                                        return `<label class="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'photo', '${room.id}', this.checked)"> ${r.name}</label>`;
+                                    }).join('') + `</div>`;
+                                }
+                                photosHTML += `</div>`;
+                            }
+                        }
+                        // ---- Rate section: sync controls for the ref room, locked/disabled inputs for a linked room ----
+                        const rateLocked = !!room.syncRateFrom;
                         let dynamicPriceBoxesHtml = `<div class="flex flex-col gap-2 border-t border-slate-100 pt-3 mt-1">`;
+                        if (rateLocked) {
+                            const src = globalDynamicRooms.find(r => r.id === room.syncRateFrom);
+                            dynamicPriceBoxesHtml += `<div class="flex items-center justify-between gap-2 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5" onclick="event.stopPropagation()"><span class="text-[10px] font-black text-indigo-600">🔗 Rate linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'rate', null, false)" class="text-[9px] font-black text-red-500 bg-white px-2 py-1 rounded-lg border border-red-100">Unlink</button></div>`;
+                        }
                         room.beds.forEach((bed, bIndex) => {
                             dynamicPriceBoxesHtml += `
                             <div class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 mb-1">
                                 <label class="text-[9px] font-black text-slate-500 block text-center mb-2 uppercase tracking-widest border-b border-slate-200 pb-1">Bed ${bIndex+1}</label>
                                 <div class="flex gap-2">
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Daily (₹)</label><input type="number" value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Weekly (₹)</label><input type="number" value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-indigo-400 block mb-0.5 text-center">Monthly (₹)</label><input type="number" value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-xs font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-1 outline-none text-indigo-700 shadow-sm"></div>
+                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Daily (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Weekly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                                    <div class="flex-1"><label class="text-[8px] font-bold text-indigo-400 block mb-0.5 text-center">Monthly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-xs font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-1 outline-none text-indigo-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
                                 </div>
                             </div>`;
                         });
                         dynamicPriceBoxesHtml += `</div>`;
-                        let photosHTML = ` <div class="flex gap-2 mb-3" onclick="event.stopPropagation()"> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this)"></label> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this)"></label> </div>`;
+                        if (isRefRoom && !rateLocked && otherRoomsOnFloor.length > 0) {
+                            const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'rate';
+                            dynamicPriceBoxesHtml += `<div onclick="event.stopPropagation()" class="mt-2"><button type="button" onclick="toggleSyncPanel(${index}, 'rate')" class="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                            if (open) {
+                                dynamicPriceBoxesHtml += `<div class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">` + otherRoomsOnFloor.map(r => {
+                                    const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
+                                    const checked = r.syncRateFrom === room.id;
+                                    return `<label class="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'rate', '${room.id}', this.checked)"> ${r.name}</label>`;
+                                }).join('') + `</div>`;
+                            }
+                            dynamicPriceBoxesHtml += `</div>`;
+                        }
                         insideContentHtml = ` <div class="mt-2 pl-2 animate-fade-in" onclick="event.stopPropagation()"> <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between mb-3"> <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bed Count:</span> <div class="flex gap-2"> <button type="button" onclick="removeBedFromRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">-</button> <span class="w-8 h-7 flex justify-center items-center font-black text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg">${room.beds.length}</span> <button type="button" onclick="addBedToRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">+</button> </div> </div> ${photosHTML} ${dynamicPriceBoxesHtml} </div>`;
                     }
-                    container.innerHTML += ` <div onclick="toggleRoomAccordion(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-[10px] font-black opacity-40 ml-1">${isExpanded ? '▲' : '▼'}</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span></div> <button onclick="event.stopPropagation(); removeRoom(${index})" class="text-[9px] bg-red-50 text-red-600 font-black px-2.5 py-1 rounded-lg hover:bg-red-500 hover:text-white transition uppercase tracking-widest cursor-pointer">Delete</button> </div> ${insideContentHtml} </div>`;
+                    const syncBadge = (room.syncPhotoFrom || room.syncRateFrom) ? `<span class="chip text-[8px] px-2 py-0.5 bg-indigo-50 text-indigo-600 ml-1">🔗 Linked</span>` : '';
+                    container.innerHTML += ` <div onclick="toggleRoomAccordion(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-[10px] font-black opacity-40 ml-1">${isExpanded ? '▲' : '▼'}</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span>${syncBadge}</div> <button onclick="event.stopPropagation(); removeRoom(${index})" class="text-[9px] bg-red-50 text-red-600 font-black px-2.5 py-1 rounded-lg hover:bg-red-500 hover:text-white transition uppercase tracking-widest cursor-pointer">Delete</button> </div> ${insideContentHtml} </div>`;
                 }
             });
         }
@@ -2854,6 +2508,5 @@
             });
         }
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
