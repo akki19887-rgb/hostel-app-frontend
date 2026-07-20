@@ -11,10 +11,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HostelOM">
-    <!-- REVERTED: output.css wasn't found (build step not completed yet), which broke all styling. Back to CDN for now — safe/working. -->
+    <!-- PERF: Tailwind stays eager (needed for first paint since there's no build step yet).
+         Fabric.js, jsPDF and Google Maps are loaded on-demand now — see loadScriptOnce() below. -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- SENTRY ERROR LOGGING: paste your DSN below (from sentry.io project settings). Leave as-is until you have one — it just won't send anything. -->
     <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
     <script>
@@ -150,14 +149,45 @@
         /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
            load never looks identical to a frozen blank screen. */
         .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
+        /* FIX: 2D bed-selection map — mobile now uses the FULL available viewport height for the
+           canvas (no side-by-side detail panel), so bed tap targets are large & readable on phones.
+           Room details slide up as a bottom sheet on tap. Desktop keeps the existing 2/3 + 1/3 split. */
+        #userCanvasWrapper { height: calc(100dvh - 260px); min-height: 380px; touch-action: none; }
+        #userFabricCanvas { display: block; }
+        #userDetailPanelDesktop { display: none; }
+        @media (min-width: 1024px) {
+            #userCanvasWrapper { height: 100%; min-height: 0; }
+            #userDetailPanelDesktop { display: flex; }
+            #userDetailSheet { display: none !important; }
+        }
+
+        /* Mobile bottom sheet for room/bed details */
+        #userDetailSheet {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+            background: white; border-top-left-radius: 24px; border-top-right-radius: 24px;
+            box-shadow: 0 -20px 50px -10px rgba(15, 23, 42, 0.25);
+            transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 82dvh; display: flex; flex-direction: column;
+        }
+        #userDetailSheet.open { transform: translateY(0); }
+        #userDetailSheetBackdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #userDetailSheetBackdrop.open { opacity: 1; pointer-events: auto; }
+        .sheet-grabber { width: 40px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 10px auto 6px; }
+
+        /* Floor tabs sticky on mobile so user can switch without scrolling up */
         @media (max-width: 1023px) {
-            #userCanvasWrapper { min-height: 340px !important; max-height: 55vh; }
+            #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; }
+            #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
+            #screenUser2DLayout .glass-panel h3 { font-size: 1.5rem !important; }
         }
     </style>
+    <!-- Razorpay Checkout for real payments -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
             authDomain: "hostel-om.firebaseapp.com",
@@ -169,8 +199,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const auth = getAuth(app);
         window.db = db;
         window.storage = storage;
+        window.auth = auth;
+        window.RecaptchaVerifier = RecaptchaVerifier;
+        window.signInWithPhoneNumber = signInWithPhoneNumber;
+        window.firebaseSignOut = signOut;
         window.collection = collection;
         window.addDoc = addDoc;
         window.getDocs = getDocs;
@@ -239,15 +274,19 @@
         </div>
     </div>
 
-    <div id="screenOptions" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
-        <div class="flex items-center justify-center gap-2 mb-6">
+    <div id="screenOptions" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel relative">
+        <!-- Discreet admin entry — intentionally unlabeled (just a search icon) so it doesn't
+             invite guests to poke at it, but still routes through the same login flow/data as before. -->
+        <button type="button" onclick="switchAccountMode('admin')" class="absolute top-5 right-5 w-9 h-9 rounded-xl bg-slate-100/70 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition text-sm">🔍</button>
+
+        <div class="flex items-center justify-center gap-2 mb-3">
             <div class="w-11 h-11 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">🏠</div>
             <span class="display-font font-black text-2xl text-slate-800">Hostel<span class="gradient-text">OM</span></span>
         </div>
+        <p class="text-center text-[11px] font-bold text-slate-400 tracking-wide mb-6 px-2">Verified Hostels & PGs — Welcome, Guests & Property Owners Alike</p>
         <div class="flex border border-white/60 mb-8 bg-slate-100/60 backdrop-blur rounded-2xl p-1.5 gap-1 shadow-inner">
             <button type="button" id="tabUser" onclick="switchAccountMode('user')" class="flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active">User</button>
             <button type="button" id="tabBusiness" onclick="switchAccountMode('business')" class="flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive">Business</button>
-            <button type="button" id="tabAdmin" onclick="switchAccountMode('admin')" class="flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-inactive">Admin</button>
         </div>
         <h2 id="mainHeading" class="display-font text-4xl font-black text-center text-slate-900 mb-2">Welcome Back</h2>
         <p id="mainSubheading" class="text-sm text-center text-slate-500 mb-8 font-medium">Sign in to continue your journey</p>
@@ -275,7 +314,10 @@
             </button>
         </div>
         <div class="mt-6 flex justify-center">
-            <button type="button" onclick="bypassLogin()" class="px-6 py-2.5 text-slate-500 font-bold hover:bg-white/50 rounded-xl transition text-xs uppercase tracking-widest">⚡ Quick Test Login</button>
+            <button type="button" onclick="skipToSearch()" class="w-full px-6 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-black rounded-2xl transition text-xs uppercase tracking-widest border-2 border-slate-200">Skip & Search Hostels →</button>
+        </div>
+        <div class="mt-3 flex justify-center">
+            <button type="button" onclick="bypassLogin()" class="px-6 py-2.5 text-slate-400 font-bold hover:bg-white/50 rounded-xl transition text-[10px] uppercase tracking-widest">⚡ Quick Test Login</button>
         </div>
     </div>
 
@@ -283,14 +325,30 @@
         <div class="text-center mb-6">
             <div class="w-16 h-16 mx-auto rounded-2xl btn-gradient flex items-center justify-center text-white text-3xl shadow-xl mb-4">📱</div>
             <h2 class="display-font text-3xl font-black text-slate-900">Mobile Verification</h2>
+            <p class="text-xs text-slate-500 font-semibold mt-2" id="otpStepLabel">Enter your 10-digit mobile number</p>
         </div>
         <div id="sendOtpSection" class="space-y-4">
             <div>
                 <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Mobile Number</label>
-                <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
+                <div class="flex gap-2">
+                    <div class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 w-20"><span class="font-bold text-slate-800">+91</span></div>
+                    <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
+                </div>
             </div>
-            <button type="button" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
+            <button type="button" id="btnSendOtp" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
         </div>
+        <div id="verifyOtpSection" class="hidden space-y-4">
+            <div>
+                <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Enter 6-digit OTP</label>
+                <input type="tel" id="authOtpInput" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="______" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-2xl text-center tracking-[0.5em] text-slate-800 bg-white/70">
+                <p class="text-[10px] text-slate-400 font-semibold mt-2 text-center">OTP sent to +91 <span id="otpSentToNumber">-</span> · <button type="button" onclick="resetOtpFlow()" class="text-indigo-600 font-black underline">Change</button></p>
+            </div>
+            <button type="button" id="btnVerifyOtp" onclick="verifyOtpFromBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">VERIFY OTP</button>
+            <button type="button" id="btnResendOtp" onclick="sendOtpToBackend(true)" class="w-full text-xs font-bold text-slate-500 hover:text-indigo-600 py-2 transition">🔄 Resend OTP</button>
+        </div>
+        <p id="otpErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <!-- Invisible reCAPTCHA container required by Firebase Phone Auth -->
+        <div id="recaptcha-container"></div>
         <button type="button" onclick="goTo('screenOptions')" class="w-full mt-6 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back to Options</button>
     </div>
 
@@ -451,16 +509,7 @@
             <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">←</button>
             <h2 class="display-font text-3xl font-black text-slate-900 tracking-tight">Booking Management</h2>
         </div>
-        <div class="space-y-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
-                <div><h4 class="font-black text-lg text-slate-800">Booking #OM-9831</h4><p class="text-xs font-bold text-slate-500">Ankit Dewangan • Room 2, Bed B1</p></div>
-                <div class="text-right"><span class="chip chip-success mb-2">Confirmed</span><p class="text-[10px] font-black text-slate-400">₹10,000</p></div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
-                <div><h4 class="font-black text-lg text-slate-800">Booking #OM-9832</h4><p class="text-xs font-bold text-slate-500">Rahul Sharma • Room 1, Bed B2</p></div>
-                <div class="text-right"><span class="chip chip-warning mb-2">Pending Deposit</span><p class="text-[10px] font-black text-slate-400">₹5,000</p></div>
-            </div>
-        </div>
+        <div id="adminBookingsContainer" class="space-y-4"></div>
     </div>
 
     <div id="screenBusinessDashboard" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
@@ -850,18 +899,24 @@
 
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-44">
-            <!-- FIXED CANVAS WRAPPER -->
-            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-auto layout-scroll flex justify-start items-start p-6 relative" id="userCanvasWrapper" style="min-height: 500px;">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-3 lg:p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-40 lg:pb-44">
+            <!-- FIXED CANVAS WRAPPER: no internal scroll — the layout is always fully visible,
+                 scaled and centered to fit exactly (see fitUserCanvasToScreen). -->
+            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-hidden flex justify-center items-center p-2 lg:p-4 relative" id="userCanvasWrapper">
                 <div id="userCanvasStatus" class="canvas-status-overlay hidden">
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
-                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:24px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc;" alt="Layout preview">
+                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:12px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
+                <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
+                <div id="userCanvasHint" class="lg:hidden absolute top-3 left-3 right-3 z-10 bg-white/90 backdrop-blur rounded-xl px-3 py-2 text-[10px] font-bold text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 pointer-events-none">
+                    <span>👆</span> Tap bed to book · Pinch to zoom · Drag to pan
+                </div>
             </div>
 
-            <div class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative">
+            <!-- Desktop-only right panel -->
+            <div id="userDetailPanelDesktop" class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex-col overflow-hidden relative">
                 <div class="btn-gradient text-white p-4 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10">Room Overview</div>
                 <div id="bedDetailPanel" class="flex-1 p-8 flex flex-col items-center justify-center text-slate-400 text-center overflow-y-auto layout-scroll bg-slate-50/50">
                     <span class="text-6xl mb-4 animate-bounce">👆</span>
@@ -870,16 +925,27 @@
                 </div>
             </div>
         </div>
-        <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between flex-wrap gap-4 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));">
-            <div>
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Payable</p>
-                <h3 id="smart2DTotalAmount" class="display-font text-3xl font-black text-slate-900">₹0</h3>
-                <div class="flex items-center gap-2 mt-2">
-                    <input type="checkbox" id="agreeTnC" onchange="updateSmart2DBtn()" class="w-4 h-4 accent-indigo-600 cursor-pointer">
-                    <label for="agreeTnC" class="text-xs font-bold text-slate-600 cursor-pointer">I agree to <span class="text-indigo-600 underline" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')">Booking & Refund Policy</span></label>
+
+        <!-- Mobile Bottom Sheet — shows on tap, closes on backdrop tap or drag-down -->
+        <div id="userDetailSheetBackdrop" onclick="closeDetailSheet()"></div>
+        <div id="userDetailSheet" role="dialog" aria-modal="true" aria-label="Room details">
+            <div class="sheet-grabber" onclick="closeDetailSheet()"></div>
+            <div class="flex items-center justify-between px-5 pb-2">
+                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Room Details</span>
+                <button type="button" onclick="closeDetailSheet()" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full font-bold text-slate-600 text-sm">✕</button>
+            </div>
+            <div id="bedDetailPanelMobile" class="flex-1 px-5 pb-6 overflow-y-auto layout-scroll bg-white"></div>
+        </div>
+        <div class="glass-panel p-4 md:p-6 border-t border-slate-200/60 rounded-b-[2rem] z-30 flex items-center justify-between flex-wrap gap-3 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));">
+            <div class="flex-1 min-w-0">
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-0.5">Total Payable</p>
+                <h3 id="smart2DTotalAmount" class="display-font text-2xl md:text-3xl font-black text-slate-900">₹0</h3>
+                <div class="flex items-start gap-2 mt-1.5">
+                    <input type="checkbox" id="agreeTnC" onchange="updateSmart2DBtn()" class="w-4 h-4 mt-0.5 accent-indigo-600 cursor-pointer shrink-0">
+                    <label for="agreeTnC" class="text-[11px] font-bold text-slate-600 cursor-pointer leading-tight">I agree to <span class="text-indigo-600 underline" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')">Booking & Refund Policy</span></label>
                 </div>
             </div>
-            <button type="button" onclick="openGuestRegistrationForm()" id="btnSmartBookNow" disabled class="px-12 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl transition cursor-not-allowed">Select Bed to Book</button>
+            <button type="button" onclick="openGuestRegistrationForm()" id="btnSmartBookNow" disabled class="px-6 md:px-12 py-3 md:py-4 bg-slate-200 text-slate-400 font-black text-sm md:text-base rounded-2xl transition cursor-not-allowed shrink-0">Select Bed to Book</button>
         </div>
     </div>
 
@@ -909,7 +975,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Date of Birth</label>
-                    <input type="date" id="grfDob" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                    <input type="date" id="grfDob" max="" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Gender</label>
@@ -932,13 +998,19 @@
                     <input type="text" id="grfBloodGroup" placeholder="e.g. B+" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">College / School Name</label>
-                    <input type="text" id="grfCollegeName" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">College / School / Company Name</label>
+                    <input type="text" id="grfCollegeName" placeholder="Institute name, or your workplace if a working professional" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
-            <div>
-                <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Course / Year</label>
-                <input type="text" id="grfCourseYear" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Status</label>
+                    <select id="grfOccupationType" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option value="Student">Student</option><option value="Working Professional">Working Professional</option></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Course / Year (if student)</label>
+                    <input type="text" id="grfCourseYear" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                </div>
             </div>
 
             <div class="pt-2 border-t border-slate-100">
@@ -961,7 +1033,11 @@
                 <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-3">Hostel Preferences</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Room Type</label><input type="text" id="grfRoomType" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 bg-slate-100 cursor-not-allowed"></div>
-                    <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Date of Joining</label><input type="date" id="grfJoiningDate" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                    <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Date of Joining</label><input type="date" id="grfJoiningDate" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 bg-slate-100 cursor-not-allowed"><p class="text-[9px] text-slate-400 font-semibold mt-1">Set automatically from the check-in date you picked earlier</p></div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Need Help Shifting Luggage? (Labour Charge, if any)</label>
+                    <input type="text" id="grfShiftingCharge" placeholder="e.g. ₹200, or leave blank if not needed" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
 
@@ -988,7 +1064,7 @@
         </div>
     </div>
 
-    <!-- PAYMENT STEP (placeholder — no real payment gateway wired in yet, see chat notes) -->
+    <!-- PAYMENT STEP — Razorpay integration -->
     <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
@@ -999,12 +1075,56 @@
             <p class="display-font text-4xl font-black text-slate-900" id="payAmount">₹0</p>
             <p class="text-xs text-slate-500 font-semibold mt-1">Registration form saved & sent successfully</p>
         </div>
-        <button type="button" onclick="alert('Payment gateway not connected yet — this is a placeholder. See chat for setup steps.'); goTo('screenUserDashboard');" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
-        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">Secured by [Payment Partner]</p>
+
+        <!-- Order Summary -->
+        <div id="payOrderSummary" class="bg-white border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
+            <div class="flex justify-between"><span>Bed(s)</span><span id="paySumBeds" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Plan</span><span id="paySumPlan" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Payable</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
+        </div>
+
+        <button type="button" id="btnPayNow" onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="w-full mt-3 text-xs font-bold text-slate-500 hover:text-slate-700 py-2 transition">Cancel Payment</button>
+        <p id="payErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Secured by Razorpay · UPI · Cards · Netbanking · Wallets</p>
+    </div>
+
+    <!-- BOOKING CONFIRMATION -->
+    <div id="screenBookingSuccess" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel text-center">
+        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-5xl mb-4">✅</div>
+        <h2 class="display-font text-3xl font-black text-slate-900 mb-2">Booking Confirmed!</h2>
+        <p class="text-sm text-slate-500 font-semibold mb-6">Your bed is reserved. Confirmation sent to your registered contact.</p>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
+            <div class="flex justify-between"><span>Booking ID</span><span id="successBookingId" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Payment ID</span><span id="successPaymentId" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Amount Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
+        </div>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
     </div>
 
     <script>
         const BACKEND_URL = 'https://hostel-backend-5hsf.onrender.com';
+
+        // PERF: Fabric.js, jsPDF and Google Maps are heavy (~500KB+ combined) and were previously
+        // loaded on EVERY page visit, even for users who never open the 2D editor, generate a PDF,
+        // or pick a location on the map. They're now loaded on-demand, once, the first time they're
+        // actually needed — cached so repeat calls are instant and never re-download.
+        const FABRIC_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js';
+        const JSPDF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        const MAPS_CDN = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBpb8-7Y3Nc08U7sa3MlfXAFS3sXqmKrd4&libraries=marker,places';
+        const _loadedScripts = {};
+        function loadScriptOnce(src) {
+            if (_loadedScripts[src]) return _loadedScripts[src];
+            _loadedScripts[src] = new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src; s.async = true;
+                s.onload = () => resolve();
+                s.onerror = () => { delete _loadedScripts[src]; reject(new Error('Failed to load ' + src)); };
+                document.head.appendChild(s);
+            });
+            return _loadedScripts[src];
+        }
+
         // Turns a hostel/company name into a safe, readable slug for Firestore doc IDs and
         // Storage folder paths — e.g. "DCMM Boys Hostel" -> "dcmm-boys-hostel". This is what
         // makes documents/files identifiable by hostel name in the Firebase console.
@@ -1198,6 +1318,7 @@
 
         async function initUserMap() {
             if(!userMapInstance) {
+                if (!window.google || !window.google.maps) { await loadScriptOnce(MAPS_CDN); }
                 userMapInstance = new google.maps.Map(document.getElementById("userMapCanvas"), { center: { lat: 21.2514, lng: 81.6296 }, zoom: 12, mapId: "USER_MAP_ID", disableDefaultUI: true, zoomControl: true });
                 const searchInputUser = document.getElementById("userMapSearch");
                 if (searchInputUser) { const searchBoxUser = new google.maps.places.SearchBox(searchInputUser); searchBoxUser.addListener("places_changed", () => { const places = searchBoxUser.getPlaces(); if (places.length === 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return; userMapInstance.setCenter(place.geometry.location); userMapInstance.setZoom(14); }); }
@@ -1262,7 +1383,47 @@
                 // unnecessary work most users never looked at.
             }
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
-            if(screenId === 'screenGoogleMap' && googleMap) { setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150); }
+            if(screenId === 'screenAdminBookings') loadAdminBookings();
+            if(screenId === 'screenGoogleMap') {
+                if (googleMap) {
+                    setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150);
+                } else {
+                    loadScriptOnce(MAPS_CDN).then(() => { initMap(); }).catch(() => { console.warn('Google Maps failed to load'); });
+                }
+            }
+        }
+
+        // Pulls real guest registrations from Firestore and renders them as booking cards.
+        // Replaces the old hardcoded OM-9831 / OM-9832 demo entries.
+        async function loadAdminBookings() {
+            const container = document.getElementById('adminBookingsContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="loader mb-4"></div><p class="font-bold text-sm">Loading bookings...</p></div>`;
+            try {
+                const snap = await getDocs(collection(db, 'guestRegistrations'));
+                if (snap.empty) {
+                    container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">📭</span><p class="font-bold text-sm">No bookings yet</p><p class="text-xs mt-1">New guest registrations will show up here automatically.</p></div>`;
+                    return;
+                }
+                const bookings = [];
+                snap.forEach(d => bookings.push({ id: d.id, ...d.data() }));
+                // Newest first
+                bookings.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+
+                container.innerHTML = bookings.map(b => {
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : (b.roomType || 'N/A');
+                    const totalPrice = (b.bookingContext && b.bookingContext.totalPrice) || 0;
+                    const shortId = 'OM-' + (b.id || '').slice(0, 5).toUpperCase();
+                    return `<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center">
+                        <div><h4 class="font-black text-lg text-slate-800">Booking #${shortId}</h4><p class="text-xs font-bold text-slate-500">${b.fullName || 'Guest'} • ${b.hostelName || ''} • Bed ${bedLabel}</p></div>
+                        <div class="text-right"><span class="chip chip-warning mb-2">Pending Payment</span><p class="text-[10px] font-black text-slate-400">₹${totalPrice}</p></div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load bookings', err);
+                container.innerHTML = `<div class="text-center py-16 text-red-500 font-bold text-sm">Could not load bookings. Please try again.</div>`;
+            }
         }
 
         function switchAccountMode(mode) {
@@ -1271,12 +1432,138 @@
             let activeClass = "flex-1 py-2.5 text-center font-bold rounded-xl text-sm transition tab-pill-active cursor-pointer";
             if (mode === 'user') { document.getElementById('tabUser').className = activeClass; document.getElementById('mainHeading').innerText = "Welcome Back"; document.getElementById('mainSubheading').innerText = "Log in to book verified properties"; }
             else if (mode === 'business') { document.getElementById('tabBusiness').className = activeClass; document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerText = "Manage your properties and layouts"; }
-            else { document.getElementById('tabAdmin').className = activeClass; document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
+            else { const adminTab = document.getElementById('tabAdmin'); if (adminTab) adminTab.className = activeClass; document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
 
-        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') goTo('screenOtpVerification'); else { goTo('screenProfileCompletion'); } }
-        function sendOtpToBackend() { goTo('screenProfileCompletion'); }
-        function verifyOtpFromBackend() { goTo('screenProfileCompletion'); }
+        // Lets a guest browse/search properties immediately, with no login at all —
+        // the "Skip & Search" option from the welcome screen.
+        function skipToSearch() { accountMode = 'user'; goTo('screenUserDashboard'); }
+
+        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); } else { goTo('screenProfileCompletion'); } }
+
+        // ==== REAL OTP FLOW (Firebase Phone Authentication) ====
+        // Requirements before this works in production:
+        //   1. Firebase Console → Authentication → Sign-in method → Enable "Phone"
+        //   2. Add your domain to Authentication → Settings → Authorized domains
+        //   3. On localhost, add 127.0.0.1 & localhost to authorized domains
+        // Cost: Firebase Phone Auth is FREE for first 10K verifications/month, then paid.
+        let _recaptchaVerifier = null;
+        let _confirmationResult = null;
+
+        function showOtpError(msg) {
+            const el = document.getElementById('otpErrorMsg');
+            if (!el) return;
+            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
+            el.classList.remove('hidden'); el.innerText = msg;
+        }
+
+        function resetOtpFlow() {
+            _confirmationResult = null;
+            fullFormattedMobile = '';
+            const sendSec = document.getElementById('sendOtpSection');
+            const verSec = document.getElementById('verifyOtpSection');
+            const otpIn = document.getElementById('authOtpInput');
+            const mobIn = document.getElementById('authMobileNumber');
+            const stepLbl = document.getElementById('otpStepLabel');
+            if (sendSec) sendSec.classList.remove('hidden');
+            if (verSec) verSec.classList.add('hidden');
+            if (otpIn) otpIn.value = '';
+            if (mobIn) mobIn.value = '';
+            if (stepLbl) stepLbl.innerText = 'Enter your 10-digit mobile number';
+            showOtpError('');
+        }
+
+        function ensureRecaptcha() {
+            // Lazy-create the invisible reCAPTCHA verifier once. Reusing the same instance for
+            // resend keeps the flow smooth and avoids the "reCAPTCHA already rendered" error.
+            if (_recaptchaVerifier) return _recaptchaVerifier;
+            if (!window.RecaptchaVerifier || !window.auth) {
+                throw new Error('Firebase Auth not loaded yet. Please refresh the page.');
+            }
+            _recaptchaVerifier = new window.RecaptchaVerifier(window.auth, 'recaptcha-container', {
+                size: 'invisible',
+                callback: () => { /* reCAPTCHA solved — allow signInWithPhoneNumber */ }
+            });
+            return _recaptchaVerifier;
+        }
+
+        async function sendOtpToBackend(isResend) {
+            showOtpError('');
+            const mobileInput = document.getElementById('authMobileNumber');
+            const raw = (mobileInput.value || '').trim().replace(/\D/g, '');
+            if (raw.length !== 10) { showOtpError('Please enter a valid 10-digit mobile number.'); return; }
+            const phoneE164 = '+91' + raw;
+            fullFormattedMobile = phoneE164;
+
+            const btn = document.getElementById('btnSendOtp');
+            const resendBtn = document.getElementById('btnResendOtp');
+            const targetBtn = isResend ? resendBtn : btn;
+            const originalText = targetBtn ? targetBtn.innerText : '';
+            if (targetBtn) { targetBtn.disabled = true; targetBtn.innerText = '⏳ Sending...'; }
+
+            try {
+                const verifier = ensureRecaptcha();
+                _confirmationResult = await window.signInWithPhoneNumber(window.auth, phoneE164, verifier);
+                // Success — reveal OTP input section
+                document.getElementById('sendOtpSection').classList.add('hidden');
+                document.getElementById('verifyOtpSection').classList.remove('hidden');
+                document.getElementById('otpSentToNumber').innerText = raw;
+                document.getElementById('otpStepLabel').innerText = 'Enter the 6-digit OTP sent via SMS';
+                document.getElementById('authOtpInput').focus();
+            } catch (err) {
+                console.error('OTP send failed', err);
+                let userMsg = 'Failed to send OTP. Please try again.';
+                if (err && err.code) {
+                    if (err.code === 'auth/invalid-phone-number') userMsg = 'Invalid phone number format.';
+                    else if (err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again after some time.';
+                    else if (err.code === 'auth/quota-exceeded') userMsg = 'Daily OTP quota exceeded. Contact support.';
+                    else if (err.code === 'auth/billing-not-enabled') userMsg = 'Phone Auth not enabled on this project yet.';
+                }
+                showOtpError(userMsg);
+                // Reset verifier so a fresh reCAPTCHA is created on retry
+                try { if (_recaptchaVerifier) { _recaptchaVerifier.clear(); } } catch(e) {}
+                _recaptchaVerifier = null;
+            } finally {
+                if (targetBtn) { targetBtn.disabled = false; targetBtn.innerText = originalText || (isResend ? '🔄 Resend OTP' : 'SEND OTP'); }
+            }
+        }
+
+        async function verifyOtpFromBackend() {
+            showOtpError('');
+            const otp = (document.getElementById('authOtpInput').value || '').trim();
+            if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { showOtpError('Please enter the 6-digit OTP.'); return; }
+            if (!_confirmationResult) { showOtpError('OTP session expired. Please request a new OTP.'); return; }
+
+            const btn = document.getElementById('btnVerifyOtp');
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = '⏳ Verifying...'; }
+
+            try {
+                const cred = await _confirmationResult.confirm(otp);
+                // cred.user is a signed-in Firebase user. Store minimal profile locally so
+                // the rest of the app knows who is logged in.
+                const user = cred.user;
+                try {
+                    localStorage.setItem('hostelom_user', JSON.stringify({
+                        uid: user.uid,
+                        phone: user.phoneNumber || fullFormattedMobile,
+                        loggedInAt: new Date().toISOString()
+                    }));
+                } catch(e) {}
+                _confirmationResult = null;
+                // New users → profile completion. Returning users could skip, but we keep the
+                // flow simple and always route through profile (matches original behavior).
+                goTo('screenProfileCompletion');
+            } catch (err) {
+                console.error('OTP verify failed', err);
+                let userMsg = 'Incorrect OTP. Please try again.';
+                if (err && err.code === 'auth/code-expired') userMsg = 'OTP expired. Please request a new one.';
+                showOtpError(userMsg);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'VERIFY OTP'; }
+            }
+        }
+
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
         function routeToDashboard() {
@@ -1304,7 +1591,164 @@
             goTo('screenBusinessDashboard');
         }
 
-        function logout() { goTo('screenOptions'); }
+        function logout() {
+            try { if (window.firebaseSignOut && window.auth) { window.firebaseSignOut(window.auth); } } catch(e) {}
+            try { localStorage.removeItem('hostelom_user'); } catch(e) {}
+            resetOtpFlow();
+            goTo('screenOptions');
+        }
+
+        // ==== REAL PAYMENT FLOW (Razorpay) ====
+        // Two modes:
+        //  A) BACKEND MODE (recommended, secure): server creates a Razorpay order and returns
+        //     { orderId, keyId }. Signature is verified server-side after payment.
+        //     Endpoints expected on BACKEND_URL:
+        //       POST /razorpay/create-order  { amount, currency, notes } -> { orderId, keyId }
+        //       POST /razorpay/verify        { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingContext } -> { ok:true, bookingId }
+        //  B) FALLBACK / TEST MODE: if backend order creation fails, we open Razorpay with a
+        //     test key in "amount-only" mode. NEVER ship this to production — it skips
+        //     signature verification and anyone can fake a success client-side.
+        const RAZORPAY_TEST_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay's public sample test key
+        function showPayError(msg) {
+            const el = document.getElementById('payErrorMsg');
+            if (!el) return;
+            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
+            el.classList.remove('hidden'); el.innerText = msg;
+        }
+
+        async function createRazorpayOrder(amount) {
+            // Talks to your backend to create an order on Razorpay's side. Backend must call
+            // Razorpay's Orders API with your KEY_SECRET (secret must NEVER live in the frontend).
+            const res = await fetch(`${BACKEND_URL}/razorpay/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: Math.round(amount * 100), currency: 'INR', notes: { app: 'HostelOM' } })
+            });
+            if (!res.ok) throw new Error('Order creation failed: ' + res.status);
+            return await res.json();
+        }
+
+        async function verifyRazorpayPayment(payload) {
+            const res = await fetch(`${BACKEND_URL}/razorpay/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('Verification failed: ' + res.status);
+            return await res.json();
+        }
+
+        async function startRazorpayCheckout() {
+            showPayError('');
+            const pending = window._pendingPayment;
+            if (!pending || !pending.amount || pending.amount <= 0) {
+                showPayError('No pending payment found. Please restart the booking.');
+                return;
+            }
+            if (typeof Razorpay === 'undefined') {
+                showPayError('Payment SDK not loaded. Check your internet connection and reload.');
+                return;
+            }
+
+            const btn = document.getElementById('btnPayNow');
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = '⏳ Opening secure checkout...'; }
+
+            let orderInfo = null;
+            let usingBackend = true;
+            try {
+                orderInfo = await createRazorpayOrder(pending.amount);
+            } catch (err) {
+                // Backend not wired yet → fall back to test-key checkout so the UX is still testable.
+                console.warn('Backend order creation unavailable, falling back to test key.', err);
+                usingBackend = false;
+                orderInfo = { keyId: RAZORPAY_TEST_KEY, orderId: null };
+            }
+
+            const options = {
+                key: orderInfo.keyId || RAZORPAY_TEST_KEY,
+                amount: Math.round(pending.amount * 100), // in paise
+                currency: 'INR',
+                name: 'HostelOM',
+                description: `Booking at ${pending.hostelName || 'Hostel'}`,
+                image: 'icon-192.png',
+                order_id: orderInfo.orderId || undefined,
+                prefill: {
+                    name: pending.guestName || '',
+                    contact: pending.guestPhone || '',
+                    email: pending.guestEmail || ''
+                },
+                notes: {
+                    hostel: pending.hostelName || '',
+                    beds: ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id).join(',')
+                },
+                theme: { color: '#6366f1' },
+                handler: async function (response) {
+                    // response = { razorpay_payment_id, razorpay_order_id, razorpay_signature }
+                    try {
+                        let verifyResult = { ok: true, bookingId: 'BK-' + Date.now().toString(36).toUpperCase() };
+                        if (usingBackend) {
+                            verifyResult = await verifyRazorpayPayment({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                bookingContext: pending.bookingContext,
+                                guest: pending.formSnapshot
+                            });
+                            if (!verifyResult.ok) throw new Error(verifyResult.message || 'Signature verification failed');
+                        }
+                        // Save booking record in Firestore for admin dashboard
+                        try {
+                            await window.addDoc(window.collection(window.db, 'bookings'), {
+                                bookingId: verifyResult.bookingId,
+                                paymentId: response.razorpay_payment_id,
+                                orderId: response.razorpay_order_id || null,
+                                amount: pending.amount,
+                                currency: 'INR',
+                                hostelName: pending.hostelName,
+                                guestName: pending.guestName,
+                                guestPhone: pending.guestPhone,
+                                bookingContext: pending.bookingContext,
+                                status: usingBackend ? 'paid_verified' : 'paid_unverified_test',
+                                createdAt: new Date().toISOString()
+                            });
+                        } catch (fsErr) { console.warn('Firestore booking save failed:', fsErr); }
+
+                        // Show success screen
+                        document.getElementById('successBookingId').innerText = verifyResult.bookingId;
+                        document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
+                        document.getElementById('successAmount').innerText = '₹' + pending.amount;
+                        window._pendingPayment = null;
+                        goTo('screenBookingSuccess');
+                    } catch (err) {
+                        console.error('Post-payment error:', err);
+                        showPayError('Payment received but confirmation failed. Please contact support with Payment ID: ' + response.razorpay_payment_id);
+                    } finally {
+                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                        showPayError('Payment cancelled. You can retry anytime.');
+                    }
+                }
+            };
+
+            try {
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (resp) {
+                    console.error('Razorpay failure', resp.error);
+                    showPayError('Payment failed: ' + (resp.error && resp.error.description ? resp.error.description : 'Unknown error'));
+                    if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                });
+                rzp.open();
+            } catch (err) {
+                console.error('Razorpay open failed', err);
+                showPayError('Unable to open payment window. Please try again.');
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+            }
+        }
 
         function saveLegalAndNext() {
             businessLegalData.licence = document.getElementById('formLicence').value || 'LIC-OM-9942'; businessLegalData.gst = document.getElementById('formGst').value || '22AAAAA0000A1Z5';
@@ -1557,6 +2001,7 @@
         async function approveAndPublishAdminMap() { if(mappedBedsData.length === 0) return; const btn = document.getElementById('dynamicMappingPublishBtn'); btn.innerText = "Publishing..."; await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved", mapImageUrl: aiGeneratedMapUrl, imageMapBeds: mappedBedsData }); alert('Approved!'); uploadedMapDataUrl = aiGeneratedMapUrl; goTo('screenAdminDashboard'); }
 
         async function startAdmin2DFlow(docId) {
+            await loadScriptOnce(FABRIC_CDN);
             // IMPORTANT FIX: dispose any previous admin canvas before loading a (possibly different)
             // property's layout. Without this, leftover room/bed objects from the last property stayed
             // in memory and got saved into this property's floor state on Publish — causing rooms to
@@ -1760,6 +2205,8 @@
 
             document.getElementById('grfFormError').classList.add('hidden');
             document.getElementById('grfJoiningDate').value = window.selectedCheckInDate || '';
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('grfDob').max = todayStr; // no future date-of-birth
             goTo('screenGuestRegistrationForm');
         }
 
@@ -1770,7 +2217,11 @@
             const errBox = document.getElementById('grfFormError');
             for (const id of required) {
                 if (!document.getElementById(id).value.trim()) {
-                    errBox.innerText = 'Please fill all required fields (Name, DOB, Aadhar Number, Emergency Contact, Address, Date of Joining).';
+                    if (id === 'grfJoiningDate') {
+                        errBox.innerText = 'Date of Joining is empty — please go back and pick a check-in date first, then reopen this form.';
+                    } else {
+                        errBox.innerText = 'Please fill all required fields (Name, DOB, Aadhar Number, Emergency Contact, Address, Date of Joining).';
+                    }
                     errBox.classList.remove('hidden');
                     document.getElementById(id).focus();
                     return;
@@ -1823,6 +2274,7 @@
                 aadharNumber: document.getElementById('grfAadharNumber').value.trim(),
                 bloodGroup: document.getElementById('grfBloodGroup').value.trim(),
                 collegeName: document.getElementById('grfCollegeName').value.trim(),
+                occupationType: document.getElementById('grfOccupationType').value,
                 courseYear: document.getElementById('grfCourseYear').value.trim(),
                 fatherName: document.getElementById('grfFatherName').value.trim(),
                 motherName: document.getElementById('grfMotherName').value.trim(),
@@ -1830,6 +2282,7 @@
                 address: document.getElementById('grfAddress').value.trim(),
                 roomType: document.getElementById('grfRoomType').value,
                 joiningDate: document.getElementById('grfJoiningDate').value,
+                shiftingCharge: document.getElementById('grfShiftingCharge').value.trim() || 'Not needed',
                 medicalCondition: document.getElementById('grfMedicalCondition').value.trim() || 'None',
                 relativeContact: document.getElementById('grfRelativeContact').value.trim(),
                 signature: document.getElementById('grfSignature').value.trim(),
@@ -1838,6 +2291,7 @@
             };
 
             try {
+                if (!window.jspdf) { await loadScriptOnce(JSPDF_CDN); }
                 if (!window.jspdf) { throw new Error('PDF library did not load (check internet connection / try reloading the page).'); }
                 // Read uploaded photos (if any) so they can be embedded in the PDF
                 const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
@@ -1867,7 +2321,8 @@
                 line('Gender:', formData.gender);
                 line('Aadhar Number:', formData.aadharNumber);
                 line('Blood Group:', formData.bloodGroup);
-                line('College/School:', formData.collegeName);
+                line('Status:', formData.occupationType);
+                line('College/School/Company:', formData.collegeName);
                 line('Course/Year:', formData.courseYear);
                 y += 2; doc.setFont(undefined,'bold'); doc.text('Parent / Guardian Details', 14, y); y += 8; doc.setFont(undefined,'normal');
                 line("Father's Name:", formData.fatherName);
@@ -1877,22 +2332,31 @@
                 y += 2; doc.setFont(undefined,'bold'); doc.text('Hostel Preferences', 14, y); y += 8; doc.setFont(undefined,'normal');
                 line('Room Type:', formData.roomType);
                 line('Date of Joining:', formData.joiningDate);
+                line('Shifting Help Needed:', formData.shiftingCharge);
                 y += 2; doc.setFont(undefined,'bold'); doc.text('Health & Emergency', 14, y); y += 8; doc.setFont(undefined,'normal');
                 line('Medical Condition/Allergy:', formData.medicalCondition);
                 line('Emergency Contact (Relative):', formData.relativeContact);
-                y += 4; doc.setFontSize(9); doc.text('Declaration: I declare that all information given above is correct and I agree to follow all hostel rules.', 14, y, { maxWidth: 182 }); y += 10;
-                line('Date:', new Date().toLocaleDateString('en-IN'));
-                line('Student Signature:', formData.signature);
 
+                // Aadhar photo always gets its own clean page — previously it was squeezed onto
+                // whatever space was left after the declaration/signature, which sometimes pushed
+                // it off the bottom of the page (or made it print too small to read).
                 if (aadharPhotoDataUrl) {
                     try {
-                        if (y > 230) { doc.addPage(); y = 20; }
-                        y += 6; doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.text('Attached: Aadhar Card Photo', 14, y); y += 4;
-                        doc.addImage(aadharPhotoDataUrl, getImgFormat(aadharPhotoDataUrl), 14, y, 90, 55);
-                        doc.setDrawColor(180); doc.rect(14, y, 90, 55);
-                        y += 60;
+                        doc.addPage(); y = 20;
+                        doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('Attached: Aadhar Card Photo', 14, y); y += 8;
+                        doc.addImage(aadharPhotoDataUrl, getImgFormat(aadharPhotoDataUrl), 14, y, 130, 80);
+                        doc.setDrawColor(180); doc.rect(14, y, 130, 80);
+                        y += 90;
                     } catch(e) { console.warn('Could not embed aadhar photo', e); }
+                } else {
+                    y += 6;
                 }
+
+                // Declaration, date and signature print LAST — after all details and the Aadhar photo.
+                if (y > 250) { doc.addPage(); y = 20; }
+                doc.setFontSize(9); doc.text('Declaration: I declare that all information given above is correct and I agree to follow all hostel rules.', 14, y, { maxWidth: 182 }); y += 10;
+                line('Date:', new Date().toLocaleDateString('en-IN'));
+                line('Student Signature:', formData.signature);
 
                 const pdfBlob = doc.output('blob');
                 const pdfFile = new File([pdfBlob], `Hostel-Registration-${formData.fullName.replace(/\s+/g,'_')}.pdf`, { type: 'application/pdf' });
@@ -1949,8 +2413,24 @@
                 if (!shared) { doc.save(pdfFile.name); } // fallback: just download it, guest can attach manually on WhatsApp/Email
 
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                document.getElementById('payAmount').innerText = '₹' + (grfBookingContext && grfBookingContext.totalPrice ? grfBookingContext.totalPrice : 0);
+                const totalPrice = (grfBookingContext && grfBookingContext.totalPrice) ? grfBookingContext.totalPrice : 0;
+                const beds = (grfBookingContext && grfBookingContext.beds) ? grfBookingContext.beds : [];
+                const planLabel = (grfBookingContext && grfBookingContext.planLabel) ? grfBookingContext.planLabel : (formData.roomType || 'Booking');
+                document.getElementById('payAmount').innerText = '₹' + totalPrice;
                 document.getElementById('payHostelName').innerText = formData.hostelName;
+                document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
+                document.getElementById('paySumPlan').innerText = planLabel;
+                document.getElementById('paySumTotal').innerText = '₹' + totalPrice;
+                // Cache the payment context so the Razorpay handler can read it
+                window._pendingPayment = {
+                    amount: totalPrice,
+                    hostelName: formData.hostelName,
+                    guestName: formData.fullName,
+                    guestPhone: formData.emergencyContact || '',
+                    guestEmail: formData.email || '',
+                    bookingContext: grfBookingContext || {},
+                    formSnapshot: formData
+                };
                 goTo('screenPaymentStep');
             } catch (err) {
                 console.error('Registration form error:', err);
@@ -1982,6 +2462,10 @@
 
             if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
+            goTo('screenUser2DLayout');
+            setUserCanvasStatus('loading', 'Loading layout...');
+            try { await loadScriptOnce(FABRIC_CDN); }
+            catch (e) { setUserCanvasStatus('error', 'Could not load the layout viewer. Please check your connection and try again.'); return; }
 
             const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
             currentUserFloor = uniqueFloors[0] || 'Ground Floor';
@@ -1989,7 +2473,6 @@
             const tabContainer = document.getElementById('userFloorTabsContainer');
             if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
 
-            goTo('screenUser2DLayout');
             const firstFloorSnapshotUrl = propertyData.layoutSnapshotUrls ? propertyData.layoutSnapshotUrls[currentUserFloor] : null;
             if (!firstFloorSnapshotUrl) setUserCanvasStatus('loading', 'Loading layout...');
 
@@ -2024,14 +2507,79 @@
                             userFabricCanvasInstance.renderAll();
                         }
                     });
+
+                    // ==== Pinch-to-zoom + drag-to-pan on mobile ====
+                    // Small canvases on phones make it hard to tap a specific bed. Native touch
+                    // gestures were also being swallowed by the wrapper (touch-action: none).
+                    // Here we add proper 2-finger pinch zoom AND single-finger drag panning,
+                    // similar to how Google Maps / Zomato table maps behave.
+                    const canvasEl = userFabricCanvasInstance.upperCanvasEl;
+                    let touchState = { mode: null, startDist: 0, startZoom: 1, lastX: 0, lastY: 0, movedEnough: false, downTarget: null };
+
+                    function getDist(t1, t2) { const dx = t1.clientX - t2.clientX; const dy = t1.clientY - t2.clientY; return Math.sqrt(dx*dx + dy*dy); }
+                    function getMid(t1, t2, rect) { return { x: (t1.clientX + t2.clientX)/2 - rect.left, y: (t1.clientY + t2.clientY)/2 - rect.top }; }
+
+                    canvasEl.addEventListener('touchstart', function(e) {
+                        touchState.movedEnough = false;
+                        if (e.touches.length === 2) {
+                            e.preventDefault();
+                            touchState.mode = 'pinch';
+                            touchState.startDist = getDist(e.touches[0], e.touches[1]);
+                            touchState.startZoom = userFabricCanvasInstance.getZoom();
+                        } else if (e.touches.length === 1) {
+                            touchState.mode = 'pan';
+                            touchState.lastX = e.touches[0].clientX;
+                            touchState.lastY = e.touches[0].clientY;
+                        }
+                    }, { passive: false });
+
+                    canvasEl.addEventListener('touchmove', function(e) {
+                        if (touchState.mode === 'pinch' && e.touches.length === 2) {
+                            e.preventDefault();
+                            const newDist = getDist(e.touches[0], e.touches[1]);
+                            let newZoom = touchState.startZoom * (newDist / touchState.startDist);
+                            newZoom = Math.max(0.3, Math.min(4, newZoom));
+                            const rect = canvasEl.getBoundingClientRect();
+                            const mid = getMid(e.touches[0], e.touches[1], rect);
+                            userFabricCanvasInstance.zoomToPoint({ x: mid.x, y: mid.y }, newZoom);
+                            touchState.movedEnough = true;
+                        } else if (touchState.mode === 'pan' && e.touches.length === 1) {
+                            const dx = e.touches[0].clientX - touchState.lastX;
+                            const dy = e.touches[0].clientY - touchState.lastY;
+                            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                                e.preventDefault();
+                                touchState.movedEnough = true;
+                                const vpt = userFabricCanvasInstance.viewportTransform;
+                                vpt[4] += dx; vpt[5] += dy;
+                                userFabricCanvasInstance.setViewportTransform(vpt);
+                            }
+                            touchState.lastX = e.touches[0].clientX;
+                            touchState.lastY = e.touches[0].clientY;
+                        }
+                    }, { passive: false });
+
+                    canvasEl.addEventListener('touchend', function() { touchState.mode = null; }, { passive: true });
                 }
                 selectUserFloor(currentUserFloor);
             }, 150);
         }
 
+        window.openDetailSheet = function() {
+            const sheet = document.getElementById('userDetailSheet');
+            const bd = document.getElementById('userDetailSheetBackdrop');
+            if (sheet && bd) { sheet.classList.add('open'); bd.classList.add('open'); }
+        }
+        window.closeDetailSheet = function() {
+            const sheet = document.getElementById('userDetailSheet');
+            const bd = document.getElementById('userDetailSheetBackdrop');
+            if (sheet && bd) { sheet.classList.remove('open'); bd.classList.remove('open'); }
+        }
+
         window.showBedDetailsInPanel = function(bedId) {
             currentSelectedBedId = bedId;
-            const panel = document.getElementById('bedDetailPanel'); let parentRoom = null;
+            const isMobile = window.innerWidth < 1024;
+            const panel = isMobile ? document.getElementById('bedDetailPanelMobile') : document.getElementById('bedDetailPanel');
+            let parentRoom = null;
             if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
             if (!parentRoom) { return; }
 
@@ -2067,15 +2615,18 @@
             if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
 
-            // On mobile the Room Overview panel sits below the (tall) canvas — scroll it into
-            // view so tapping a bed doesn't look like nothing happened.
-            if (window.innerWidth < 1024) {
-                setTimeout(() => { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+            // Mobile: slide the bottom sheet up so guest immediately sees details without scrolling.
+            // Desktop: content is already visible in the right panel, no scroll needed.
+            if (isMobile) {
+                openDetailSheet();
+                // Hide the pinch-zoom hint once user has interacted with a bed
+                const hint = document.getElementById('userCanvasHint');
+                if (hint) hint.style.display = 'none';
             }
         }
 
@@ -2097,6 +2648,10 @@
             // interactive canvas JSON loads underneath from Firestore. Swaps over once ready.
             const snapImg = document.getElementById('userLayoutSnapshotImg');
             const snapshotUrl = window.currentPropertyData && window.currentPropertyData.layoutSnapshotUrls ? window.currentPropertyData.layoutSnapshotUrls[floorName] : null;
+            // The real photo/snapshot is now the primary picture the guest sees; the Fabric canvas
+            // becomes an invisible tap layer on top of it purely for detecting which bed was tapped.
+            // Falls back to showing the interactive canvas itself only when no snapshot was published.
+            const useSnapshotPrimary = !!snapshotUrl;
             if (snapImg) {
                 if (snapshotUrl) { snapImg.src = snapshotUrl; snapImg.classList.remove('hidden'); }
                 else { snapImg.classList.add('hidden'); snapImg.removeAttribute('src'); }
@@ -2192,6 +2747,16 @@
                                 let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
                                 if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
                                 if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
+
+                                // Match the actual <canvas> backing store to the wrapper box exactly — this is
+                                // what stops scrollbars appearing, since the canvas can never be bigger than its
+                                // visible container. NOTE: the wrapper's own box size is intentionally left alone
+                                // (stable, CSS-driven — see #userCanvasWrapper) rather than resized to the content
+                                // each time: shrinking it here and then using its own new (smaller) clientHeight as
+                                // the ceiling on the NEXT floor switch created a feedback loop that made the box
+                                // shrink a little more on every tab press, eventually collapsing to almost nothing.
+                                userFabricCanvasInstance.setWidth(wrapper.clientWidth);
+                                userFabricCanvasInstance.setHeight(wrapper.clientHeight);
                                 userFabricCanvasInstance.setZoom(scale);
 
                                 let vpt = userFabricCanvasInstance.viewportTransform;
@@ -2199,8 +2764,16 @@
                                 vpt[5] = (wrapper.clientHeight - height * scale) / 2 - boundingRect.top * scale;
                                 userFabricCanvasInstance.setViewportTransform(vpt);
                                 userFabricCanvasInstance.renderAll();
-                                // Interactive canvas is now correctly scaled & ready for bed taps — swap away from the static preview.
-                                if (snapImg) snapImg.classList.add('hidden');
+                                if (useSnapshotPrimary) {
+                                    // Real photo stays visible as the picture; canvas is invisible but still
+                                    // fully interactive (opacity doesn't block clicks) so bed taps keep working.
+                                    userFabricCanvasInstance.wrapperEl.style.opacity = '0';
+                                    if (snapImg) snapImg.classList.remove('hidden');
+                                } else {
+                                    // No snapshot published for this floor — show the interactive canvas itself.
+                                    userFabricCanvasInstance.wrapperEl.style.opacity = '1';
+                                    if (snapImg) snapImg.classList.add('hidden');
+                                }
                             }
                         }
                         requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
@@ -2262,8 +2835,17 @@
             container.innerHTML = html + roomsHtml + `</div></div>`;
         }
 
+        // No back-dates anywhere in the app: search check-in date, DOB (no future birthdates),
+        // and any date input added later that carries this class.
+        (function preventBackDates() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const setMin = (id) => { const el = document.getElementById(id); if (el) el.min = todayStr; };
+            const setMax = (id) => { const el = document.getElementById(id); if (el) el.max = todayStr; };
+            setMin('userCheckInDate');
+            setMax('grfDob');
+        })();
+
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpb8-7Y3Nc08U7sa3MlfXAFS3sXqmKrd4&callback=initMap&libraries=marker,places" async defer></script>
     <script>
         // Register service worker for PWA installability (silently no-ops if it fails, e.g. on file:// during local testing)
         if ('serviceWorker' in navigator) {
@@ -2272,5 +2854,6 @@
             });
         }
     </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
