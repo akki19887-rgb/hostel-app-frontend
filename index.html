@@ -151,18 +151,51 @@
         /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
            load never looks identical to a frozen blank screen. */
         .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
-        /* FIX: 2D bed-selection map — no scrollbars, canvas always exactly fills its box
-           (JS resizes the Fabric canvas to match this box on every render, see fitUserCanvasToScreen) */
-        #userCanvasWrapper { height: 46vh; }
+        /* FIX: 2D bed-selection map — mobile now uses the FULL available viewport height for the
+           canvas (no side-by-side detail panel), so bed tap targets are large & readable on phones.
+           Room details slide up as a bottom sheet on tap. Desktop keeps the existing 2/3 + 1/3 split. */
+        #userCanvasWrapper { height: calc(100dvh - 260px); min-height: 380px; touch-action: none; }
         #userFabricCanvas { display: block; }
+        #userDetailPanelDesktop { display: none; }
         @media (min-width: 1024px) {
-            #userCanvasWrapper { height: 100%; }
+            #userCanvasWrapper { height: 100%; min-height: 0; }
+            #userDetailPanelDesktop { display: flex; }
+            #userDetailSheet { display: none !important; }
+        }
+
+        /* Mobile bottom sheet for room/bed details */
+        #userDetailSheet {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+            background: white; border-top-left-radius: 24px; border-top-right-radius: 24px;
+            box-shadow: 0 -20px 50px -10px rgba(15, 23, 42, 0.25);
+            transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 82dvh; display: flex; flex-direction: column;
+        }
+        #userDetailSheet.open { transform: translateY(0); }
+        #userDetailSheetBackdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #userDetailSheetBackdrop.open { opacity: 1; pointer-events: auto; }
+        .sheet-grabber { width: 40px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 10px auto 6px; }
+
+        /* Floor tabs sticky on mobile so user can switch without scrolling up */
+        @media (max-width: 1023px) {
+            #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; }
+            #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
+            #screenUser2DLayout .glass-panel h3 { font-size: 1.5rem !important; }
+            /* FIX: on mobile, editor pages were squeezed inside the body's padding + a rounded,
+               height-capped card — making them feel tiny and cramped. They now take the ENTIRE
+               screen, edge to edge, like a dedicated full-screen page. */
+            #screenAdmin2DEditor.screen-panel, .fullscreen-mobile-page.screen-panel {
+                position: fixed !important; inset: 0 !important; margin: 0 !important;
+                max-width: 100% !important; width: 100% !important; height: 100dvh !important;
+                border-radius: 0 !important; z-index: 100;
+            }
         }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
             authDomain: "hostel-om.firebaseapp.com",
@@ -174,8 +207,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
+        const auth = getAuth(app);
         window.db = db;
         window.storage = storage;
+        window.auth = auth;
+        window.RecaptchaVerifier = RecaptchaVerifier;
+        window.signInWithPhoneNumber = signInWithPhoneNumber;
+        window.firebaseSignOut = signOut;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.sendEmailVerification = sendEmailVerification;
+        window.onAuthStateChanged = onAuthStateChanged;
         window.collection = collection;
         window.addDoc = addDoc;
         window.getDocs = getDocs;
@@ -273,27 +315,91 @@
                 </div>
                 <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
             </button>
+            <button type="button" onclick="goTo('screenEmailAuth')" class="method-option w-full flex items-center justify-between p-4 rounded-2xl group">
+                <div class="flex items-center gap-4">
+                    <div class="icon-container"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="#6366f1" stroke-width="1.8"/><path d="M4 7l8 6 8-6" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    <div class="text-left"><div class="font-black text-slate-800">Continue with Email</div><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Verify via inbox link</div></div>
+                </div>
+                <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
+            </button>
         </div>
 
         <!-- Admin (unlabeled globe icon, discreet) + Skip & Search — both inside the card, bottom row -->
         <div class="flex items-center justify-between mt-8">
-            <button type="button" onclick="switchAccountMode('admin')" class="corner-btn w-11 h-11 rounded-xl flex items-center justify-center text-lg">🌍</button>
+            <button type="button" onclick="goTo('screenAdminSecureLogin')" class="corner-btn w-11 h-11 rounded-xl flex items-center justify-center text-lg">🌍</button>
             <button type="button" onclick="skipToSearch()" class="corner-btn px-4 py-2.5 rounded-xl font-bold text-xs text-slate-600">Skip & Search →</button>
         </div>
+    </div>
+
+    <!-- Secure Admin-only login — separate from the User/Business flow entirely. No Firebase Auth
+         allowlist doc for this UID = access denied even with correct password (see verifyAdminLogin). -->
+    <div id="screenAdminSecureLogin" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-white text-3xl shadow-xl mb-4">🔒</div>
+            <h2 class="display-font text-3xl font-black text-slate-900">Admin Access</h2>
+            <p class="text-xs text-slate-500 font-semibold mt-2">Restricted — authorized personnel only</p>
+        </div>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Admin ID (Email)</label><input type="email" id="adminLoginEmail" autocomplete="username" placeholder="admin@yourdomain.com" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Password</label><input type="password" id="adminLoginPassword" autocomplete="current-password" placeholder="••••••••" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70" onkeydown="if(event.key==='Enter') verifyAdminLogin()"></div>
+        </div>
+        <p id="adminLoginError" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <button type="button" id="btnAdminLogin" onclick="verifyAdminLogin()" class="btn-dark w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">LOGIN</button>
+        <button type="button" onclick="goTo('screenOptions')" class="w-full mt-4 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back</button>
     </div>
 
     <div id="screenOtpVerification" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="text-center mb-6">
             <div class="w-16 h-16 mx-auto rounded-2xl btn-gradient flex items-center justify-center text-white text-3xl shadow-xl mb-4">📱</div>
             <h2 class="display-font text-3xl font-black text-slate-900">Mobile Verification</h2>
+            <p class="text-xs text-slate-500 font-semibold mt-2" id="otpStepLabel">Enter your 10-digit mobile number</p>
         </div>
         <div id="sendOtpSection" class="space-y-4">
             <div>
                 <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Mobile Number</label>
-                <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
+                <div class="flex gap-2">
+                    <div class="flex items-center justify-center p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 w-20"><span class="font-bold text-slate-800">+91</span></div>
+                    <input type="tel" id="authMobileNumber" maxlength="10" placeholder="9876543210" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-lg text-slate-800 bg-white/70">
+                </div>
             </div>
-            <button type="button" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
+            <button type="button" id="btnSendOtp" onclick="sendOtpToBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SEND OTP</button>
         </div>
+        <div id="verifyOtpSection" class="hidden space-y-4">
+            <div>
+                <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Enter 6-digit OTP</label>
+                <input type="tel" id="authOtpInput" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="______" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-2xl text-center tracking-[0.5em] text-slate-800 bg-white/70">
+                <p class="text-[10px] text-slate-400 font-semibold mt-2 text-center">OTP sent to +91 <span id="otpSentToNumber">-</span> · <button type="button" onclick="resetOtpFlow()" class="text-indigo-600 font-black underline">Change</button></p>
+            </div>
+            <button type="button" id="btnVerifyOtp" onclick="verifyOtpFromBackend()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">VERIFY OTP</button>
+            <button type="button" id="btnResendOtp" onclick="sendOtpToBackend(true)" class="w-full text-xs font-bold text-slate-500 hover:text-indigo-600 py-2 transition">🔄 Resend OTP</button>
+        </div>
+        <p id="otpErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <!-- Invisible reCAPTCHA container required by Firebase Phone Auth -->
+        <div id="recaptcha-container"></div>
+        <button type="button" onclick="goTo('screenOptions')" class="w-full mt-6 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back to Options</button>
+    </div>
+
+    <!-- Email + Password with verification link -->
+    <div id="screenEmailAuth" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto rounded-2xl btn-gradient flex items-center justify-center text-white text-3xl shadow-xl mb-4">✉️</div>
+            <h2 class="display-font text-3xl font-black text-slate-900">Email Sign-in</h2>
+            <p class="text-xs text-slate-500 font-semibold mt-2" id="emailAuthStepLabel">Enter your email & a password to continue</p>
+        </div>
+        <div id="emailAuthFormSection" class="space-y-4">
+            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Email</label><input type="email" id="authEmailInput" autocomplete="email" placeholder="you@example.com" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Password</label><input type="password" id="authEmailPasswordInput" autocomplete="new-password" placeholder="At least 6 characters" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 bg-white/70" onkeydown="if(event.key==='Enter') submitEmailAuth()"></div>
+            <button type="button" id="btnEmailAuth" onclick="submitEmailAuth()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">CONTINUE</button>
+        </div>
+        <div id="emailVerifyPendingSection" class="hidden text-center space-y-4">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
+                <p class="text-sm font-bold text-indigo-700">We've sent a verification link to <span id="verifyEmailTarget" class="underline"></span>.</p>
+                <p class="text-xs text-indigo-500 font-semibold mt-2">Open it, then tap below to continue.</p>
+            </div>
+            <button type="button" onclick="checkEmailVerifiedAndContinue()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">I'VE VERIFIED — CONTINUE</button>
+            <button type="button" onclick="resendVerificationEmail()" class="w-full text-xs font-bold text-slate-500 hover:text-indigo-600 py-2 transition">🔄 Resend verification email</button>
+        </div>
+        <p id="emailAuthError" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
         <button type="button" onclick="goTo('screenOptions')" class="w-full mt-6 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back to Options</button>
     </div>
 
@@ -691,7 +797,7 @@
         </div>
     </div>
 
-    <div id="screenBusinessBedConfig" class="hidden pt-4 pb-4 px-4 md:px-6 rounded-[2rem] max-w-7xl w-full relative h-[97vh] flex flex-col screen-panel premium-card overflow-hidden">
+    <div id="screenBusinessBedConfig" class="hidden fullscreen-mobile-page pt-4 pb-4 px-4 md:px-6 rounded-[2rem] max-w-7xl w-full relative h-[97vh] flex flex-col screen-panel premium-card overflow-hidden">
         <div class="border-b border-slate-200/60 pb-3 mb-3 flex justify-between items-center flex-wrap gap-3 bg-white p-3 rounded-2xl shadow-sm z-10 relative">
             <div>
                 <h2 class="display-font text-xl font-black text-slate-900">Review & Correct Your Plan</h2>
@@ -719,7 +825,7 @@
         </div>
 
         <div class="flex justify-between items-center mb-3 shrink-0">
-            <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">📝 Data Editor <span class="text-[10px] text-slate-400 font-bold normal-case tracking-normal ml-2">Click Room strip below to expand</span></h3>
+            <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">📝 Data Editor <span class="text-[10px] text-slate-400 font-bold normal-case tracking-normal ml-2">Tap a room to edit it on its own page</span></h3>
             <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100" id="dataEditorRoomCount"></span>
         </div>
 
@@ -728,6 +834,24 @@
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 rounded-b-[2rem] flex justify-between items-center shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] z-20">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Cancel</button>
             <button type="button" id="submitAdminBtn" onclick="submitToAdmin()" class="btn-gradient px-8 py-3 text-white font-black rounded-2xl shadow-xl tracking-wider">✅ VERIFY & PUBLISH</button>
+        </div>
+    </div>
+
+    <!-- DEDICATED ROOM EDITOR — full page (not an inline accordion). Tapping any room in the Data
+         Editor list opens THIS page for just that one room, so photo/price/bed-count editing has
+         the whole screen to itself on mobile, instead of squeezing into a small expanding card. -->
+    <div id="screenRoomEditor" class="hidden fullscreen-mobile-page premium-card p-0 rounded-[2rem] max-w-2xl w-full relative h-[95vh] flex flex-col screen-panel overflow-hidden">
+        <div class="bg-white/95 backdrop-blur px-5 py-4 border-b border-slate-200/60 shadow-sm z-10 flex items-center gap-3 shrink-0">
+            <button type="button" onclick="goTo('screenBusinessBedConfig')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition shrink-0">←</button>
+            <div class="min-w-0">
+                <h2 class="display-font text-xl font-black text-slate-900 truncate" id="roomEditorTitle">Room</h2>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Editing this room only</p>
+            </div>
+        </div>
+        <div id="roomEditorContent" class="flex-1 overflow-y-auto layout-scroll p-5"></div>
+        <div class="p-4 bg-white/95 border-t border-slate-200 flex justify-between items-center shrink-0">
+            <button type="button" onclick="event.stopPropagation(); removeRoomFromEditor()" class="text-xs bg-red-50 text-red-600 font-black px-4 py-2.5 rounded-xl hover:bg-red-500 hover:text-white transition uppercase tracking-widest">🗑️ Delete Room</button>
+            <button type="button" onclick="goTo('screenBusinessBedConfig')" class="btn-gradient px-6 py-2.5 text-white font-black rounded-xl shadow-lg text-sm">Done ✓</button>
         </div>
     </div>
 
@@ -844,20 +968,25 @@
 
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
-        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-44">
+        <div class="flex-1 flex flex-col lg:flex-row gap-6 p-3 lg:p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-40 lg:pb-44">
             <!-- FIXED CANVAS WRAPPER: no internal scroll — the layout is always fully visible,
                  scaled and centered to fit exactly (see fitUserCanvasToScreen). -->
-            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-hidden flex justify-center items-center p-4 relative" id="userCanvasWrapper">
+            <div class="w-full lg:w-2/3 bg-slate-50 rounded-3xl shadow-inner border border-slate-200 overflow-hidden flex justify-center items-center p-2 lg:p-4 relative" id="userCanvasWrapper">
                 <div id="userCanvasStatus" class="canvas-status-overlay hidden">
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
-                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:24px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
+                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:12px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
                 <div id="userBedTapIndicator" class="hidden" style="position:absolute; border:3px solid #4f46e5; background:rgba(99,102,241,0.18); border-radius:12px; pointer-events:none; z-index:6; box-shadow:0 0 0 4px rgba(99,102,241,0.15);"></div>
+                <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
+                <div id="userCanvasHint" class="lg:hidden absolute top-3 left-3 right-3 z-10 bg-white/90 backdrop-blur rounded-xl px-3 py-2 text-[10px] font-bold text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 pointer-events-none">
+                    <span>👆</span> Tap bed to book · Pinch to zoom · Drag to pan
+                </div>
             </div>
 
-            <div class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative">
+            <!-- Desktop-only right panel -->
+            <div id="userDetailPanelDesktop" class="w-full lg:w-1/3 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex-col overflow-hidden relative">
                 <div class="btn-gradient text-white p-4 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10">Room Overview</div>
                 <div id="bedDetailPanel" class="flex-1 p-8 flex flex-col items-center justify-center text-slate-400 text-center overflow-y-auto layout-scroll bg-slate-50/50">
                     <span class="text-6xl mb-4 animate-bounce">👆</span>
@@ -865,6 +994,17 @@
                     <p class="font-medium text-sm">Interact with the map on the left to view room photos, amenities, and select your plan.</p>
                 </div>
             </div>
+        </div>
+
+        <!-- Mobile Bottom Sheet — shows on tap, closes on backdrop tap or drag-down -->
+        <div id="userDetailSheetBackdrop" onclick="closeDetailSheet()"></div>
+        <div id="userDetailSheet" role="dialog" aria-modal="true" aria-label="Room details">
+            <div class="sheet-grabber" onclick="closeDetailSheet()"></div>
+            <div class="flex items-center justify-between px-5 pb-2">
+                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Room Details</span>
+                <button type="button" onclick="closeDetailSheet()" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full font-bold text-slate-600 text-sm">✕</button>
+            </div>
+            <div id="bedDetailPanelMobile" class="flex-1 px-5 pb-6 overflow-y-auto layout-scroll bg-white"></div>
         </div>
         <div class="glass-panel p-6 border-t border-slate-200/60 rounded-b-[2rem] z-20 flex items-center justify-between flex-wrap gap-4 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] absolute bottom-0 left-0 right-0" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));">
             <div>
@@ -994,7 +1134,7 @@
         </div>
     </div>
 
-    <!-- PAYMENT STEP (placeholder — no real payment gateway wired in yet, see chat notes) -->
+    <!-- PAYMENT STEP — Razorpay integration -->
     <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
@@ -1005,8 +1145,31 @@
             <p class="display-font text-4xl font-black text-slate-900" id="payAmount">₹0</p>
             <p class="text-xs text-slate-500 font-semibold mt-1">Registration form saved & sent successfully</p>
         </div>
-        <button type="button" onclick="alert('Payment gateway not connected yet — this is a placeholder. See chat for setup steps.'); goTo('screenUserDashboard');" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
-        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">Secured by [Payment Partner]</p>
+
+        <!-- Order Summary -->
+        <div id="payOrderSummary" class="bg-white border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
+            <div class="flex justify-between"><span>Bed(s)</span><span id="paySumBeds" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Plan</span><span id="paySumPlan" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Payable</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
+        </div>
+
+        <button type="button" id="btnPayNow" onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="w-full mt-3 text-xs font-bold text-slate-500 hover:text-slate-700 py-2 transition">Cancel Payment</button>
+        <p id="payErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Secured by Razorpay · UPI · Cards · Netbanking · Wallets</p>
+    </div>
+
+    <!-- BOOKING CONFIRMATION -->
+    <div id="screenBookingSuccess" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel text-center">
+        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-5xl mb-4">✅</div>
+        <h2 class="display-font text-3xl font-black text-slate-900 mb-2">Booking Confirmed!</h2>
+        <p class="text-sm text-slate-500 font-semibold mb-6">Your bed is reserved. Confirmation sent to your registered contact.</p>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
+            <div class="flex justify-between"><span>Booking ID</span><span id="successBookingId" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Payment ID</span><span id="successPaymentId" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Amount Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
+        </div>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
     </div>
 
     <script>
@@ -1064,6 +1227,24 @@
         let currentAdminFloor = '';
         let currentUserFloor = '';
         let currentFloorSnapshotPrimary = false; // true when the real photo is the primary view and the canvas is an invisible tap layer
+        let userLayoutCommonScale = null; // one shared scale for the WHOLE property, computed once — see computeFloorRawBounds()
+
+        // Reads a floor's TRUE size directly from its saved canvas JSON (left/top/width/height of every
+        // object), with no rendering or zoom involved — so it's never affected by whatever zoom level a
+        // previously-viewed floor happened to be left at.
+        function computeFloorRawBounds(floorJSON) {
+            if (!floorJSON || !floorJSON.objects || !floorJSON.objects.length) return null;
+            let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+            floorJSON.objects.forEach(o => {
+                const w = (o.width || 0) * (o.scaleX || 1);
+                const h = (o.height || 0) * (o.scaleY || 1);
+                const l = o.left || 0, t = o.top || 0;
+                left = Math.min(left, l); top = Math.min(top, t);
+                right = Math.max(right, l + w); bottom = Math.max(bottom, t + h);
+            });
+            if (!isFinite(left)) return null;
+            return { width: right - left, height: bottom - top };
+        }
         let loadedBusinessData = null;
         let editingBusinessDocId = null;
         let mappedBedsData = [];
@@ -1122,23 +1303,6 @@
                 document.getElementById('adminTabLive').classList.replace('text-slate-500', 'text-indigo-700'); document.getElementById('adminTabLive').classList.replace('border-transparent', 'border-indigo-600');
                 document.getElementById('adminTabPending').classList.replace('text-indigo-700', 'text-slate-500'); document.getElementById('adminTabPending').classList.replace('border-indigo-600', 'border-transparent');
             }
-        }
-
-        async function compressImage(file, maxSizeKB = 200) {
-            return new Promise((resolve) => {
-                if (file.size <= maxSizeKB * 1024) { resolve(file); return; }
-                const reader = new FileReader(); reader.readAsDataURL(file);
-                reader.onload = (event) => {
-                    const img = new Image(); img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                        let width = img.width; let height = img.height; const MAX_WIDTH = 1200;
-                        if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
-                        canvas.width = width; canvas.height = height; ctx.drawImage(img, 0, 0, width, height);
-                        canvas.toBlob((blob) => { resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() })); }, 'image/jpeg', 0.7);
-                    };
-                };
-            });
         }
 
         window.toggleRoomAccordion = function(index) { currentlyExpandedRoomIdx = (currentlyExpandedRoomIdx === index) ? null : index; renderBusinessConfig(); }
@@ -1338,7 +1502,11 @@
         function switchAccountMode(mode) {
             accountMode = mode;
             if (mode === 'user') { document.getElementById('mainHeading').innerText = "Welcome"; document.getElementById('mainSubheading').innerHTML = 'Sign in to <span class="gradient-text font-bold">Ho-Om</span>'; }
-            else if (mode === 'business') { document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">Ho-Om Bizz</span>'; }
+            else if (mode === 'business') {
+                document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">Ho-Om Bizz</span>';
+                // Fire-and-forget: lets you know someone is exploring the Business side of the app right now.
+                try { addDoc(collection(db, 'notifications'), { type: 'business_visitor', message: '🧑‍💼 Someone is exploring the Business side of the app right now', read: false, createdAt: new Date().toISOString() }); } catch(e) {}
+            }
             else { document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
 
@@ -1346,9 +1514,231 @@
         // the "Skip & Search" option from the welcome screen.
         function skipToSearch() { accountMode = 'user'; goTo('screenUserDashboard'); }
 
-        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') goTo('screenOtpVerification'); else { goTo('screenProfileCompletion'); } }
-        function sendOtpToBackend() { goTo('screenProfileCompletion'); }
-        function verifyOtpFromBackend() { goTo('screenProfileCompletion'); }
+        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); } else { goTo('screenProfileCompletion'); } }
+
+        // ==== REAL OTP FLOW (Firebase Phone Authentication) ====
+        // Requirements before this works in production:
+        //   1. Firebase Console → Authentication → Sign-in method → Enable "Phone"
+        //   2. Add your domain to Authentication → Settings → Authorized domains
+        //   3. On localhost, add 127.0.0.1 & localhost to authorized domains
+        let _recaptchaVerifier = null;
+        let _confirmationResult = null;
+
+        function showOtpError(msg) {
+            const el = document.getElementById('otpErrorMsg');
+            if (!el) return;
+            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
+            el.classList.remove('hidden'); el.innerText = msg;
+        }
+
+        function resetOtpFlow() {
+            _confirmationResult = null;
+            fullFormattedMobile = '';
+            const sendSec = document.getElementById('sendOtpSection');
+            const verSec = document.getElementById('verifyOtpSection');
+            const otpIn = document.getElementById('authOtpInput');
+            const mobIn = document.getElementById('authMobileNumber');
+            const stepLbl = document.getElementById('otpStepLabel');
+            if (sendSec) sendSec.classList.remove('hidden');
+            if (verSec) verSec.classList.add('hidden');
+            if (otpIn) otpIn.value = '';
+            if (mobIn) mobIn.value = '';
+            if (stepLbl) stepLbl.innerText = 'Enter your 10-digit mobile number';
+            showOtpError('');
+        }
+
+        function ensureRecaptcha() {
+            if (_recaptchaVerifier) return _recaptchaVerifier;
+            if (!window.RecaptchaVerifier || !window.auth) {
+                throw new Error('Firebase Auth not loaded yet. Please refresh the page.');
+            }
+            _recaptchaVerifier = new window.RecaptchaVerifier(window.auth, 'recaptcha-container', {
+                size: 'invisible',
+                callback: () => { /* reCAPTCHA solved — allow signInWithPhoneNumber */ }
+            });
+            return _recaptchaVerifier;
+        }
+
+        async function sendOtpToBackend(isResend) {
+            showOtpError('');
+            const mobileInput = document.getElementById('authMobileNumber');
+            const raw = (mobileInput.value || '').trim().replace(/\D/g, '');
+            if (raw.length !== 10) { showOtpError('Please enter a valid 10-digit mobile number.'); return; }
+            const phoneE164 = '+91' + raw;
+            fullFormattedMobile = phoneE164;
+
+            const btn = document.getElementById('btnSendOtp');
+            const resendBtn = document.getElementById('btnResendOtp');
+            const targetBtn = isResend ? resendBtn : btn;
+            const originalText = targetBtn ? targetBtn.innerText : '';
+            if (targetBtn) { targetBtn.disabled = true; targetBtn.innerText = '⏳ Sending...'; }
+
+            try {
+                const verifier = ensureRecaptcha();
+                _confirmationResult = await window.signInWithPhoneNumber(window.auth, phoneE164, verifier);
+                document.getElementById('sendOtpSection').classList.add('hidden');
+                document.getElementById('verifyOtpSection').classList.remove('hidden');
+                document.getElementById('otpSentToNumber').innerText = raw;
+                document.getElementById('otpStepLabel').innerText = 'Enter the 6-digit OTP sent via SMS';
+                document.getElementById('authOtpInput').focus();
+            } catch (err) {
+                console.error('OTP send failed', err);
+                let userMsg = 'Failed to send OTP. Please try again.';
+                if (err && err.code) {
+                    if (err.code === 'auth/invalid-phone-number') userMsg = 'Invalid phone number format.';
+                    else if (err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again after some time.';
+                    else if (err.code === 'auth/quota-exceeded') userMsg = 'Daily OTP quota exceeded. Contact support.';
+                    else if (err.code === 'auth/billing-not-enabled') userMsg = 'Phone Auth not enabled on this project yet.';
+                }
+                showOtpError(userMsg);
+                try { if (_recaptchaVerifier) { _recaptchaVerifier.clear(); } } catch(e) {}
+                _recaptchaVerifier = null;
+            } finally {
+                if (targetBtn) { targetBtn.disabled = false; targetBtn.innerText = originalText || (isResend ? '🔄 Resend OTP' : 'SEND OTP'); }
+            }
+        }
+
+        async function verifyOtpFromBackend() {
+            showOtpError('');
+            const otp = (document.getElementById('authOtpInput').value || '').trim();
+            if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { showOtpError('Please enter the 6-digit OTP.'); return; }
+            if (!_confirmationResult) { showOtpError('OTP session expired. Please request a new OTP.'); return; }
+
+            const btn = document.getElementById('btnVerifyOtp');
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = '⏳ Verifying...'; }
+
+            try {
+                const cred = await _confirmationResult.confirm(otp);
+                const user = cred.user;
+                try {
+                    localStorage.setItem('hostelom_user', JSON.stringify({ uid: user.uid, phone: user.phoneNumber || fullFormattedMobile, loggedInAt: new Date().toISOString() }));
+                } catch(e) {}
+                _confirmationResult = null;
+                goTo('screenProfileCompletion');
+            } catch (err) {
+                console.error('OTP verify failed', err);
+                let userMsg = 'Incorrect OTP. Please try again.';
+                if (err && err.code === 'auth/code-expired') userMsg = 'OTP expired. Please request a new one.';
+                showOtpError(userMsg);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'VERIFY OTP'; }
+            }
+        }
+
+        // ==== EMAIL + PASSWORD with verification link ====
+        function showEmailAuthError(msg) {
+            const el = document.getElementById('emailAuthError');
+            if (!el) return;
+            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
+            el.classList.remove('hidden'); el.innerText = msg;
+        }
+
+        async function submitEmailAuth() {
+            showEmailAuthError('');
+            const email = (document.getElementById('authEmailInput').value || '').trim();
+            const password = document.getElementById('authEmailPasswordInput').value || '';
+            if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showEmailAuthError('Please enter a valid email address.'); return; }
+            if (password.length < 6) { showEmailAuthError('Password must be at least 6 characters.'); return; }
+
+            const btn = document.getElementById('btnEmailAuth');
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = '⏳ Please wait...'; }
+            try {
+                let userCred;
+                try {
+                    userCred = await window.createUserWithEmailAndPassword(window.auth, email, password);
+                } catch (createErr) {
+                    if (createErr.code === 'auth/email-already-in-use') {
+                        userCred = await window.signInWithEmailAndPassword(window.auth, email, password);
+                    } else { throw createErr; }
+                }
+                const user = userCred.user;
+                if (user.emailVerified) {
+                    try { localStorage.setItem('hostelom_user', JSON.stringify({ uid: user.uid, email: user.email, loggedInAt: new Date().toISOString() })); } catch(e) {}
+                    goTo('screenProfileCompletion');
+                    return;
+                }
+                await window.sendEmailVerification(user);
+                document.getElementById('emailAuthFormSection').classList.add('hidden');
+                document.getElementById('emailVerifyPendingSection').classList.remove('hidden');
+                document.getElementById('verifyEmailTarget').innerText = email;
+                document.getElementById('emailAuthStepLabel').innerText = 'Verify your email to continue';
+            } catch (err) {
+                console.error('Email auth failed', err);
+                let userMsg = 'Something went wrong. Please try again.';
+                if (err && err.code) {
+                    if (err.code === 'auth/wrong-password') userMsg = 'Incorrect password for this email.';
+                    else if (err.code === 'auth/invalid-email') userMsg = 'Invalid email address.';
+                    else if (err.code === 'auth/weak-password') userMsg = 'Password is too weak (min 6 characters).';
+                    else if (err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again later.';
+                }
+                showEmailAuthError(userMsg);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'CONTINUE'; }
+            }
+        }
+
+        async function checkEmailVerifiedAndContinue() {
+            showEmailAuthError('');
+            const user = window.auth.currentUser;
+            if (!user) { showEmailAuthError('Session expired. Please start again.'); goTo('screenEmailAuth'); return; }
+            await user.reload();
+            if (user.emailVerified) {
+                try { localStorage.setItem('hostelom_user', JSON.stringify({ uid: user.uid, email: user.email, loggedInAt: new Date().toISOString() })); } catch(e) {}
+                goTo('screenProfileCompletion');
+            } else {
+                showEmailAuthError('Not verified yet — open the link in your inbox first, then tap this button again.');
+            }
+        }
+
+        async function resendVerificationEmail() {
+            const user = window.auth.currentUser;
+            if (!user) return;
+            try { await window.sendEmailVerification(user); showEmailAuthError(''); } catch(e) { showEmailAuthError('Could not resend right now — please wait a bit and try again.'); }
+        }
+
+        // ==== SECURE ADMIN LOGIN (ID + Password) ====
+        // Real Firebase Auth email/password sign-in, PLUS an allowlist check against an 'admins'
+        // Firestore collection keyed by UID — so even a correct password alone isn't enough; the
+        // signed-in user's UID must also have a matching doc in 'admins' (add one manually per
+        // admin in the Firebase Console, or ask to set this up). This two-factor gate (something
+        // you know + a server-side allowlist Firestore rules can enforce) is far safer than a
+        // hardcoded password sitting in the page's source code, which anyone could read.
+        async function verifyAdminLogin() {
+            const errEl = document.getElementById('adminLoginError');
+            errEl.classList.add('hidden');
+            const email = (document.getElementById('adminLoginEmail').value || '').trim();
+            const password = document.getElementById('adminLoginPassword').value || '';
+            if (!email || !password) { errEl.innerText = 'Enter both Admin ID and Password.'; errEl.classList.remove('hidden'); return; }
+
+            const btn = document.getElementById('btnAdminLogin');
+            const originalText = btn.innerText;
+            btn.disabled = true; btn.innerText = '⏳ Verifying...';
+            try {
+                const cred = await window.signInWithEmailAndPassword(window.auth, email, password);
+                const uid = cred.user.uid;
+                const adminSnap = await window.getDocs(window.query(window.collection(window.db, 'admin'), window.where('__name__', '==', uid)));
+                if (adminSnap.empty) {
+                    await window.firebaseSignOut(window.auth);
+                    errEl.innerText = 'This account is not authorized for admin access.';
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('adminLoginPassword').value = '';
+                switchAccountMode('admin');
+                routeToDashboard();
+            } catch (err) {
+                console.error('Admin login failed', err);
+                let userMsg = 'Login failed. Check your Admin ID and Password.';
+                if (err && err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again later.';
+                errEl.innerText = userMsg;
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false; btn.innerText = originalText;
+            }
+        }
+
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
         function routeToDashboard() {
@@ -1376,7 +1766,152 @@
             goTo('screenBusinessDashboard');
         }
 
-        function logout() { goTo('screenOptions'); }
+        function logout() {
+            try { if (window.firebaseSignOut && window.auth) { window.firebaseSignOut(window.auth); } } catch(e) {}
+            try { localStorage.removeItem('hostelom_user'); } catch(e) {}
+            resetOtpFlow();
+            goTo('screenOptions');
+        }
+
+        // ==== REAL PAYMENT FLOW (Razorpay) ====
+        // Two modes:
+        //  A) BACKEND MODE (recommended, secure): server creates a Razorpay order and returns
+        //     { orderId, keyId }. Signature is verified server-side after payment.
+        //  B) FALLBACK / TEST MODE: if backend order creation fails, we open Razorpay with a
+        //     test key in "amount-only" mode. NEVER ship this to production — it skips
+        //     signature verification and anyone can fake a success client-side.
+        const RAZORPAY_TEST_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay's public sample test key
+        function showPayError(msg) {
+            const el = document.getElementById('payErrorMsg');
+            if (!el) return;
+            if (!msg) { el.classList.add('hidden'); el.innerText = ''; return; }
+            el.classList.remove('hidden'); el.innerText = msg;
+        }
+
+        async function createRazorpayOrder(amount) {
+            const res = await fetch(`${BACKEND_URL}/razorpay/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: Math.round(amount * 100), currency: 'INR', notes: { app: 'HostelOM' } })
+            });
+            if (!res.ok) throw new Error('Order creation failed: ' + res.status);
+            return await res.json();
+        }
+
+        async function verifyRazorpayPayment(payload) {
+            const res = await fetch(`${BACKEND_URL}/razorpay/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error('Verification failed: ' + res.status);
+            return await res.json();
+        }
+
+        async function startRazorpayCheckout() {
+            showPayError('');
+            const pending = window._pendingPayment;
+            if (!pending || !pending.amount || pending.amount <= 0) {
+                showPayError('No pending payment found. Please restart the booking.');
+                return;
+            }
+            if (typeof Razorpay === 'undefined') {
+                try { await loadScriptOnce('https://checkout.razorpay.com/v1/checkout.js'); }
+                catch (e) { showPayError('Payment SDK failed to load. Check your internet connection and try again.'); return; }
+            }
+            if (typeof Razorpay === 'undefined') {
+                showPayError('Payment SDK not loaded. Check your internet connection and reload.');
+                return;
+            }
+
+            const btn = document.getElementById('btnPayNow');
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = '⏳ Opening secure checkout...'; }
+
+            let orderInfo = null;
+            let usingBackend = true;
+            try {
+                orderInfo = await createRazorpayOrder(pending.amount);
+            } catch (err) {
+                console.warn('Backend order creation unavailable, falling back to test key.', err);
+                usingBackend = false;
+                orderInfo = { keyId: RAZORPAY_TEST_KEY, orderId: null };
+            }
+
+            const options = {
+                key: orderInfo.keyId || RAZORPAY_TEST_KEY,
+                amount: Math.round(pending.amount * 100),
+                currency: 'INR',
+                name: 'HostelOM',
+                description: `Booking at ${pending.hostelName || 'Hostel'}`,
+                image: 'icon-192.png',
+                order_id: orderInfo.orderId || undefined,
+                prefill: { name: pending.guestName || '', contact: pending.guestPhone || '', email: pending.guestEmail || '' },
+                notes: { hostel: pending.hostelName || '', beds: ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id).join(',') },
+                theme: { color: '#6366f1' },
+                handler: async function (response) {
+                    try {
+                        let verifyResult = { ok: true, bookingId: 'BK-' + Date.now().toString(36).toUpperCase() };
+                        if (usingBackend) {
+                            verifyResult = await verifyRazorpayPayment({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                bookingContext: pending.bookingContext,
+                                guest: pending.formSnapshot
+                            });
+                            if (!verifyResult.ok) throw new Error(verifyResult.message || 'Signature verification failed');
+                        }
+                        try {
+                            await window.addDoc(window.collection(window.db, 'bookings'), {
+                                bookingId: verifyResult.bookingId,
+                                paymentId: response.razorpay_payment_id,
+                                orderId: response.razorpay_order_id || null,
+                                amount: pending.amount,
+                                currency: 'INR',
+                                hostelName: pending.hostelName,
+                                guestName: pending.guestName,
+                                guestPhone: pending.guestPhone,
+                                bookingContext: pending.bookingContext,
+                                status: usingBackend ? 'paid_verified' : 'paid_unverified_test',
+                                createdAt: new Date().toISOString()
+                            });
+                        } catch (fsErr) { console.warn('Firestore booking save failed:', fsErr); }
+
+                        document.getElementById('successBookingId').innerText = verifyResult.bookingId;
+                        document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
+                        document.getElementById('successAmount').innerText = '₹' + pending.amount;
+                        window._pendingPayment = null;
+                        goTo('screenBookingSuccess');
+                    } catch (err) {
+                        console.error('Post-payment error:', err);
+                        showPayError('Payment received but confirmation failed. Please contact support with Payment ID: ' + response.razorpay_payment_id);
+                    } finally {
+                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                        showPayError('Payment cancelled. You can retry anytime.');
+                    }
+                }
+            };
+
+            try {
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (resp) {
+                    console.error('Razorpay failure', resp.error);
+                    showPayError('Payment failed: ' + (resp.error && resp.error.description ? resp.error.description : 'Unknown error'));
+                    if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                });
+                rzp.open();
+            } catch (err) {
+                console.error('Razorpay open failed', err);
+                showPayError('Unable to open payment window. Please try again.');
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+            }
+        }
 
         function saveLegalAndNext() {
             businessLegalData.licence = document.getElementById('formLicence').value || 'LIC-OM-9942'; businessLegalData.gst = document.getElementById('formGst').value || '22AAAAA0000A1Z5';
@@ -1743,7 +2278,16 @@
                     // (heavier — read from Firestore) loads underneath, then swaps to it for bed clicks.
                     try {
                         btn.innerText = "⏳ Generating fast preview...";
-                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.7, multiplier: 0.6 });
+                        // BUG FIX: JPEG has no transparency — any transparent canvas area was being
+                        // filled solid BLACK on export, which is why some floors' snapshots looked
+                        // broken (large black regions, blurry text). Force a white background before
+                        // exporting, and use a sharper resolution/quality so text stays readable.
+                        const prevBg = adminFabricCanvasInstance.backgroundColor;
+                        adminFabricCanvasInstance.backgroundColor = '#ffffff';
+                        adminFabricCanvasInstance.renderAll();
+                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.85, multiplier: 1 });
+                        adminFabricCanvasInstance.backgroundColor = prevBg;
+                        adminFabricCanvasInstance.renderAll();
                         const snapUrl = await uploadCanvasSnapshot(snapshotDataUrl, `layoutSnapshots/${currentAdminDocId}/${currentAdminFloor}.jpg`);
                         adminLayoutSnapshotUrls[currentAdminFloor] = snapUrl;
                     } catch (snapErr) {
@@ -2089,8 +2633,24 @@
                 if (!shared) { doc.save(pdfFile.name); } // fallback: just download it, guest can attach manually on WhatsApp/Email
 
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                document.getElementById('payAmount').innerText = '₹' + (grfBookingContext && grfBookingContext.totalPrice ? grfBookingContext.totalPrice : 0);
+                const totalPrice = (grfBookingContext && grfBookingContext.totalPrice) ? grfBookingContext.totalPrice : 0;
+                const beds = (grfBookingContext && grfBookingContext.beds) ? grfBookingContext.beds : [];
+                const planLabel = (grfBookingContext && grfBookingContext.planLabel) ? grfBookingContext.planLabel : (formData.roomType || 'Booking');
+                document.getElementById('payAmount').innerText = '₹' + totalPrice;
                 document.getElementById('payHostelName').innerText = formData.hostelName;
+                document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
+                document.getElementById('paySumPlan').innerText = planLabel;
+                document.getElementById('paySumTotal').innerText = '₹' + totalPrice;
+                // Cache the payment context so the Razorpay handler can read it
+                window._pendingPayment = {
+                    amount: totalPrice,
+                    hostelName: formData.hostelName,
+                    guestName: formData.fullName,
+                    guestPhone: formData.emergencyContact || '',
+                    guestEmail: formData.email || '',
+                    bookingContext: grfBookingContext || {},
+                    formSnapshot: formData
+                };
                 goTo('screenPaymentStep');
             } catch (err) {
                 console.error('Registration form error:', err);
@@ -2119,6 +2679,19 @@
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
+            userLayoutCommonScale = null; // fresh property — recompute the shared true-size scale once, below
+
+            // Fire-and-forget: let the owner's dashboard know someone is browsing THIS property right
+            // now — shows up as a live notification (no page reload needed) while their app is open.
+            // IMPORTANT: intentionally NOT awaited — this must never delay/block opening the property
+            // itself, especially on a slow or unstable mobile connection.
+            addDoc(collection(db, 'notifications'), {
+                propertyId: docId,
+                type: 'property_view',
+                message: `👀 Someone is viewing ${propertyData.businessName || propertyData.businessProfile && propertyData.businessProfile.company || 'your hostel'} right now`,
+                read: false,
+                createdAt: new Date().toISOString()
+            }).catch(e => console.warn('View notification failed (non-critical):', e));
 
             if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
@@ -2192,7 +2765,9 @@
 
         window.showBedDetailsInPanel = function(bedId) {
             currentSelectedBedId = bedId;
-            const panel = document.getElementById('bedDetailPanel'); let parentRoom = null;
+            const isMobile = window.innerWidth < 1024;
+            const panel = isMobile ? document.getElementById('bedDetailPanelMobile') : document.getElementById('bedDetailPanel');
+            let parentRoom = null;
             if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
             if (!parentRoom) { return; }
 
@@ -2228,16 +2803,29 @@
             if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
 
-            // On mobile the Room Overview panel sits below the (tall) canvas — scroll it into
-            // view so tapping a bed doesn't look like nothing happened.
-            if (window.innerWidth < 1024) {
-                setTimeout(() => { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+            // Mobile: slide the bottom sheet up so guest immediately sees details without scrolling.
+            // Desktop: content is already visible in the right panel, no scroll needed.
+            if (isMobile) {
+                openDetailSheet();
+                const hint = document.getElementById('userCanvasHint');
+                if (hint) hint.style.display = 'none';
             }
+        }
+
+        window.openDetailSheet = function() {
+            const sheet = document.getElementById('userDetailSheet');
+            const bd = document.getElementById('userDetailSheetBackdrop');
+            if (sheet && bd) { sheet.classList.add('open'); bd.classList.add('open'); }
+        }
+        window.closeDetailSheet = function() {
+            const sheet = document.getElementById('userDetailSheet');
+            const bd = document.getElementById('userDetailSheetBackdrop');
+            if (sheet && bd) { sheet.classList.remove('open'); bd.classList.remove('open'); }
         }
 
         window.selectBookingPlan = function(planType, price) {
@@ -2268,6 +2856,13 @@
             if (snapImg) {
                 if (snapshotUrl) { snapImg.src = snapshotUrl; snapImg.classList.remove('hidden'); }
                 else { snapImg.classList.add('hidden'); snapImg.removeAttribute('src'); }
+            }
+            // FIX: set the canvas's visibility for the NEW floor right away, before it even loads/
+            // renders — previously this only happened after loadFromJSON finished, so for one frame
+            // the canvas kept showing the PREVIOUS floor's visibility state (visible vector layout,
+            // or vice versa), which looked like the layout "jumping"/shifting when switching floors.
+            if (userFabricCanvasInstance) {
+                userFabricCanvasInstance.wrapperEl.style.opacity = useSnapshotPrimary ? '0' : '1';
             }
 
             if(userFabricCanvasInstance) {
@@ -2333,6 +2928,11 @@
                         function fitUserCanvasToScreen(attemptsLeft) {
                             const activeObjects = userFabricCanvasInstance.getObjects();
                             if(activeObjects.length === 0) { setUserCanvasStatus('empty', 'This floor has no rooms/beds published yet.'); return; }
+                            // FIX: reset zoom/pan to neutral BEFORE measuring. Previously the bounding box was
+                            // measured while the canvas still had the PREVIOUS floor's zoom applied, so the
+                            // measurement (and therefore the size shown) came out different each time depending
+                            // on floor-switch history — this is why repeatedly tapping floor tabs looked unstable.
+                            userFabricCanvasInstance.setViewportTransform([1, 0, 0, 1, 0, 0]);
                             let boundingRect = null;
                             activeObjects.forEach(obj => {
                                  let bound = obj.getBoundingRect();
@@ -2357,9 +2957,28 @@
                                     setUserCanvasStatus('error', 'Could not display the layout on this screen. Please try reloading.');
                                     return;
                                 }
-                                let scale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
-                                if(!isFinite(scale) || scale <= 0) scale = 0.3; // safety net — never leave it invisible
-                                if(scale > 1) scale = 1; // Show exactly as published by admin — never scale up, only shrink to fit small screens
+
+                                // TRUE-SIZE FIX: use ONE shared scale for every floor of this property (computed
+                                // once, from whichever floor is biggest), instead of each floor independently
+                                // stretching/shrinking to fill the same box. This way a small floor genuinely
+                                // LOOKS smaller than a big floor — honest, consistent, and never changes on repeat
+                                // floor-tab taps since it's computed once and reused.
+                                if (userLayoutCommonScale === null) {
+                                    let maxW = 0, maxH = 0;
+                                    const allStates = (window.currentPropertyData && window.currentPropertyData.fabricCanvasStates) || {};
+                                    Object.values(allStates).forEach(floorJSON => {
+                                        const b = computeFloorRawBounds(floorJSON);
+                                        if (b) { maxW = Math.max(maxW, b.width); maxH = Math.max(maxH, b.height); }
+                                    });
+                                    if (maxW > 0 && maxH > 0) {
+                                        userLayoutCommonScale = Math.min((wrapper.clientWidth - 40) / maxW, (wrapper.clientHeight - 40) / maxH);
+                                    } else {
+                                        userLayoutCommonScale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
+                                    }
+                                    if(!isFinite(userLayoutCommonScale) || userLayoutCommonScale <= 0) userLayoutCommonScale = 0.3;
+                                    if(userLayoutCommonScale > 1) userLayoutCommonScale = 1; // never scale up past the size admin actually drew
+                                }
+                                let scale = userLayoutCommonScale;
 
                                 // Match the actual <canvas> backing store to the wrapper box exactly — this is
                                 // what stops scrollbars appearing, since the canvas can never be bigger than its
@@ -2407,72 +3026,113 @@
             const container = document.getElementById('dynamicBusinessRoomsContainer'); if(!container) return; container.innerHTML = '';
             if(floorMaps.length > 0 && !currentSelectedFloor) { currentSelectedFloor = floorMaps[0].floorName; }
             const roomsThisFloor = globalDynamicRooms.filter(r => r.floor === currentSelectedFloor);
-            const refRoom = roomsThisFloor[0] || null; // this floor's reference room ("Same as Room 1" source) — independent per floor
             const countLabel = document.getElementById('dataEditorRoomCount');
             if(countLabel) countLabel.innerText = `${roomsThisFloor.length} Room${roomsThisFloor.length !== 1 ? 's' : ''} on ${currentSelectedFloor || 'Ground Floor'}`;
             globalDynamicRooms.forEach((room, index) => {
                 if(room.floor === currentSelectedFloor) {
-                    const isExpanded = (currentlyExpandedRoomIdx === index); let insideContentHtml = '';
-                    const isRefRoom = refRoom && room.id === refRoom.id;
-                    const otherRoomsOnFloor = roomsThisFloor.filter(r => r.id !== room.id);
-                    if (isExpanded) {
-                        // ---- Photo section: sync controls for the ref room, locked badge for a linked room ----
-                        let photosHTML;
-                        if (room.syncPhotoFrom) {
-                            const src = globalDynamicRooms.find(r => r.id === room.syncPhotoFrom);
-                            photosHTML = `<div class="flex items-center justify-between gap-2 mb-3 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5" onclick="event.stopPropagation()"><span class="text-[10px] font-black text-indigo-600">🔗 Photos linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'photo', null, false)" class="text-[9px] font-black text-red-500 bg-white px-2 py-1 rounded-lg border border-red-100">Unlink</button></div>`;
-                        } else {
-                            photosHTML = ` <div class="flex gap-2 mb-3" onclick="event.stopPropagation()"> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this)"></label> <label class="flex-1 p-2 border-2 border-dashed border-slate-200 text-center rounded-xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[9px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this)"></label> </div>`;
-                            if (isRefRoom && otherRoomsOnFloor.length > 0) {
-                                const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'photo';
-                                photosHTML += `<div onclick="event.stopPropagation()" class="mb-3"><button type="button" onclick="toggleSyncPanel(${index}, 'photo')" class="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
-                                if (open) {
-                                    photosHTML += `<div class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">` + otherRoomsOnFloor.map(r => {
-                                        const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
-                                        const checked = r.syncPhotoFrom === room.id;
-                                        return `<label class="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'photo', '${room.id}', this.checked)"> ${r.name}</label>`;
-                                    }).join('') + `</div>`;
-                                }
-                                photosHTML += `</div>`;
-                            }
-                        }
-                        // ---- Rate section: sync controls for the ref room, locked/disabled inputs for a linked room ----
-                        const rateLocked = !!room.syncRateFrom;
-                        let dynamicPriceBoxesHtml = `<div class="flex flex-col gap-2 border-t border-slate-100 pt-3 mt-1">`;
-                        if (rateLocked) {
-                            const src = globalDynamicRooms.find(r => r.id === room.syncRateFrom);
-                            dynamicPriceBoxesHtml += `<div class="flex items-center justify-between gap-2 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5" onclick="event.stopPropagation()"><span class="text-[10px] font-black text-indigo-600">🔗 Rate linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'rate', null, false)" class="text-[9px] font-black text-red-500 bg-white px-2 py-1 rounded-lg border border-red-100">Unlink</button></div>`;
-                        }
-                        room.beds.forEach((bed, bIndex) => {
-                            dynamicPriceBoxesHtml += `
-                            <div class="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 mb-1">
-                                <label class="text-[9px] font-black text-slate-500 block text-center mb-2 uppercase tracking-widest border-b border-slate-200 pb-1">Bed ${bIndex+1}</label>
-                                <div class="flex gap-2">
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Daily (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-slate-400 block mb-0.5 text-center">Weekly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-xs font-black text-center border-2 border-white rounded-lg bg-white py-1 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
-                                    <div class="flex-1"><label class="text-[8px] font-bold text-indigo-400 block mb-0.5 text-center">Monthly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-xs font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-1 outline-none text-indigo-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
-                                </div>
-                            </div>`;
-                        });
-                        dynamicPriceBoxesHtml += `</div>`;
-                        if (isRefRoom && !rateLocked && otherRoomsOnFloor.length > 0) {
-                            const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'rate';
-                            dynamicPriceBoxesHtml += `<div onclick="event.stopPropagation()" class="mt-2"><button type="button" onclick="toggleSyncPanel(${index}, 'rate')" class="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2.5 py-1.5 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
-                            if (open) {
-                                dynamicPriceBoxesHtml += `<div class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">` + otherRoomsOnFloor.map(r => {
-                                    const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
-                                    const checked = r.syncRateFrom === room.id;
-                                    return `<label class="flex items-center gap-2 text-xs font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'rate', '${room.id}', this.checked)"> ${r.name}</label>`;
-                                }).join('') + `</div>`;
-                            }
-                            dynamicPriceBoxesHtml += `</div>`;
-                        }
-                        insideContentHtml = ` <div class="mt-2 pl-2 animate-fade-in" onclick="event.stopPropagation()"> <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between mb-3"> <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bed Count:</span> <div class="flex gap-2"> <button type="button" onclick="removeBedFromRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">-</button> <span class="w-8 h-7 flex justify-center items-center font-black text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg">${room.beds.length}</span> <button type="button" onclick="addBedToRoom(${index})" class="w-7 h-7 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition cursor-pointer">+</button> </div> </div> ${photosHTML} ${dynamicPriceBoxesHtml} </div>`;
-                    }
                     const syncBadge = (room.syncPhotoFrom || room.syncRateFrom) ? `<span class="chip text-[8px] px-2 py-0.5 bg-indigo-50 text-indigo-600 ml-1">🔗 Linked</span>` : '';
-                    container.innerHTML += ` <div onclick="toggleRoomAccordion(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-[10px] font-black opacity-40 ml-1">${isExpanded ? '▲' : '▼'}</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span>${syncBadge}</div> <button onclick="event.stopPropagation(); removeRoom(${index})" class="text-[9px] bg-red-50 text-red-600 font-black px-2.5 py-1 rounded-lg hover:bg-red-500 hover:text-white transition uppercase tracking-widest cursor-pointer">Delete</button> </div> ${insideContentHtml} </div>`;
+                    const bedCount = room.beds.length;
+                    const priceRange = room.beds.length ? `₹${Math.min(...room.beds.map(b => b.priceMonthly || b.price || 0))}${room.beds.length > 1 ? '+' : ''}/mo` : 'No beds';
+                    const photoCount = (room.photos || []).filter(Boolean).length;
+                    container.innerHTML += ` <div onclick="openRoomEditorPage(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer active:scale-[0.98]"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-slate-300 text-sm ml-1">›</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span>${syncBadge}</div> <span class="text-[9px] bg-slate-50 text-slate-500 font-black px-2.5 py-1 rounded-lg uppercase tracking-widest">Edit</span> </div> <div class="pl-2 mt-1 flex items-center gap-3 text-[10px] font-bold text-slate-400"><span>🛏️ ${bedCount} bed${bedCount !== 1 ? 's' : ''}</span><span>💰 ${priceRange}</span><span>📷 ${photoCount}/2 photos</span></div> </div>`;
                 }
             });
+        }
+
+        // Opens the dedicated full-page room editor (mobile-friendly — the whole screen is just
+        // this one room's photos/beds/price, instead of an inline accordion squeezed into a list).
+        function openRoomEditorPage(index) {
+            currentlyExpandedRoomIdx = index;
+            goTo('screenRoomEditor');
+            renderRoomEditorPage(index);
+        }
+
+        function removeRoomFromEditor() {
+            if (currentlyExpandedRoomIdx === null) { goTo('screenBusinessBedConfig'); return; }
+            if (!confirm('Delete this room? This cannot be undone.')) return;
+            removeRoom(currentlyExpandedRoomIdx);
+            currentlyExpandedRoomIdx = null;
+            goTo('screenBusinessBedConfig');
+        }
+
+        function renderRoomEditorPage(index) {
+            const room = globalDynamicRooms[index];
+            const content = document.getElementById('roomEditorContent');
+            if (!room || !content) { goTo('screenBusinessBedConfig'); return; }
+            document.getElementById('roomEditorTitle').innerText = room.name;
+
+            const roomsThisFloor = globalDynamicRooms.filter(r => r.floor === room.floor);
+            const refRoom = roomsThisFloor[0] || null; // this floor's reference room ("Same as Room 1" source) — independent per floor
+            const isRefRoom = refRoom && room.id === refRoom.id;
+            const otherRoomsOnFloor = roomsThisFloor.filter(r => r.id !== room.id);
+
+            // ---- Photo section: sync controls for the ref room, locked badge for a linked room ----
+            let photosHTML;
+            if (room.syncPhotoFrom) {
+                const src = globalDynamicRooms.find(r => r.id === room.syncPhotoFrom);
+                photosHTML = `<div class="flex items-center justify-between gap-2 mb-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3"><span class="text-xs font-black text-indigo-600">🔗 Photos linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'photo', null, false); renderRoomEditorPage(${index});" class="text-[10px] font-black text-red-500 bg-white px-2.5 py-1.5 rounded-lg border border-red-100">Unlink</button></div>`;
+            } else {
+                photosHTML = ` <div class="flex gap-3 mb-3"> <label class="flex-1 p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this); renderRoomEditorPage(${index});"></label> <label class="flex-1 p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this); renderRoomEditorPage(${index});"></label> </div>`;
+                if (isRefRoom && otherRoomsOnFloor.length > 0) {
+                    const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'photo';
+                    photosHTML += `<div class="mb-3"><button type="button" onclick="toggleSyncPanel(${index}, 'photo'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                    if (open) {
+                        photosHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">` + otherRoomsOnFloor.map(r => {
+                            const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
+                            const checked = r.syncPhotoFrom === room.id;
+                            return `<label class="flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'photo', '${room.id}', this.checked); renderRoomEditorPage(${index});"> ${r.name}</label>`;
+                        }).join('') + `</div>`;
+                    }
+                    photosHTML += `</div>`;
+                }
+            }
+
+            // ---- Rate section ----
+            const rateLocked = !!room.syncRateFrom;
+            let priceHTML = `<div class="flex flex-col gap-2 border-t border-slate-100 pt-4 mt-1">`;
+            if (rateLocked) {
+                const src = globalDynamicRooms.find(r => r.id === room.syncRateFrom);
+                priceHTML += `<div class="flex items-center justify-between gap-2 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl p-3"><span class="text-xs font-black text-indigo-600">🔗 Rate linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'rate', null, false); renderRoomEditorPage(${index});" class="text-[10px] font-black text-red-500 bg-white px-2.5 py-1.5 rounded-lg border border-red-100">Unlink</button></div>`;
+            }
+            room.beds.forEach((bed, bIndex) => {
+                priceHTML += `
+                <div class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-2">
+                    <label class="text-[10px] font-black text-slate-500 block text-center mb-3 uppercase tracking-widest border-b border-slate-200 pb-2">Bed ${bIndex+1}</label>
+                    <div class="flex gap-2">
+                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Daily (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-sm font-black text-center border-2 border-white rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Weekly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-sm font-black text-center border-2 border-white rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                        <div class="flex-1"><label class="text-[9px] font-bold text-indigo-400 block mb-1 text-center">Monthly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-sm font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-2 outline-none text-indigo-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                    </div>
+                </div>`;
+            });
+            priceHTML += `</div>`;
+            if (isRefRoom && !rateLocked && otherRoomsOnFloor.length > 0) {
+                const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'rate';
+                priceHTML += `<div class="mt-2"><button type="button" onclick="toggleSyncPanel(${index}, 'rate'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                if (open) {
+                    priceHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">` + otherRoomsOnFloor.map(r => {
+                        const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
+                        const checked = r.syncRateFrom === room.id;
+                        return `<label class="flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'rate', '${room.id}', this.checked); renderRoomEditorPage(${index});"> ${r.name}</label>`;
+                    }).join('') + `</div>`;
+                }
+                priceHTML += `</div>`;
+            }
+
+            content.innerHTML = `
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between mb-4">
+                    <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Bed Count:</span>
+                    <div class="flex gap-3 items-center">
+                        <button type="button" onclick="removeBedFromRoom(${index}); renderRoomEditorPage(${index});" class="w-9 h-9 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition">-</button>
+                        <span class="w-10 h-9 flex justify-center items-center font-black text-base text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg">${room.beds.length}</span>
+                        <button type="button" onclick="addBedToRoom(${index}); renderRoomEditorPage(${index});" class="w-9 h-9 flex justify-center items-center bg-white border-2 border-slate-200 rounded-lg font-black text-slate-600 hover:border-indigo-500 transition">+</button>
+                    </div>
+                </div>
+                <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Room Photos</h5>
+                ${photosHTML}
+                <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-2">Pricing</h5>
+                ${priceHTML}
+            `;
         }
 
         function renderAttractive2DPlan() {
