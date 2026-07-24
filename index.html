@@ -178,9 +178,18 @@
 
         /* Floor tabs sticky on mobile so user can switch without scrolling up */
         @media (max-width: 1023px) {
-            #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; }
+            #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
             #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
             #screenUser2DLayout .glass-panel h3 { font-size: 1.5rem !important; }
+            #screenUser2DLayout .glass-panel #btnSmartBookNow { padding: 12px 24px !important; font-size: 13px !important; }
+            /* SPACE MANAGEMENT: tighten every chrome element around the bed-selection canvas on mobile
+               so the canvas itself — the part that actually matters — gets noticeably more room. */
+            #screenUser2DLayout > div:first-child { padding: 12px 16px !important; } /* header row */
+            #screenUser2DLayout > div:first-child h2 { font-size: 1.35rem !important; }
+            #screenUser2DLayout > div:first-child p { font-size: 9px !important; margin-top: 2px !important; }
+            #screenUser2DLayout > div:first-child button { width: 36px !important; height: 36px !important; font-size: 14px !important; }
+            #userCanvasWrapper { height: calc(100dvh - 190px); }
+            #screenUser2DLayout .flex-1.flex.flex-col.lg\:flex-row { padding-bottom: 100px !important; }
             /* FIX: on mobile, editor pages were squeezed inside the body's padding + a rounded,
                height-capped card — making them feel tiny and cramped. They now take the ENTIRE
                screen, edge to edge, like a dedicated full-screen page. */
@@ -528,6 +537,31 @@
         </div>
 
         <div id="userPropertyContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <!-- Useful info strip below the listing, MakeMyTrip-style: quick trust signals + help, so the
+             page doesn't just end abruptly after the property cards. -->
+        <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+                <div class="text-2xl mb-1">✅</div>
+                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Verified Listings</p>
+                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Every property checked</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+                <div class="text-2xl mb-1">🔒</div>
+                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Secure Payment</p>
+                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Powered by Razorpay</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+                <div class="text-2xl mb-1">↩️</div>
+                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Easy Refunds</p>
+                <p class="text-[9px] text-slate-400 font-semibold mt-0.5"><a href="#" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')" class="underline">View policy</a></p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+                <div class="text-2xl mb-1">💬</div>
+                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Need Help?</p>
+                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">We're here for you</p>
+            </div>
+        </div>
     </div>
 
     <!-- ADMIN DASHBOARD -->
@@ -976,7 +1010,7 @@
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
-                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; inset:0; width:100%; height:100%; padding:12px; box-sizing:border-box; object-fit:contain; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
+                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; box-sizing:border-box; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
                 <div id="userBedTapIndicator" class="hidden" style="position:absolute; border:3px solid #4f46e5; background:rgba(99,102,241,0.18); border-radius:12px; pointer-events:none; z-index:6; box-shadow:0 0 0 4px rgba(99,102,241,0.15);"></div>
                 <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
@@ -3000,7 +3034,22 @@
                                     // Real photo stays visible as the picture; canvas is invisible but still
                                     // fully interactive (opacity doesn't block clicks) so bed taps keep working.
                                     userFabricCanvasInstance.wrapperEl.style.opacity = '0';
-                                    if (snapImg) snapImg.classList.remove('hidden');
+                                    if (snapImg) {
+                                        // BUG FIX: the photo used to size itself independently via CSS
+                                        // object-fit:contain, which stopped matching the canvas's content box
+                                        // once floors could use different scales (true-size fix) — taps landed
+                                        // on the wrong spot because the invisible tap-layer and the visible
+                                        // photo no longer lined up. Now the photo is positioned with the exact
+                                        // same box math as the canvas content, so they always stay pixel-aligned.
+                                        snapImg.style.objectFit = 'fill';
+                                        snapImg.style.padding = '0';
+                                        snapImg.style.left = ((wrapper.clientWidth - width * scale) / 2) + 'px';
+                                        snapImg.style.top = ((wrapper.clientHeight - height * scale) / 2) + 'px';
+                                        snapImg.style.width = (width * scale) + 'px';
+                                        snapImg.style.height = (height * scale) + 'px';
+                                        snapImg.style.right = 'auto'; snapImg.style.bottom = 'auto';
+                                        snapImg.classList.remove('hidden');
+                                    }
                                 } else {
                                     // No snapshot published for this floor — show the interactive canvas itself.
                                     userFabricCanvasInstance.wrapperEl.style.opacity = '1';
