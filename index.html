@@ -583,10 +583,21 @@
         <div class="flex gap-4 mb-6 border-b border-slate-200 pb-2">
             <button onclick="switchAdminTab('pending')" id="adminTabPending" class="pb-2 text-sm font-black border-b-2 border-indigo-600 text-indigo-700 transition">⏳ Pending Verifications</button>
             <button onclick="switchAdminTab('live')" id="adminTabLive" class="pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">✅ Live Properties</button>
+            <button onclick="switchAdminTab('activity')" id="adminTabActivity" class="pb-2 text-sm font-black border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition">📊 Activity</button>
         </div>
 
         <div id="adminPendingContainer" class="space-y-6"></div>
         <div id="adminLiveContainer" class="space-y-6 hidden"></div>
+        <div id="adminActivityContainer" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100"><h4 class="text-xs font-black text-indigo-700 uppercase tracking-widest">🧑‍💼 Business Activity</h4></div>
+                <div id="adminActivityBusiness"></div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div class="bg-emerald-50 px-4 py-3 border-b border-emerald-100"><h4 class="text-xs font-black text-emerald-700 uppercase tracking-widest">🙋 User Activity</h4></div>
+                <div id="adminActivityUser"></div>
+            </div>
+        </div>
     </div>
 
     <div id="screenAdminBookings" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
@@ -1328,14 +1339,37 @@
             if(lVal === 'Paid Service') { inp.classList.remove('hidden'); } else { inp.classList.add('hidden'); inp.value = ''; }
         }
         window.switchAdminTab = function(tabId) {
-            if(tabId === 'pending') {
-                document.getElementById('adminPendingContainer').classList.remove('hidden'); document.getElementById('adminLiveContainer').classList.add('hidden');
-                document.getElementById('adminTabPending').classList.replace('text-slate-500', 'text-indigo-700'); document.getElementById('adminTabPending').classList.replace('border-transparent', 'border-indigo-600');
-                document.getElementById('adminTabLive').classList.replace('text-indigo-700', 'text-slate-500'); document.getElementById('adminTabLive').classList.replace('border-indigo-600', 'border-transparent');
-            } else {
-                document.getElementById('adminPendingContainer').classList.add('hidden'); document.getElementById('adminLiveContainer').classList.remove('hidden');
-                document.getElementById('adminTabLive').classList.replace('text-slate-500', 'text-indigo-700'); document.getElementById('adminTabLive').classList.replace('border-transparent', 'border-indigo-600');
-                document.getElementById('adminTabPending').classList.replace('text-indigo-700', 'text-slate-500'); document.getElementById('adminTabPending').classList.replace('border-indigo-600', 'border-transparent');
+            const tabs = { pending: 'adminTabPending', live: 'adminTabLive', activity: 'adminTabActivity' };
+            const containers = { pending: 'adminPendingContainer', live: 'adminLiveContainer', activity: 'adminActivityContainer' };
+            Object.keys(containers).forEach(key => {
+                const cont = document.getElementById(containers[key]); if (cont) cont.classList.toggle('hidden', key !== tabId);
+                const tabBtn = document.getElementById(tabs[key]); if (!tabBtn) return;
+                if (key === tabId) { tabBtn.classList.remove('text-slate-500', 'border-transparent'); tabBtn.classList.add('text-indigo-700', 'border-indigo-600'); }
+                else { tabBtn.classList.remove('text-indigo-700', 'border-indigo-600'); tabBtn.classList.add('text-slate-500', 'border-transparent'); }
+            });
+            if (tabId === 'activity') loadAdminActivity();
+        }
+
+        // Admin's own activity feed — split into Business activity and User activity, so it's clear
+        // at a glance who's doing what, instead of one mixed list.
+        async function loadAdminActivity() {
+            const bizBox = document.getElementById('adminActivityBusiness');
+            const userBox = document.getElementById('adminActivityUser');
+            if (!bizBox || !userBox) return;
+            bizBox.innerHTML = userBox.innerHTML = `<div class="flex justify-center py-8"><div class="loader"></div></div>`;
+            try {
+                const snap = await window.getDocs(window.collection(window.db, 'notifications'));
+                const items = []; snap.forEach(d => items.push(d.data()));
+                items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+                const bizItems = items.filter(n => n.role === 'business');
+                const userItems = items.filter(n => n.role === 'user' || (!n.role && n.type !== 'business_visitor'));
+                const renderList = (list) => list.length
+                    ? list.slice(0, 30).map(n => `<div class="p-3 border-b border-slate-100 last:border-0"><p class="text-xs font-bold text-slate-700">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p></div>`).join('')
+                    : `<p class="text-xs text-slate-400 font-semibold text-center py-6">No activity yet</p>`;
+                bizBox.innerHTML = renderList(bizItems);
+                userBox.innerHTML = renderList(userItems);
+            } catch (e) {
+                bizBox.innerHTML = userBox.innerHTML = `<p class="text-xs text-red-500 font-bold text-center py-6">Could not load activity.</p>`;
             }
         }
 
@@ -1539,7 +1573,7 @@
             else if (mode === 'business') {
                 document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">Ho-Om Bizz</span>';
                 // Fire-and-forget: lets you know someone is exploring the Business side of the app right now.
-                try { addDoc(collection(db, 'notifications'), { type: 'business_visitor', message: '🧑‍💼 Someone is exploring the Business side of the app right now', read: false, createdAt: new Date().toISOString() }); } catch(e) {}
+                try { addDoc(collection(db, 'notifications'), { type: 'business_visitor', role: 'business', message: '🧑‍💼 Someone is exploring the Business side of the app right now', read: false, createdAt: new Date().toISOString() }); } catch(e) {}
             }
             else { document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
@@ -1776,6 +1810,17 @@
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
         function routeToDashboard() {
+            // Fire-and-forget activity log for the Admin dashboard — tagged by role so admin can see
+            // User activity and Business activity as two separate feeds.
+            try {
+                addDoc(collection(db, 'notifications'), {
+                    type: 'login_activity',
+                    role: accountMode, // 'user' | 'business' | 'admin'
+                    message: accountMode === 'business' ? '🧑‍💼 A business user just logged in' : (accountMode === 'user' ? '🙋 A user just logged in' : '🔒 Admin logged in'),
+                    read: false,
+                    createdAt: new Date().toISOString()
+                });
+            } catch(e) {}
             if (accountMode === 'user') { goTo('screenUserDashboard'); }
             else if (accountMode === 'business') {
                 // Already-registered business user: skip "Welcome Aboard" profile form, go straight to their dashboard
@@ -2133,7 +2178,15 @@
                 bizNotifUnsubscribe = window.onSnapshot(window.collection(window.db, "notifications"), (qs) => {
                     let unread = 0; let html = '';
                     const items = [];
-                    qs.forEach(d => { const n = d.data(); items.push(n); if (!n.read) unread++; });
+                    const myIds = window._myPropertyIds || null; // set by refreshBusinessDash's property listener
+                    qs.forEach(d => {
+                        const n = d.data();
+                        // Only show this business's own activity: either the notification is tied to
+                        // one of THEIR properties, or it's a generic one with no property (e.g. booking
+                        // confirmations that already only ever get created for the right owner).
+                        if (myIds && n.propertyId && !myIds.includes(n.propertyId)) return;
+                        items.push(n); if (!n.read) unread++;
+                    });
                     items.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
                     items.slice(0, 20).forEach(n => { html += `<div class="p-3 border-b border-slate-100 last:border-0"><p class="text-xs font-bold text-slate-700">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="${n.pdfUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`; });
                     const badge = document.getElementById('bizNotifBadge');
@@ -2156,14 +2209,21 @@
             const container = document.getElementById('businessExistingProperties'); container.innerHTML = skeletonCards(2, 'h-56');
             try {
                 if(businessUnsubscribe) businessUnsubscribe();
-                businessUnsubscribe = window.onSnapshot(window.collection(window.db, "businesses"), (querySnapshot) => {
-                    if (querySnapshot.empty) { container.innerHTML = ``; return; } let htmlContent = '';
+                const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                const businessesQuery = myUid
+                    ? window.query(window.collection(window.db, "businesses"), window.where('ownerId', '==', myUid))
+                    : window.collection(window.db, "businesses"); // not signed in (e.g. Quick Test Login) — fall back to showing everything, better than showing nothing
+                businessUnsubscribe = window.onSnapshot(businessesQuery, (querySnapshot) => {
+                    if (querySnapshot.empty) { container.innerHTML = `<p class="text-sm text-slate-400 font-semibold col-span-2 text-center py-8">No properties yet — add your first one above.</p>`; window._myPropertyIds = []; return; } let htmlContent = ''; const myIds = [];
                     querySnapshot.forEach((doc) => {
+                        myIds.push(doc.id);
                         const data = doc.data(); let statusText = data.status === 'approved_2d' ? '✅ Active' : '⏳ Pending'; let statusChip = data.status === 'approved_2d' ? 'chip chip-success' : 'chip chip-warning';
                         let uploadedAtText = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString('en-IN') : (data.dateSubmitted ? 'Earlier' : '—');
                         let editedAtText = data.lastEditedAt ? new Date(data.lastEditedAt).toLocaleString('en-IN') : 'Not edited yet';
                         htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> </div>`;
                     });
+                    window._myPropertyIds = myIds; // used to scope this business's notification feed too
+                    listenBizNotifications(); // re-filter now that we know which properties are "mine"
                     updateHtmlPreservingScroll(container, htmlContent);
                 });
             } catch(error) { container.innerHTML = `<p class="text-red-500 font-bold col-span-2">Error: ${error.message}</p>`; }
@@ -2195,7 +2255,7 @@
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
                     currentAdminDocId = newDocId;
-                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, legalDetails: businessLegalData, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
                     alert('Listing submitted for verification!');
                 }
                 editingBusinessDocId = null; goTo('screenBusinessDashboard');
@@ -2643,6 +2703,7 @@
                         await addDoc(collection(db, 'notifications'), {
                             propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
                             type: 'new_booking',
+                            role: 'user',
                             message: `New booking request from ${formData.fullName} for ${formData.hostelName}`,
                             pdfUrl,
                             read: false,
@@ -2722,6 +2783,7 @@
             addDoc(collection(db, 'notifications'), {
                 propertyId: docId,
                 type: 'property_view',
+                role: 'user',
                 message: `👀 Someone is viewing ${propertyData.businessName || propertyData.businessProfile && propertyData.businessProfile.company || 'your hostel'} right now`,
                 read: false,
                 createdAt: new Date().toISOString()
