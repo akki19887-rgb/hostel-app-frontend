@@ -812,7 +812,7 @@
         <div id="aiLoadingOverlay" class="hidden absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center rounded-[2rem] backdrop-blur-xl">
             <div class="loader mb-6"></div>
             <h3 class="display-font text-2xl font-black gradient-text tracking-tight">AI is Scanning Your Maps...</h3>
-            <p class="text-sm font-bold text-slate-500 mt-2">Extracting walls, rooms, and corridors</p>
+            <p class="text-sm font-bold text-slate-500 mt-2" id="aiLoadingOverlayText">Extracting walls, rooms, and corridors</p>
         </div>
         <div class="text-center mb-6">
             <div class="w-20 h-20 mx-auto rounded-3xl btn-gradient flex items-center justify-center text-white text-4xl shadow-xl mb-4">🗺️</div>
@@ -2029,24 +2029,46 @@
         }
 
         async function simulateAIProcessing() {
-            if(floorMaps.length === 0 || !uploadedMapFile) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
+            if(floorMaps.length === 0) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
+            globalDynamicRooms = []; admin2DBlocks = [];
+            const failedFloors = [];
             try {
-                const formData = new FormData(); formData.append('floor_plan', uploadedMapFile);
-                const response = await fetch(`${BACKEND_URL}/process-rough-layout`, { method: 'POST', body: formData });
-                if (!response.ok) throw new Error("Backend connection failed.");
-                const aiData = await response.json();
-                globalDynamicRooms = []; admin2DBlocks = []; let layoutPos = aiData.corridor_position || 'center'; const defaultFlr = floorMaps[0].floorName;
-                if(aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: layoutPos, floor: defaultFlr }); }
-                if(aiData.rooms && aiData.rooms.length > 0) {
-                    aiData.rooms.forEach((r, idx) => {
-                        let roomId = 'R' + (idx + 1); let bedsArr = []; let bedsCount = r.beds_count || 1;
-                        for(let i=0; i<bedsCount; i++) bedsArr.push({id: `${roomId}-B${i+1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000});
-                        let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx+1}`, floor: defaultFlr, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['','',''], amenities: r.amenities || [], has_door: r.has_door !== false };
-                        globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: defaultFlr });
-                    });
+                // FIX: previously this only ever sent the FIRST uploaded floor's image to the AI, one
+                // single time — every other floor (2nd, 3rd...) never got analyzed at all, so they always
+                // came back with zero rooms/corridor. Now every uploaded floor is sent and processed
+                // individually, and each floor's detected rooms are correctly tagged to THAT floor.
+                for (let i = 0; i < floorMaps.length; i++) {
+                    const fm = floorMaps[i];
+                    const overlayText = document.getElementById('aiLoadingOverlayText');
+                    if (overlayText) overlayText.innerText = `Analyzing ${fm.floorName} (${i + 1}/${floorMaps.length})...`;
+                    try {
+                        const formData = new FormData(); formData.append('floor_plan', fm.file);
+                        const response = await fetch(`${BACKEND_URL}/process-rough-layout`, { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error(`Backend connection failed for ${fm.floorName}.`);
+                        const aiData = await response.json();
+                        if (aiData.error) throw new Error(aiData.error);
+                        let layoutPos = aiData.corridor_position || 'center'; const thisFloor = fm.floorName;
+                        if (aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: layoutPos, floor: thisFloor }); }
+                        if (aiData.rooms && aiData.rooms.length > 0) {
+                            aiData.rooms.forEach((r, idx) => {
+                                let roomId = `F${i}-R${idx + 1}`; let bedsArr = []; let bedsCount = r.beds_count || 1;
+                                for (let b = 0; b < bedsCount; b++) bedsArr.push({ id: `${roomId}-B${b + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000 });
+                                let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx + 1}`, floor: thisFloor, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['', '', ''], amenities: r.amenities || [], has_door: r.has_door !== false };
+                                globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: thisFloor });
+                            });
+                        }
+                    } catch (floorErr) {
+                        console.error(`AI detection failed for ${fm.floorName}:`, floorErr);
+                        failedFloors.push(fm.floorName);
+                    }
                 }
-                document.getElementById('aiLoadingOverlay').classList.add('hidden'); currentSelectedFloor = defaultFlr; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); goTo('screenBusinessBedConfig');
+                document.getElementById('aiLoadingOverlay').classList.add('hidden');
+                currentSelectedFloor = floorMaps[0].floorName; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan();
+                if (failedFloors.length > 0) {
+                    alert(`AI detection worked for most floors, but couldn't read: ${failedFloors.join(', ')}. You can add those rooms manually with "+ Room" on that floor's tab.`);
+                }
+                goTo('screenBusinessBedConfig');
             } catch(error) { document.getElementById('aiLoadingOverlay').classList.add('hidden'); alert("Processing Error: " + error.message); }
         }
 
@@ -2366,6 +2388,32 @@
                     const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
                     if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
                     adminLocalCanvasStates[currentAdminFloor] = jsonState;
+
+                    // FIX: beds/rooms drawn directly on the canvas (via the Architect Mode "+Bed" toolbar)
+                    // only ever existed visually — they had no matching entry in the structured room/bed
+                    // data (admin2DBlocks/layout2D), so the user-side bed-selection screen silently
+                    // stripped them out (it only shows beds it can find in that structured data). This
+                    // reconciles the two: any bed drawn on the canvas that isn't already tracked gets a
+                    // matching structured room+bed entry, so it actually appears — and is bookable — for users.
+                    if (jsonState.objects) {
+                        const knownBedIds = new Set();
+                        admin2DBlocks.forEach(b => { if (b.beds) b.beds.forEach(bd => knownBedIds.add(bd.id)); });
+                        jsonState.objects.forEach(obj => {
+                            if (!obj.isBed || !obj.bedId) return;
+                            if (knownBedIds.has(obj.bedId)) {
+                                // Already tracked — keep its price in sync with whatever was set on the canvas.
+                                admin2DBlocks.forEach(b => { if (b.beds) { const bd = b.beds.find(x => x.id === obj.bedId); if (bd) { bd.price = obj.bedPrice; bd.priceMonthly = obj.bedPrice; } } });
+                            } else {
+                                // New bed drawn directly on the canvas — give it a real structured room entry.
+                                admin2DBlocks.push({
+                                    type: 'room', id: 'AUTO-' + obj.bedId, name: 'Room (from canvas)',
+                                    beds: [{ id: obj.bedId, price: obj.bedPrice, priceMonthly: obj.bedPrice, priceDaily: 0, priceWeekly: 0 }],
+                                    amenities: [], has_door: true, floor: currentAdminFloor
+                                });
+                                knownBedIds.add(obj.bedId);
+                            }
+                        });
+                    }
 
                     // PERF: also save a compressed static snapshot (JPEG) of the finalized layout.
                     // User dashboard shows this instantly while the full interactive canvas JSON
