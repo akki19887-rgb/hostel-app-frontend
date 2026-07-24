@@ -1273,6 +1273,7 @@
         let currentUserFloor = '';
         let currentFloorSnapshotPrimary = false; // true when the real photo is the primary view and the canvas is an invisible tap layer
         let userLayoutCommonScale = null; // one shared scale for the WHOLE property, computed once — see computeFloorRawBounds()
+        let userLayoutMaxWrapperHeight = null; // the wrapper's natural (CSS-defined, un-shrunk) height, captured once
 
         // Reads a floor's TRUE size directly from its saved canvas JSON (left/top/width/height of every
         // object), with no rendering or zoom involved — so it's never affected by whatever zoom level a
@@ -1435,7 +1436,14 @@
             const bizMapEl = document.getElementById("map");
             if (bizMapEl) {
                 googleMap = new google.maps.Map(bizMapEl, { center: businessCoordinates, zoom: 14, mapId: "DEMO_MAP_ID" });
-                googleMarker = new google.maps.marker.AdvancedMarkerElement({ map: googleMap, position: businessCoordinates, gmpDraggable: true, title: "Location" });
+                // Custom branded pin instead of the default red marker — falls back gracefully if
+                // ho-pin.png hasn't been uploaded alongside index.html on the live site yet.
+                const bizPinImg = document.createElement("img");
+                bizPinImg.src = "ho-pin.png";
+                bizPinImg.onerror = function () { this.src = "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png"; this.style.width = "27px"; this.style.height = "43px"; };
+                bizPinImg.style.width = "42px"; bizPinImg.style.height = "auto"; bizPinImg.style.objectFit = "contain";
+                bizPinImg.style.cursor = "grab"; bizPinImg.style.filter = "drop-shadow(0px 4px 4px rgba(0,0,0,0.3))";
+                googleMarker = new google.maps.marker.AdvancedMarkerElement({ map: googleMap, position: businessCoordinates, gmpDraggable: true, title: "Location", content: bizPinImg });
                 googleMap.addListener("click", (mapsMouseEvent) => { const clickedPos = mapsMouseEvent.latLng; googleMarker.position = clickedPos; businessCoordinates = { lat: clickedPos.lat(), lng: clickedPos.lng() }; });
                 googleMarker.addListener("dragend", () => { const draggedPos = googleMarker.position; businessCoordinates = { lat: typeof draggedPos.lat === 'function' ? draggedPos.lat() : draggedPos.lat, lng: typeof draggedPos.lng === 'function' ? draggedPos.lng() : draggedPos.lng }; });
                 const searchInput = document.getElementById("businessMapSearch");
@@ -1809,14 +1817,29 @@
 
         function bypassLogin() { routeToDashboard(); }
         function validateAndSubmitProfile() { routeToDashboard(); }
+        // Builds a human-readable "who" string from whatever identity we have — the name field if
+        // it was just filled in on the profile-completion screen, otherwise the phone/email used to
+        // log in (saved to localStorage at login time), falling back to "Unknown" as a last resort.
+        function getLoggedInIdentityLabel() {
+            try {
+                const nameInput = document.getElementById('profileName');
+                if (nameInput && nameInput.value && nameInput.value.trim()) return nameInput.value.trim();
+                const saved = JSON.parse(localStorage.getItem('hostelom_user') || 'null');
+                if (saved) { if (saved.phone) return '+91 ' + saved.phone.replace('+91', ''); if (saved.email) return saved.email; }
+            } catch(e) {}
+            return 'Unknown (Quick Test Login)';
+        }
+
         function routeToDashboard() {
             // Fire-and-forget activity log for the Admin dashboard — tagged by role so admin can see
-            // User activity and Business activity as two separate feeds.
+            // User activity and Business activity as two separate feeds, WITH who actually logged in.
             try {
+                const who = getLoggedInIdentityLabel();
                 addDoc(collection(db, 'notifications'), {
                     type: 'login_activity',
                     role: accountMode, // 'user' | 'business' | 'admin'
-                    message: accountMode === 'business' ? '🧑‍💼 A business user just logged in' : (accountMode === 'user' ? '🙋 A user just logged in' : '🔒 Admin logged in'),
+                    who,
+                    message: accountMode === 'business' ? `🧑‍💼 Business login: ${who}` : (accountMode === 'user' ? `🙋 User login: ${who}` : `🔒 Admin logged in: ${who}`),
                     read: false,
                     createdAt: new Date().toISOString()
                 });
@@ -1842,6 +1865,10 @@
         function saveBusinessProfile() {
             globalBizProfile = { firstName: document.getElementById('bizFirstName').value || 'Unknown', lastName: document.getElementById('bizLastName').value || '', phone: document.getElementById('bizPhone').value || 'N/A', role: document.getElementById('bizRole').value || 'Admin', company: document.getElementById('bizCompanyName').value || 'Personal', empCount: document.getElementById('bizEmpCount').value || '1-10', idValue: document.getElementById('bizIdValue').value || 'N/A' };
             try { localStorage.setItem('hostelom_business_profile', JSON.stringify(globalBizProfile)); } catch(e) {}
+            try {
+                const who = `${globalBizProfile.firstName} ${globalBizProfile.lastName}`.trim() + (globalBizProfile.phone && globalBizProfile.phone !== 'N/A' ? ` (+91 ${globalBizProfile.phone})` : '') + (globalBizProfile.company ? ` — ${globalBizProfile.company}` : '');
+                addDoc(collection(db, 'notifications'), { type: 'login_activity', role: 'business', who, message: `🧑‍💼 New business onboarded: ${who}`, read: false, createdAt: new Date().toISOString() });
+            } catch(e) {}
             goTo('screenBusinessDashboard');
         }
 
@@ -2574,6 +2601,21 @@
 
         function closeGuestRegistrationForm() { goTo(grfReturnScreen); }
 
+        // Asks for the browser's location permission and returns { lat, lng, accuracy } if granted,
+        // or null if denied / unavailable / times out — booking always continues either way, this
+        // is purely best-effort extra data for the hostel owner/admin.
+        function captureGuestLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) { resolve(null); return; }
+                const timer = setTimeout(() => resolve(null), 8000); // don't let booking hang if the user ignores the permission prompt
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }); },
+                    () => { clearTimeout(timer); resolve(null); }, // denied or unavailable
+                    { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 }
+                );
+            });
+        }
+
         async function submitGuestRegistrationForm() {
             const required = ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
             const errBox = document.getElementById('grfFormError');
@@ -2629,6 +2671,10 @@
             }
             submitBtn.innerText = 'Generating Form...';
 
+            // Ask for the guest's GPS location as part of booking (best-effort — if they deny the
+            // permission or it times out, booking still continues normally without it).
+            const guestLocation = await captureGuestLocation();
+
             const formData = {
                 fullName: document.getElementById('grfFullName').value.trim(),
                 dob: document.getElementById('grfDob').value,
@@ -2649,6 +2695,7 @@
                 relativeContact: document.getElementById('grfRelativeContact').value.trim(),
                 signature: document.getElementById('grfSignature').value.trim(),
                 hostelName: document.getElementById('grfHostelNameHeading').innerText,
+                bookingLocation: guestLocation, // { lat, lng, accuracy } or null if denied/unavailable
                 submittedAt: new Date().toISOString()
             };
 
@@ -2823,6 +2870,7 @@
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
             userLayoutCommonScale = null; // fresh property — recompute the shared true-size scale once, below
+            userLayoutMaxWrapperHeight = null;
 
             // Fire-and-forget: let the owner's dashboard know someone is browsing THIS property right
             // now — shows up as a live notification (no page reload needed) while their app is open.
@@ -3120,9 +3168,28 @@
                                         userLayoutCommonScale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
                                     }
                                     if(!isFinite(userLayoutCommonScale) || userLayoutCommonScale <= 0) userLayoutCommonScale = 0.3;
-                                    if(userLayoutCommonScale > 1) userLayoutCommonScale = 1; // never scale up past the size admin actually drew
+                                    // FIX: was hard-capped at exactly 1x (the admin's original drawing size),
+                                    // which meant a small layout stayed tiny and hard to read even on a big
+                                    // phone screen with lots of spare room. Now allowed to zoom in modestly
+                                    // (up to 1.4x) for legibility — still shared across every floor, so
+                                    // relative proportions between floors stay honest either way.
+                                    if(userLayoutCommonScale > 1.4) userLayoutCommonScale = 1.4;
                                 }
                                 let scale = userLayoutCommonScale;
+
+                                // Cache the wrapper's natural max height ONCE (before we ever shrink it),
+                                // so every later height calculation has a stable ceiling to bound against —
+                                // never derived from the wrapper's OWN possibly-already-shrunk size.
+                                if (userLayoutMaxWrapperHeight === null) { userLayoutMaxWrapperHeight = wrapper.clientHeight; }
+
+                                // FIX: the box was always the full available height regardless of how much
+                                // vertical space the content actually needed, leaving large empty bands of
+                                // white space above/below small layouts. Now the wrapper hugs THIS floor's
+                                // actual scaled content height (min 260px, never exceeding the natural max) —
+                                // safe against the earlier feedback-loop bug because `scale` here is the
+                                // cached, stable value above, not re-derived from the wrapper's current size.
+                                const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
+                                wrapper.style.height = desiredWrapperH + 'px';
 
                                 // Match the actual <canvas> backing store to the wrapper box exactly — this is
                                 // what stops scrollbars appearing, since the canvas can never be bigger than its
