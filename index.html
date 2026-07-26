@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hostel OM - Ultra Premium Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>HostelOM - Verified Hostels & PGs</title>
     <!-- PWA setup: makes the app installable ("Add to Home Screen") with a real icon and full-screen look -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HostelOM">
     <!-- PERF: Tailwind stays eager (needed for first paint since there's no build step yet).
@@ -1021,7 +1022,7 @@
                     <div class="loader mb-4"></div>
                     <p class="font-bold text-slate-600 text-sm" id="userCanvasStatusText">Loading layout...</p>
                 </div>
-                <img id="userLayoutSnapshotImg" class="hidden" style="position:absolute; box-sizing:border-box; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
+                <img id="userLayoutSnapshotImg" class="hidden" fetchpriority="high" decoding="async" style="position:absolute; box-sizing:border-box; border-radius:1.5rem; z-index:4; background:#f8fafc; pointer-events:none;" alt="Layout preview">
                 <canvas id="userFabricCanvas"></canvas>
                 <div id="userBedTapIndicator" class="hidden" style="position:absolute; border:3px solid #4f46e5; background:rgba(99,102,241,0.18); border-radius:12px; pointer-events:none; z-index:6; box-shadow:0 0 0 4px rgba(99,102,241,0.15);"></div>
                 <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
@@ -1214,7 +1215,8 @@
             <div class="flex justify-between"><span>Payment ID</span><span id="successPaymentId" class="font-black text-slate-800">—</span></div>
             <div class="flex justify-between"><span>Amount Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
         </div>
-        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
+        <button type="button" onclick="downloadBookingCalendarFile()" class="w-full mt-3 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-black rounded-2xl border-2 border-slate-200 transition tracking-wide flex items-center justify-center gap-2">📅 Add to Calendar</button>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 mt-3 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
     </div>
 
     <script>
@@ -1872,6 +1874,34 @@
             goTo('screenBusinessDashboard');
         }
 
+        // Generates a standard .ics calendar file for the guest's check-in date, downloadable and
+        // openable by Google Calendar, Apple Calendar, Outlook — anything that reads the .ics format.
+        function downloadBookingCalendarFile() {
+            const info = window._lastBookingCalendarInfo;
+            if (!info || !info.joiningDate) { alert('Booking date not available for this session.'); return; }
+            const dateStr = info.joiningDate.replace(/-/g, ''); // YYYYMMDD, all-day event
+            const uid = (info.bookingId || 'HOSTELOM-' + Date.now()) + '@hostelom.app';
+            const title = `Hostel Check-in — ${info.hostelName || 'HostelOM'}`;
+            const desc = `Your check-in date at ${info.hostelName || 'your hostel'}. Booking ID: ${info.bookingId || 'N/A'}.`;
+            const ics = [
+                'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//HostelOM//Booking//EN',
+                'BEGIN:VEVENT',
+                `UID:${uid}`,
+                `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                `DTSTART;VALUE=DATE:${dateStr}`,
+                `SUMMARY:${title}`,
+                `DESCRIPTION:${desc}`,
+                'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Reminder', 'TRIGGER:-P1D', 'END:VALARM',
+                'END:VEVENT', 'END:VCALENDAR'
+            ].join('\r\n');
+            const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'hostel-checkin.ics';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function logout() {
             try { if (window.firebaseSignOut && window.auth) { window.firebaseSignOut(window.auth); } } catch(e) {}
             try { localStorage.removeItem('hostelom_user'); } catch(e) {}
@@ -1987,6 +2017,12 @@
                         document.getElementById('successBookingId').innerText = verifyResult.bookingId;
                         document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
                         document.getElementById('successAmount').innerText = '₹' + pending.amount;
+                        // Kept separately (not cleared) so the "Add to Calendar" button on the success screen still has what it needs.
+                        window._lastBookingCalendarInfo = {
+                            hostelName: pending.hostelName,
+                            joiningDate: (pending.formSnapshot && pending.formSnapshot.joiningDate) || '',
+                            bookingId: verifyResult.bookingId
+                        };
                         window._pendingPayment = null;
                         goTo('screenBookingSuccess');
                     } catch (err) {
@@ -2059,37 +2095,45 @@
             if(floorMaps.length === 0) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
             globalDynamicRooms = []; admin2DBlocks = [];
+            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; // fresh property — never inherit another property's canvas/snapshot data
             const failedFloors = [];
+            const overlayText = document.getElementById('aiLoadingOverlayText');
+            if (overlayText) overlayText.innerText = `Analyzing ${floorMaps.length} floor${floorMaps.length > 1 ? 's' : ''} at once...`;
             try {
-                // FIX: previously this only ever sent the FIRST uploaded floor's image to the AI, one
-                // single time — every other floor (2nd, 3rd...) never got analyzed at all, so they always
-                // came back with zero rooms/corridor. Now every uploaded floor is sent and processed
-                // individually, and each floor's detected rooms are correctly tagged to THAT floor.
-                for (let i = 0; i < floorMaps.length; i++) {
+                // PERF: every floor's image used to be analyzed one at a time, waiting for each to
+                // finish before starting the next — with several floors that added up fast. Now all
+                // floors are sent to the AI at the same time (Promise.allSettled) and we wait for the
+                // slowest one, not the sum of all of them, while still tagging each floor's rooms
+                // correctly and letting individual floors fail without blocking the others.
+                const results = await Promise.allSettled(floorMaps.map(async (fm) => {
+                    const formData = new FormData(); formData.append('floor_plan', fm.file);
+                    const response = await fetch(`${BACKEND_URL}/process-rough-layout`, { method: 'POST', body: formData });
+                    if (!response.ok) throw new Error(`Backend connection failed for ${fm.floorName}.`);
+                    const aiData = await response.json();
+                    if (aiData.error) throw new Error(aiData.error);
+                    return { fm, aiData };
+                }));
+
+                results.forEach((result, i) => {
                     const fm = floorMaps[i];
-                    const overlayText = document.getElementById('aiLoadingOverlayText');
-                    if (overlayText) overlayText.innerText = `Analyzing ${fm.floorName} (${i + 1}/${floorMaps.length})...`;
-                    try {
-                        const formData = new FormData(); formData.append('floor_plan', fm.file);
-                        const response = await fetch(`${BACKEND_URL}/process-rough-layout`, { method: 'POST', body: formData });
-                        if (!response.ok) throw new Error(`Backend connection failed for ${fm.floorName}.`);
-                        const aiData = await response.json();
-                        if (aiData.error) throw new Error(aiData.error);
-                        let layoutPos = aiData.corridor_position || 'center'; const thisFloor = fm.floorName;
-                        if (aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: layoutPos, floor: thisFloor }); }
-                        if (aiData.rooms && aiData.rooms.length > 0) {
-                            aiData.rooms.forEach((r, idx) => {
-                                let roomId = `F${i}-R${idx + 1}`; let bedsArr = []; let bedsCount = r.beds_count || 1;
-                                for (let b = 0; b < bedsCount; b++) bedsArr.push({ id: `${roomId}-B${b + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000 });
-                                let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx + 1}`, floor: thisFloor, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['', '', ''], amenities: r.amenities || [], has_door: r.has_door !== false };
-                                globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: thisFloor });
-                            });
-                        }
-                    } catch (floorErr) {
-                        console.error(`AI detection failed for ${fm.floorName}:`, floorErr);
+                    if (result.status === 'rejected') {
+                        console.error(`AI detection failed for ${fm.floorName}:`, result.reason);
                         failedFloors.push(fm.floorName);
+                        return;
                     }
-                }
+                    const { aiData } = result.value;
+                    let layoutPos = aiData.corridor_position || 'center'; const thisFloor = fm.floorName;
+                    if (aiData.corridor_detected) { admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: layoutPos, floor: thisFloor }); }
+                    if (aiData.rooms && aiData.rooms.length > 0) {
+                        aiData.rooms.forEach((r, idx) => {
+                            let roomId = `F${i}-R${idx + 1}`; let bedsArr = []; let bedsCount = r.beds_count || 1;
+                            for (let b = 0; b < bedsCount; b++) bedsArr.push({ id: `${roomId}-B${b + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000 });
+                            let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx + 1}`, floor: thisFloor, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['', '', ''], amenities: r.amenities || [], has_door: r.has_door !== false };
+                            globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: thisFloor });
+                        });
+                    }
+                });
+
                 document.getElementById('aiLoadingOverlay').classList.add('hidden');
                 currentSelectedFloor = floorMaps[0].floorName; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan();
                 if (failedFloors.length > 0) {
@@ -2364,7 +2408,9 @@
             currentAdminDocId = docId; admin2DBlocks = [];
             const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); loadedBusinessData = busData;
             if(busData && busData.layout2D && busData.layout2D.length > 0) { admin2DBlocks = busData.layout2D; } else if (busData && busData.roomsAndBeds) { admin2DBlocks = [{ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: 'center', floor: busData.roomsAndBeds[0].floor || 'Ground Floor' }, ...busData.roomsAndBeds.map(r => ({ type: 'room', id: r.id || 'B'+Date.now(), name: r.name, beds: r.beds.map(b => ({id: b.id, price: b.price || 5000})), amenities: r.amenities || ['study_table', 'bathroom'], has_door: r.has_door !== false, floor: r.floor || 'Ground Floor' })) ]; }
-            adminLocalCanvasStates = busData.fabricCanvasStates || {}; goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
+            adminLocalCanvasStates = busData.fabricCanvasStates || {};
+            adminLayoutSnapshotUrls = busData.layoutSnapshotUrls || {}; // FIX: this was never loaded before — publishing any one floor was silently wiping out every other floor's saved snapshot URL when the update was written back to Firestore
+            goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
         }
 
         // PERF: canvas is now sized to fit the actual content (with padding), instead of always
@@ -2450,11 +2496,18 @@
                         // BUG FIX: JPEG has no transparency — any transparent canvas area was being
                         // filled solid BLACK on export, which is why some floors' snapshots looked
                         // broken (large black regions, blurry text). Force a white background before
-                        // exporting, and use a sharper resolution/quality so text stays readable.
+                        // exporting.
                         const prevBg = adminFabricCanvasInstance.backgroundColor;
                         adminFabricCanvasInstance.backgroundColor = '#ffffff';
                         adminFabricCanvasInstance.renderAll();
-                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.85, multiplier: 1 });
+                        // QUALITY FIRST: the crisp 2D layout snapshot is this app's standout feature —
+                        // never sacrifice how it looks for a marginal speed gain. This only trims
+                        // resolution that's genuinely wasted (far beyond what any phone/tablet screen
+                        // can even display), not anywhere near a compromise on sharpness.
+                        const rawW = adminFabricCanvasInstance.getWidth(), rawH = adminFabricCanvasInstance.getHeight();
+                        const longerSide = Math.max(rawW, rawH) || 1;
+                        const snapMultiplier = Math.min(1, 1800 / longerSide);
+                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.92, multiplier: snapMultiplier });
                         adminFabricCanvasInstance.backgroundColor = prevBg;
                         adminFabricCanvasInstance.renderAll();
                         const snapUrl = await uploadCanvasSnapshot(snapshotDataUrl, `layoutSnapshots/${currentAdminDocId}/${currentAdminFloor}.jpg`);
