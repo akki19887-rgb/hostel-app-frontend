@@ -1317,6 +1317,7 @@
         let adminLocalCanvasStates = {};
         let adminLayoutSnapshotUrls = {};
         let adminExistingRoomsAndBeds = [];
+        let adminCanvasRenderReady = true; // false while a floor switch is still loading/rendering — Publish waits for this
         let currentlyExpandedRoomIdx = null;
 
         window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { goTo('screenOptions'); }, 2500); });
@@ -2420,13 +2421,14 @@
         // cost of a 3000x3000 surface — this was a big, unnecessary cost on every load.
         let adminCanvasBaseSize = { w: 1200, h: 900 };
         function redrawAdminCanvasForFloor() {
+            adminCanvasRenderReady = false;
             setTimeout(() => {
                 const wrapper = document.getElementById('fabricCanvasWrapper');
                 if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: adminCanvasBaseSize.w, height: adminCanvasBaseSize.h, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); }
                 adminFabricCanvasInstance.clear();
                 if (adminLocalCanvasStates[currentAdminFloor]) {
                     adminFabricCanvasInstance.renderOnAddRemove = false;
-                    adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { adminFabricCanvasInstance.renderOnAddRemove = true; adminFabricCanvasInstance.renderAll(); setTimeout(fitFabricCanvas, 50); });
+                    adminFabricCanvasInstance.loadFromJSON(adminLocalCanvasStates[currentAdminFloor], function() { adminFabricCanvasInstance.renderOnAddRemove = true; adminFabricCanvasInstance.renderAll(); setTimeout(fitFabricCanvas, 50); adminCanvasRenderReady = true; });
                     return;
                 }
                 const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentAdminFloor);
@@ -2446,6 +2448,7 @@
                 adminFabricCanvasInstance.renderOnAddRemove = true;
                 adminFabricCanvasInstance.renderAll();
                 setTimeout(fitFabricCanvas, 50);
+                adminCanvasRenderReady = true;
             }, 300);
         }
 
@@ -2459,6 +2462,14 @@
         async function publishAdmin2DMap() {
             const btn = document.getElementById('btnPublish2D'); btn.innerText = "⏳ Syncing to Cloud..."; btn.disabled = true;
             try {
+                // FIX: switching floors takes ~350ms to fully load/render (async) — publishing right
+                // after tapping a floor tab could snapshot a stale or half-loaded canvas. Wait here
+                // (briefly) until that floor's render has actually finished.
+                if (!adminCanvasRenderReady) {
+                    btn.innerText = "⏳ Finishing floor load...";
+                    let waited = 0;
+                    while (!adminCanvasRenderReady && waited < 3000) { await new Promise(r => setTimeout(r, 100)); waited += 100; }
+                }
                 if (adminFabricCanvasInstance && currentAdminFloor) {
                     const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
                     if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
