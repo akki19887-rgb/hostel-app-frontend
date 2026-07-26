@@ -1316,6 +1316,7 @@
         let userFabricCanvasInstance = null;
         let adminLocalCanvasStates = {};
         let adminLayoutSnapshotUrls = {};
+        let adminExistingRoomsAndBeds = [];
         let currentlyExpandedRoomIdx = null;
 
         window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { goTo('screenOptions'); }, 2500); });
@@ -2095,7 +2096,7 @@
             if(floorMaps.length === 0) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
             globalDynamicRooms = []; admin2DBlocks = [];
-            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; // fresh property — never inherit another property's canvas/snapshot data
+            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; adminExistingRoomsAndBeds = []; // fresh property — never inherit another property's canvas/snapshot/room data
             const failedFloors = [];
             const overlayText = document.getElementById('aiLoadingOverlayText');
             if (overlayText) overlayText.innerText = `Analyzing ${floorMaps.length} floor${floorMaps.length > 1 ? 's' : ''} at once...`;
@@ -2410,6 +2411,7 @@
             if(busData && busData.layout2D && busData.layout2D.length > 0) { admin2DBlocks = busData.layout2D; } else if (busData && busData.roomsAndBeds) { admin2DBlocks = [{ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: 'center', floor: busData.roomsAndBeds[0].floor || 'Ground Floor' }, ...busData.roomsAndBeds.map(r => ({ type: 'room', id: r.id || 'B'+Date.now(), name: r.name, beds: r.beds.map(b => ({id: b.id, price: b.price || 5000})), amenities: r.amenities || ['study_table', 'bathroom'], has_door: r.has_door !== false, floor: r.floor || 'Ground Floor' })) ]; }
             adminLocalCanvasStates = busData.fabricCanvasStates || {};
             adminLayoutSnapshotUrls = busData.layoutSnapshotUrls || {}; // FIX: this was never loaded before — publishing any one floor was silently wiping out every other floor's saved snapshot URL when the update was written back to Firestore
+            adminExistingRoomsAndBeds = busData.roomsAndBeds || [];
             goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
         }
 
@@ -2517,7 +2519,28 @@
                     }
                     btn.innerText = "⏳ Syncing to Cloud...";
                 }
-                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, layout2DPublishedAt: new Date().toISOString() });
+                // CRITICAL FIX: the user-side "tap a bed" handler reads room/bed data from
+                // `roomsAndBeds`, NOT from `layout2D` — but this function only ever updated
+                // `layout2D`. Any room/bed added or changed only through Architect Mode (never
+                // touched via the Data Editor's own Save) would exist on the canvas and LOOK
+                // tappable, but tapping it silently did nothing because it had no matching entry
+                // in `roomsAndBeds`. This is very likely why some floors' bed-selection "didn't
+                // work" even though the visual layout was fine. Now rebuilt from admin2DBlocks on
+                // every publish, preserving each room's existing photos where we have them.
+                const syncedRoomsAndBeds = admin2DBlocks.filter(b => b.type === 'room').map(block => {
+                    const existing = adminExistingRoomsAndBeds.find(r => r.id === block.id);
+                    return {
+                        id: block.id, name: block.name, floor: block.floor,
+                        type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : (existing ? existing.type : '1-Seater'),
+                        beds: block.beds || [],
+                        amenities: block.amenities || (existing ? existing.amenities : []),
+                        has_door: block.has_door !== undefined ? block.has_door : (existing ? existing.has_door : true),
+                        photos: existing ? existing.photos : ['', '']
+                    };
+                });
+                adminExistingRoomsAndBeds = syncedRoomsAndBeds; // keep in sync if published again without reloading
+
+                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, roomsAndBeds: syncedRoomsAndBeds, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, layout2DPublishedAt: new Date().toISOString() });
                 alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
             } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
         }
@@ -3226,7 +3249,11 @@
                                     // phone screen with lots of spare room. Now allowed to zoom in modestly
                                     // (up to 1.4x) for legibility — still shared across every floor, so
                                     // relative proportions between floors stay honest either way.
-                                    if(userLayoutCommonScale > 1.4) userLayoutCommonScale = 1.4;
+                                    // FIX: even at 1.4x the layout still looked small compared to the
+                                    // available box (per user screenshot) — raised substantially so the
+                                    // layout actually fills the space it's given, not just a little more
+                                    // than before. Still one shared value for every floor of the property.
+                                    if(userLayoutCommonScale > 2.6) userLayoutCommonScale = 2.6;
                                 }
                                 let scale = userLayoutCommonScale;
 
