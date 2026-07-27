@@ -951,6 +951,7 @@
             <div class="flex items-center gap-4">
                 <div class="bg-slate-50 p-1.5 border border-slate-200 rounded-xl flex items-center gap-2"><label class="text-[10px] font-black uppercase text-slate-500 pl-2 tracking-widest">Rate:</label><input type="number" id="adminCanvasSetPrice" placeholder="5000" class="w-20 p-2 bg-white border-2 border-transparent rounded-lg text-sm font-black text-indigo-700 outline-none"></div>
                 <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 flex items-center justify-center bg-white border-2 border-slate-200 text-slate-600 rounded-full font-bold hover:bg-gray-50 transition">✕</button>
+                <button type="button" onclick="previewCurrentLayoutAsUser()" class="text-xs bg-white border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2.5 rounded-xl shadow-sm hover:bg-indigo-50 transition whitespace-nowrap">👁️ Preview & Test</button>
                 <button type="button" onclick="publishAdmin2DMap()" id="btnPublish2D" class="btn-gradient px-8 py-3 text-white font-black rounded-xl shadow-lg tracking-wide">Publish Blueprint</button>
             </div>
         </div>
@@ -1004,7 +1005,7 @@
     <div id="screenUser2DLayout" class="hidden premium-card pt-4 pb-0 rounded-[2rem] max-w-7xl w-full relative h-[95vh] flex flex-col overflow-hidden screen-panel" style="height: 95dvh;">
         <div class="bg-white/90 backdrop-blur px-8 py-5 border-b border-slate-200/60 shadow-sm z-10 flex justify-between items-center rounded-t-[2rem] flex-wrap gap-4">
             <div class="flex items-center gap-5">
-                <button type="button" onclick="goTo('screenUserDashboard')" class="w-12 h-12 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center text-xl font-bold text-slate-600 transition">←</button>
+                <button type="button" onclick="exitUser2DLayout()" class="w-12 h-12 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center text-xl font-bold text-slate-600 transition">←</button>
                 <div>
                     <h2 class="display-font text-3xl font-black text-slate-900 tracking-tight">Choose Your Bed</h2>
                     <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest">Tap any bed to see photos, price & amenities</p>
@@ -1317,6 +1318,7 @@
         let adminLocalCanvasStates = {};
         let adminLayoutSnapshotUrls = {};
         let adminExistingRoomsAndBeds = [];
+        let adminPublishedFloors = []; // which floors have actually been explicitly published — others stay hidden from users
         let adminCanvasRenderReady = true; // false while a floor switch is still loading/rendering — Publish waits for this
         let currentlyExpandedRoomIdx = null;
 
@@ -2097,7 +2099,7 @@
             if(floorMaps.length === 0) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
             globalDynamicRooms = []; admin2DBlocks = [];
-            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; adminExistingRoomsAndBeds = []; // fresh property — never inherit another property's canvas/snapshot/room data
+            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; adminExistingRoomsAndBeds = []; adminPublishedFloors = []; // fresh property — never inherit another property's canvas/snapshot/room data
             const failedFloors = [];
             const overlayText = document.getElementById('aiLoadingOverlayText');
             if (overlayText) overlayText.innerText = `Analyzing ${floorMaps.length} floor${floorMaps.length > 1 ? 's' : ''} at once...`;
@@ -2413,6 +2415,7 @@
             adminLocalCanvasStates = busData.fabricCanvasStates || {};
             adminLayoutSnapshotUrls = busData.layoutSnapshotUrls || {}; // FIX: this was never loaded before — publishing any one floor was silently wiping out every other floor's saved snapshot URL when the update was written back to Firestore
             adminExistingRoomsAndBeds = busData.roomsAndBeds || [];
+            adminPublishedFloors = busData.publishedFloors || [];
             goTo('screenAdmin2DEditor'); const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentAdminFloor = uniqueFloors[0] || 'Ground Floor'; renderAdminFloorTabs(uniqueFloors); selectAdminFloor(currentAdminFloor);
         }
 
@@ -2551,7 +2554,12 @@
                 });
                 adminExistingRoomsAndBeds = syncedRoomsAndBeds; // keep in sync if published again without reloading
 
-                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, roomsAndBeds: syncedRoomsAndBeds, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, layout2DPublishedAt: new Date().toISOString() });
+                // This floor is now officially published — add it to the list (no duplicates) so
+                // user-side only shows floors that have actually been published, one at a time,
+                // instead of every floor with any data appearing the moment ANY floor goes live.
+                if (!adminPublishedFloors.includes(currentAdminFloor)) { adminPublishedFloors.push(currentAdminFloor); }
+
+                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, roomsAndBeds: syncedRoomsAndBeds, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, publishedFloors: adminPublishedFloors, layout2DPublishedAt: new Date().toISOString() });
                 alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
             } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
         }
@@ -2952,6 +2960,55 @@
             textEl.innerText = text;
         }
 
+        let isPreviewingAsUser = false; // true when 2D layout was opened from Architect Mode for testing, not from the real user dashboard
+
+        // Lets the admin test bed-selection immediately, using whatever is CURRENTLY on the canvas
+        // (even unpublished changes) — no need to hit Publish and go find the property on the user
+        // side just to check if tapping beds works.
+        async function previewCurrentLayoutAsUser() {
+            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']); }
+            // Build the same room/bed shape used on publish, from whatever's in memory right now.
+            const previewRoomsAndBeds = admin2DBlocks.filter(b => b.type === 'room').map(block => {
+                const existing = adminExistingRoomsAndBeds.find(r => r.id === block.id);
+                return { id: block.id, name: block.name, floor: block.floor, type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : '1-Seater', beds: block.beds || [], amenities: block.amenities || [], has_door: block.has_door !== false, photos: existing ? existing.photos : ['', ''] };
+            });
+            isPreviewingAsUser = true;
+            window.currentPropertyData = {
+                id: currentAdminDocId || 'preview',
+                businessName: (loadedBusinessData && (loadedBusinessData.businessName || (loadedBusinessData.businessProfile && loadedBusinessData.businessProfile.company))) || 'Preview',
+                layout2D: admin2DBlocks,
+                roomsAndBeds: previewRoomsAndBeds,
+                fabricCanvasStates: adminLocalCanvasStates,
+                layoutSnapshotUrls: {} // deliberately empty — always shows the live canvas in preview, not a possibly-stale published photo
+            };
+            admin2DBlocks = window.currentPropertyData.layout2D;
+            userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null;
+            if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
+            selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
+            goTo('screenUser2DLayout');
+            setUserCanvasStatus('loading', 'Loading preview...');
+            try { await loadScriptOnce(FABRIC_CDN); }
+            catch (e) { setUserCanvasStatus('error', 'Could not load the layout viewer.'); return; }
+
+            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            currentUserFloor = currentAdminFloor && uniqueFloors.includes(currentAdminFloor) ? currentAdminFloor : (uniqueFloors[0] || 'Ground Floor');
+            const tabContainer = document.getElementById('userFloorTabsContainer');
+            if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
+
+            setTimeout(() => {
+                if (!userFabricCanvasInstance) {
+                    userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { width: 1200, height: 900, selection: false });
+                    attachUserCanvasTapHandler();
+                }
+                selectUserFloor(currentUserFloor);
+            }, 150);
+        }
+
+        function exitUser2DLayout() {
+            if (isPreviewingAsUser) { isPreviewingAsUser = false; goTo('screenAdmin2DEditor'); }
+            else { goTo('screenUserDashboard'); }
+        }
+
         async function openUser2DLayout(docId) {
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
@@ -2979,7 +3036,15 @@
             try { await loadScriptOnce(FABRIC_CDN); }
             catch (e) { setUserCanvasStatus('error', 'Could not load the layout viewer. Please check your connection and try again.'); return; }
 
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            // FIX: publishing floor A used to make EVERY floor with any data visible to users
+            // (there's only one property-wide "status" flag) — even floors the admin hadn't
+            // actually finished/published yet. Now floors are additionally filtered down to only
+            // ones present in `publishedFloors` (backward-compatible: older properties that never
+            // had this field fall back to showing everything, so nothing existing breaks).
+            let uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            if (propertyData.publishedFloors && propertyData.publishedFloors.length > 0) {
+                uniqueFloors = uniqueFloors.filter(f => propertyData.publishedFloors.includes(f));
+            }
             currentUserFloor = uniqueFloors[0] || 'Ground Floor';
 
             const tabContainer = document.getElementById('userFloorTabsContainer');
@@ -3001,45 +3066,51 @@
             setTimeout(() => {
                 if (!userFabricCanvasInstance) {
                     userFabricCanvasInstance = new fabric.Canvas('userFabricCanvas', { width: 1200, height: 900, selection: false });
-                    userFabricCanvasInstance.on('mouse:down', function(options) {
-                        if (options.target && options.target.isBed) {
-                            const bedId = options.target.bedId;
-                            showBedDetailsInPanel(bedId);
-
-                            userFabricCanvasInstance.forEachObject(function(obj) {
-                                if(obj.isBed) {
-                                    const bedBgRect = obj.item(0); const topAccent = obj.item(1); const priceBg = obj.item(3); const priceTxt = obj.item(4);
-                                    bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
-                                }
-                            });
-
-                            const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
-                            selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
-
-                            // The colour highlight above only shows on the fabric canvas itself — invisible
-                            // when a snapshot photo is the primary view (see currentFloorSnapshotPrimary).
-                            // Draw a matching highlight ring directly on top of the photo instead, so a tap
-                            // always gives clear, immediate confirmation of exactly which bed was picked.
-                            const tapIndicator = document.getElementById('userBedTapIndicator');
-                            if (tapIndicator) {
-                                if (currentFloorSnapshotPrimary) {
-                                    const r = options.target.getBoundingRect(true);
-                                    tapIndicator.style.left = r.left + 'px';
-                                    tapIndicator.style.top = r.top + 'px';
-                                    tapIndicator.style.width = r.width + 'px';
-                                    tapIndicator.style.height = r.height + 'px';
-                                    tapIndicator.classList.remove('hidden');
-                                } else {
-                                    tapIndicator.classList.add('hidden');
-                                }
-                            }
-
-                            userFabricCanvasInstance.renderAll();
-                        }
-                    });
+                    attachUserCanvasTapHandler();
                 }
                 selectUserFloor(currentUserFloor);
             }, 150);
+        }
+
+        // Shared bed-tap handler for the user-facing 2D canvas — used both for the real user
+        // dashboard AND the admin's "Preview & Test" mode, so both behave identically.
+        function attachUserCanvasTapHandler() {
+            userFabricCanvasInstance.on('mouse:down', function(options) {
+                if (options.target && options.target.isBed) {
+                    const bedId = options.target.bedId;
+                    showBedDetailsInPanel(bedId);
+
+                    userFabricCanvasInstance.forEachObject(function(obj) {
+                        if(obj.isBed) {
+                            const bedBgRect = obj.item(0); const topAccent = obj.item(1); const priceBg = obj.item(3); const priceTxt = obj.item(4);
+                            bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
+                        }
+                    });
+
+                    const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
+                    selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
+
+                    // The colour highlight above only shows on the fabric canvas itself — invisible
+                    // when a snapshot photo is the primary view (see currentFloorSnapshotPrimary).
+                    // Draw a matching highlight ring directly on top of the photo instead, so a tap
+                    // always gives clear, immediate confirmation of exactly which bed was picked.
+                    const tapIndicator = document.getElementById('userBedTapIndicator');
+                    if (tapIndicator) {
+                        if (currentFloorSnapshotPrimary) {
+                            const r = options.target.getBoundingRect(true);
+                            tapIndicator.style.left = r.left + 'px';
+                            tapIndicator.style.top = r.top + 'px';
+                            tapIndicator.style.width = r.width + 'px';
+                            tapIndicator.style.height = r.height + 'px';
+                            tapIndicator.classList.remove('hidden');
+                        } else {
+                            tapIndicator.classList.add('hidden');
+                        }
+                    }
+
+                    userFabricCanvasInstance.renderAll();
+                }
+            });
         }
 
         window.showBedDetailsInPanel = function(bedId) {
@@ -3118,7 +3189,10 @@
 
         function selectUserFloor(floorName) {
             currentUserFloor = floorName;
-            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            let uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            if (window.currentPropertyData && window.currentPropertyData.publishedFloors && window.currentPropertyData.publishedFloors.length > 0) {
+                uniqueFloors = uniqueFloors.filter(f => window.currentPropertyData.publishedFloors.includes(f));
+            }
             renderUserFloorTabs(uniqueFloors);
 
             // PERF: show the fast static snapshot (if published) immediately, while the heavier
