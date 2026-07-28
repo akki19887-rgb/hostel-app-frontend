@@ -203,7 +203,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
         import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
@@ -241,9 +241,11 @@
         window.onSnapshot = onSnapshot;
         window.runTransaction = runTransaction;
         window.setDoc = setDoc;
+        window.deleteDoc = deleteDoc;
     </script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden">
+    <div id="appToast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[999] bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-2xl max-w-[90vw] text-center transition-all duration-300"></div>
     <div class="bg-blob bg-blob-1"></div>
     <div class="bg-blob bg-blob-2"></div>
     <div id="imageZoomModal" class="zoom-modal hidden" onclick="closeZoomModal()">
@@ -1345,6 +1347,22 @@
             const lVal = document.getElementById('formLaundry').value; const inp = document.getElementById('formLaundryCharge');
             if(lVal === 'Paid Service') { inp.classList.remove('hidden'); } else { inp.classList.add('hidden'); inp.value = ''; }
         }
+        // Simple non-blocking success/info message — shows briefly at the top of the screen without
+        // interrupting or navigating away, unlike alert().
+        let appToastTimer = null;
+        function showAppToast(message, durationMs = 3500) {
+            const el = document.getElementById('appToast');
+            if (!el) return;
+            el.innerText = message;
+            el.classList.remove('hidden');
+            el.style.opacity = '1'; el.style.transform = 'translate(-50%, 0)';
+            if (appToastTimer) clearTimeout(appToastTimer);
+            appToastTimer = setTimeout(() => {
+                el.style.opacity = '0'; el.style.transform = 'translate(-50%, -10px)';
+                setTimeout(() => el.classList.add('hidden'), 300);
+            }, durationMs);
+        }
+
         window.switchAdminTab = function(tabId) {
             const tabs = { pending: 'adminTabPending', live: 'adminTabLive', activity: 'adminTabActivity' };
             const containers = { pending: 'adminPendingContainer', live: 'adminLiveContainer', activity: 'adminActivityContainer' };
@@ -2359,6 +2377,17 @@
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
 
+        async function deleteAdminProperty(docId, propertyName) {
+            if (!confirm(`Delete "${propertyName}" (ID: ${docId.substring(0,8).toUpperCase()})? This cannot be undone — the listing, all its rooms/beds, and photos will be permanently removed.`)) return;
+            try {
+                await window.deleteDoc(window.doc(window.db, "businesses", docId));
+                showAppToast('🗑️ Property deleted.');
+            } catch (err) {
+                console.error('Delete failed:', err);
+                alert('Could not delete: ' + err.message + '\n\nMake sure Firestore Rules allow admin delete (see chat for the rules update needed).');
+            }
+        }
+
         let adminUnsubscribe = null;
         function refreshAdminDash() {
             const pendingContainer = document.getElementById('adminPendingContainer'); const liveContainer = document.getElementById('adminLiveContainer');
@@ -2386,7 +2415,7 @@
                         rulesSummaryHtml = `<div class="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-200"><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-200 pb-1">Amenities, Rules & Mess (filled by owner)</p><div class="flex flex-wrap gap-2">${chips}${messChip}</div></div>`;
                     }
                     let publishedAtHtml = data.layout2DPublishedAt ? `<p class="text-[10px] font-bold text-emerald-600 -mt-2">📅 2D Layout finalized: ${new Date(data.layout2DPublishedAt).toLocaleString('en-IN')}</p>` : '';
-                    const cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}<div class="flex justify-end gap-3 pt-2"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div>`;
+                    const cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}<div class="flex justify-between items-center gap-3 pt-2"><button type="button" onclick="deleteAdminProperty('${doc.id}', '${(data.propertyType || 'this property').replace(/'/g, "\\'")}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button><div class="flex gap-3"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div></div>`;
                     if (data.status === 'pending_approval') pendingHtml += cardHtml; else if (data.status === 'approved_2d' || data.status === 'approved') liveHtml += cardHtml;
                 });
                 updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`);
@@ -2441,8 +2470,8 @@
                 const roomCols = Math.max(1, Math.ceil(filteredBlocks.filter(b => b.type === 'room').length / 2));
                 adminCanvasBaseSize = { w: Math.max(1200, 80 + roomCols * 310), h: 900 };
                 adminFabricCanvasInstance.renderOnAddRemove = false; // PERF FIX: was re-rendering the full canvas on every single .add() call below (grid lines + every room + every bed) — this was the main reason Architect Mode felt very slow to load.
-                for (let i = 0; i <= adminCanvasBaseSize.w; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, adminCanvasBaseSize.h], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
-                for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
+                for (let i = 0; i <= adminCanvasBaseSize.w; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, adminCanvasBaseSize.h], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false, evented: false, hoverCursor: 'default' })); }
+                for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false, evented: false, hoverCursor: 'default' })); }
                 let topPos = 40; let leftPos = 40;
                 filteredBlocks.forEach((block, idx) => {
                     if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 95; }
@@ -2522,7 +2551,12 @@
                         // can even display), not anywhere near a compromise on sharpness.
                         const rawW = adminFabricCanvasInstance.getWidth(), rawH = adminFabricCanvasInstance.getHeight();
                         const longerSide = Math.max(rawW, rawH) || 1;
-                        const snapMultiplier = Math.min(1, 1800 / longerSide);
+                        // FIX: 1800px was fine when display never zoomed past 1x, but since the
+                        // layout can now be shown up to 2.6x bigger for legibility, that same photo
+                        // was being stretched well beyond its actual resolution — this is exactly
+                        // what was causing the blur reported on the user side. Raised so the photo
+                        // stays sharp even at the largest on-screen size.
+                        const snapMultiplier = Math.min(1, 2600 / longerSide);
                         const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.92, multiplier: snapMultiplier });
                         adminFabricCanvasInstance.backgroundColor = prevBg;
                         adminFabricCanvasInstance.renderAll();
@@ -2560,7 +2594,11 @@
                 if (!adminPublishedFloors.includes(currentAdminFloor)) { adminPublishedFloors.push(currentAdminFloor); }
 
                 await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, roomsAndBeds: syncedRoomsAndBeds, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, publishedFloors: adminPublishedFloors, layout2DPublishedAt: new Date().toISOString() });
-                alert('Live 2D Blueprint Published!'); goTo('screenAdminDashboard');
+                // FIX: this used to alert() + redirect back to the dashboard after every publish,
+                // forcing the admin to re-open the property and navigate back into Architect Mode
+                // just to publish the NEXT floor. Now stays right here — switch floor tabs and
+                // publish again immediately, as many times as needed, in one continuous session.
+                showAppToast(`✅ ${currentAdminFloor} published! You can switch floors and publish again.`);
             } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
         }
 
@@ -3353,8 +3391,13 @@
                                 // actual scaled content height (min 260px, never exceeding the natural max) —
                                 // safe against the earlier feedback-loop bug because `scale` here is the
                                 // cached, stable value above, not re-derived from the wrapper's current size.
-                                const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
-                                wrapper.style.height = desiredWrapperH + 'px';
+                                // SKIPPED during admin Preview & Test: hugging made the box visibly change
+                                // size when switching floor tabs mid-preview, which looked like a bug —
+                                // preview keeps one constant, stable box size instead.
+                                if (!isPreviewingAsUser) {
+                                    const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
+                                    wrapper.style.height = desiredWrapperH + 'px';
+                                }
 
                                 // Match the actual <canvas> backing store to the wrapper box exactly — this is
                                 // what stops scrollbars appearing, since the canvas can never be bigger than its
