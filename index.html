@@ -577,9 +577,9 @@
                     <p class="text-sm font-semibold text-slate-500 mt-1">Manage & Verify Properties</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
+            <div class="flex items-center gap-4 flex-wrap justify-end">
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 border border-slate-200/60 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm">Logout</button>
+                <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
             </div>
         </div>
 
@@ -967,9 +967,10 @@
             </div>
 
             <div id="adminCanvasPanel" class="flex-1 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative transition-all duration-300">
-                <div class="btn-gradient text-white p-3 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10 flex justify-between items-center px-4">
-                    <span>Architectural HD Canvas</span>
-                    <span class="text-[10px] opacity-80">Tip: Hold Shift/Ctrl + click for multi-select · Drag to lasso-select · Ctrl+A = Select All</span>
+                <div class="btn-gradient text-white p-3 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10 flex justify-between items-center px-4 gap-2">
+                    <button type="button" onclick="event.stopPropagation(); toggleCanvasExpand()" id="btnExpandCanvas" class="shrink-0 bg-white/20 hover:bg-white/30 rounded-lg px-2.5 py-1.5 text-[10px] font-black transition">⛶ Expand</button>
+                    <span class="truncate">Architectural HD Canvas</span>
+                    <span class="text-[10px] opacity-80 hidden lg:inline whitespace-nowrap">Tip: Hold Shift/Ctrl + click for multi-select · Drag to lasso-select · Ctrl+A = Select All</span>
                 </div>
                 <div class="flex-1 overflow-auto layout-scroll bg-slate-50 p-4" id="fabricCanvasWrapper">
                     <canvas id="adminFabricCanvas"></canvas>
@@ -1347,8 +1348,6 @@
             const lVal = document.getElementById('formLaundry').value; const inp = document.getElementById('formLaundryCharge');
             if(lVal === 'Paid Service') { inp.classList.remove('hidden'); } else { inp.classList.add('hidden'); inp.value = ''; }
         }
-        // Simple non-blocking success/info message — shows briefly at the top of the screen without
-        // interrupting or navigating away, unlike alert().
         let appToastTimer = null;
         function showAppToast(message, durationMs = 3500) {
             const el = document.getElementById('appToast');
@@ -2377,6 +2376,23 @@
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
 
+        // Hides the "Original Floor Plan" side panel so the canvas gets the ENTIRE width — much
+        // easier to precisely place/edit rooms on a small mobile screen than the cramped side-by-side split.
+        let canvasExpanded = false;
+        function toggleCanvasExpand() {
+            canvasExpanded = !canvasExpanded;
+            const mapPanel = document.getElementById('adminFloorPlanPanel');
+            const btn = document.getElementById('btnExpandCanvas');
+            if (canvasExpanded) {
+                mapPanel.classList.add('hidden');
+                btn.innerText = '⛶ Show Map';
+            } else {
+                mapPanel.classList.remove('hidden');
+                btn.innerText = '⛶ Expand';
+            }
+            setTimeout(fitFabricCanvas, 100);
+        }
+
         async function deleteAdminProperty(docId, propertyName) {
             if (!confirm(`Delete "${propertyName}" (ID: ${docId.substring(0,8).toUpperCase()})? This cannot be undone — the listing, all its rooms/beds, and photos will be permanently removed.`)) return;
             try {
@@ -2384,7 +2400,7 @@
                 showAppToast('🗑️ Property deleted.');
             } catch (err) {
                 console.error('Delete failed:', err);
-                alert('Could not delete: ' + err.message + '\n\nMake sure Firestore Rules allow admin delete (see chat for the rules update needed).');
+                alert('Could not delete: ' + err.message + '\n\nMake sure Firestore Rules allow admin delete.');
             }
         }
 
@@ -2470,8 +2486,8 @@
                 const roomCols = Math.max(1, Math.ceil(filteredBlocks.filter(b => b.type === 'room').length / 2));
                 adminCanvasBaseSize = { w: Math.max(1200, 80 + roomCols * 310), h: 900 };
                 adminFabricCanvasInstance.renderOnAddRemove = false; // PERF FIX: was re-rendering the full canvas on every single .add() call below (grid lines + every room + every bed) — this was the main reason Architect Mode felt very slow to load.
-                for (let i = 0; i <= adminCanvasBaseSize.w; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, adminCanvasBaseSize.h], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false, evented: false, hoverCursor: 'default' })); }
-                for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false, evented: false, hoverCursor: 'default' })); }
+                for (let i = 0; i <= adminCanvasBaseSize.w; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([i, 0, i, adminCanvasBaseSize.h], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
+                for (let i = 0; i <= adminCanvasBaseSize.h; i += 50) { adminFabricCanvasInstance.add(new fabric.Line([0, i, adminCanvasBaseSize.w, i], { stroke: i % 100 === 0 ? '#cbd5e1' : '#f1f5f9', strokeWidth: i % 100 === 0 ? 1.5 : 0.5, selectable: false })); }
                 let topPos = 40; let leftPos = 40;
                 filteredBlocks.forEach((block, idx) => {
                     if(block.type === 'corridor') { let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: leftPos, top: topPos, selectable: true }); adminFabricCanvasInstance.add(group); leftPos += 95; }
@@ -2551,11 +2567,6 @@
                         // can even display), not anywhere near a compromise on sharpness.
                         const rawW = adminFabricCanvasInstance.getWidth(), rawH = adminFabricCanvasInstance.getHeight();
                         const longerSide = Math.max(rawW, rawH) || 1;
-                        // FIX: 1800px was fine when display never zoomed past 1x, but since the
-                        // layout can now be shown up to 2.6x bigger for legibility, that same photo
-                        // was being stretched well beyond its actual resolution — this is exactly
-                        // what was causing the blur reported on the user side. Raised so the photo
-                        // stays sharp even at the largest on-screen size.
                         const snapMultiplier = Math.min(1, 2600 / longerSide);
                         const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.92, multiplier: snapMultiplier });
                         adminFabricCanvasInstance.backgroundColor = prevBg;
@@ -2594,10 +2605,6 @@
                 if (!adminPublishedFloors.includes(currentAdminFloor)) { adminPublishedFloors.push(currentAdminFloor); }
 
                 await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", layout2D: admin2DBlocks, roomsAndBeds: syncedRoomsAndBeds, fabricCanvasStates: adminLocalCanvasStates, layoutSnapshotUrls: adminLayoutSnapshotUrls, publishedFloors: adminPublishedFloors, layout2DPublishedAt: new Date().toISOString() });
-                // FIX: this used to alert() + redirect back to the dashboard after every publish,
-                // forcing the admin to re-open the property and navigate back into Architect Mode
-                // just to publish the NEXT floor. Now stays right here — switch floor tabs and
-                // publish again immediately, as many times as needed, in one continuous session.
                 showAppToast(`✅ ${currentAdminFloor} published! You can switch floors and publish again.`);
             } catch (error) { alert("Publishing Error: " + error.message); } finally { btn.innerText = "Publish Blueprint"; btn.disabled = false; }
         }
@@ -3391,13 +3398,8 @@
                                 // actual scaled content height (min 260px, never exceeding the natural max) —
                                 // safe against the earlier feedback-loop bug because `scale` here is the
                                 // cached, stable value above, not re-derived from the wrapper's current size.
-                                // SKIPPED during admin Preview & Test: hugging made the box visibly change
-                                // size when switching floor tabs mid-preview, which looked like a bug —
-                                // preview keeps one constant, stable box size instead.
-                                if (!isPreviewingAsUser) {
-                                    const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
-                                    wrapper.style.height = desiredWrapperH + 'px';
-                                }
+                                const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
+                                wrapper.style.height = desiredWrapperH + 'px';
 
                                 // Match the actual <canvas> backing store to the wrapper box exactly — this is
                                 // what stops scrollbars appearing, since the canvas can never be bigger than its
