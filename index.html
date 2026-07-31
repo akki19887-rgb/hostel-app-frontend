@@ -157,17 +157,14 @@
         .anim-float-2 { animation: float-2 4.5s ease-in-out infinite; }
         .anim-progress { animation: progress 2.5s ease-out forwards; }
 
-        /* NEW: visible loading + empty states for the user-facing 2D layout screen, so a slow/failed
-           load never looks identical to a frozen blank screen. */
         .canvas-status-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(248,250,252,0.95); z-index: 5; text-align: center; padding: 24px; }
-        /* FIX: 2D bed-selection map — mobile now uses the FULL available viewport height for the
-           canvas (no side-by-side detail panel), so bed tap targets are large & readable on phones.
-           Room details slide up as a bottom sheet on tap. Desktop keeps the existing 2/3 + 1/3 split. */
-        #userCanvasWrapper { height: calc(100dvh - 260px); min-height: 380px; touch-action: none; }
+        
+        /* ADDED/UPDATED: Mobile wrapper height & minimum boundary to give full space to the layout */
+        #userCanvasWrapper { height: calc(100dvh - 220px); min-height: 480px !important; touch-action: none; }
         #userFabricCanvas { display: block; }
         #userDetailPanelDesktop { display: none; }
         @media (min-width: 1024px) {
-            #userCanvasWrapper { height: 100%; min-height: 0; }
+            #userCanvasWrapper { height: 100%; min-height: 0 !important; }
             #userDetailPanelDesktop { display: flex; }
             #userDetailSheet { display: none !important; }
         }
@@ -185,23 +182,17 @@
         #userDetailSheetBackdrop.open { opacity: 1; pointer-events: auto; }
         .sheet-grabber { width: 40px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 10px auto 6px; }
 
-        /* Floor tabs sticky on mobile so user can switch without scrolling up */
         @media (max-width: 1023px) {
             #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
             #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
             #screenUser2DLayout .glass-panel h3 { font-size: 1.5rem !important; }
             #screenUser2DLayout .glass-panel #btnSmartBookNow { padding: 12px 24px !important; font-size: 13px !important; }
-            /* SPACE MANAGEMENT: tighten every chrome element around the bed-selection canvas on mobile
-               so the canvas itself — the part that actually matters — gets noticeably more room. */
-            #screenUser2DLayout > div:first-child { padding: 12px 16px !important; } /* header row */
+            #screenUser2DLayout > div:first-child { padding: 12px 16px !important; }
             #screenUser2DLayout > div:first-child h2 { font-size: 1.35rem !important; }
             #screenUser2DLayout > div:first-child p { font-size: 9px !important; margin-top: 2px !important; }
             #screenUser2DLayout > div:first-child button { width: 36px !important; height: 36px !important; font-size: 14px !important; }
             #userCanvasWrapper { height: calc(100dvh - 190px); }
             #screenUser2DLayout .flex-1.flex.flex-col.lg\:flex-row { padding-bottom: 100px !important; }
-            /* FIX: on mobile, editor pages were squeezed inside the body's padding + a rounded,
-               height-capped card — making them feel tiny and cramped. They now take the ENTIRE
-               screen, edge to edge, like a dedicated full-screen page. */
             #screenAdmin2DEditor.screen-panel, .fullscreen-mobile-page.screen-panel {
                 position: fixed !important; inset: 0 !important; margin: 0 !important;
                 max-width: 100% !important; width: 100% !important; height: 100dvh !important;
@@ -211,7 +202,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
         import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
@@ -226,6 +217,12 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
         const auth = getAuth(app);
+        
+        // ADDED: Offline persistence for faster repeat visits
+        enableIndexedDbPersistence(db).catch((err) => {
+            console.warn("Firestore Persistence warning: ", err.code);
+        });
+
         window.db = db;
         window.storage = storage;
         window.auth = auth;
