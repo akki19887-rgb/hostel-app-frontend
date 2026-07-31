@@ -60,11 +60,19 @@
         .animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .premium-card {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px) saturate(150%);
-            -webkit-backdrop-filter: blur(12px) saturate(150%);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(6px) saturate(140%);
+            -webkit-backdrop-filter: blur(6px) saturate(140%);
             border: 1px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 20px 60px -20px rgba(79, 70, 229, 0.15), 0 8px 32px -12px rgba(0, 0, 0, 0.08);
+        }
+        /* FIX: user-side map wrapper — no blur, no glass tint, sharp rendering */
+        #screenUser2DLayout, #screenUserImageRedbus { background: #ffffff !important; }
+        #screenUser2DLayout .glass-panel, #screenUserImageRedbus .glass-panel,
+        #userCanvasWrapper, #userBedOverlays, .blueprint-container {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: #ffffff;
         }
         #screenUserDashboard.premium-card { background: #ffffff; backdrop-filter: none; -webkit-backdrop-filter: none; }
         .btn-gradient {
@@ -105,7 +113,7 @@
 
         input, select, textarea { transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #6366f1 !important; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
-        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); }
+        .glass-panel { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(6px) saturate(140%); -webkit-backdrop-filter: blur(6px) saturate(140%); }
 
         .tab-pill-active { background: white; box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.25), 0 2px 4px rgba(0,0,0,0.05); color: #4f46e5; }
         .tab-pill-inactive { color: #64748b; }
@@ -3119,6 +3127,16 @@
 
         // Shared bed-tap handler for the user-facing 2D canvas — used both for the real user
         // dashboard AND the admin's "Preview & Test" mode, so both behave identically.
+        // FIX: safe getter — bed groups may not always have the same child count/order.
+        // Guard every item() call so a structural change never crashes the tap handler.
+        function _safeItem(group, i) { try { return group && typeof group.item === 'function' ? group.item(i) : null; } catch(e) { return null; } }
+        function _paintBed(bedGroup, colors) {
+            const bg = _safeItem(bedGroup, 0), accent = _safeItem(bedGroup, 1), priceBg = _safeItem(bedGroup, 3), priceTxt = _safeItem(bedGroup, 4);
+            if (bg) { bg.set('fill', colors.bg); bg.set('stroke', colors.stroke); }
+            if (accent) accent.set('fill', colors.accent);
+            if (priceBg) priceBg.set('fill', colors.priceBg);
+            if (priceTxt) priceTxt.set('fill', colors.priceTxt);
+        }
         function attachUserCanvasTapHandler() {
             userFabricCanvasInstance.on('mouse:down', function(options) {
                 if (options.target && options.target.isBed) {
@@ -3127,13 +3145,10 @@
 
                     userFabricCanvasInstance.forEachObject(function(obj) {
                         if(obj.isBed) {
-                            const bedBgRect = obj.item(0); const topAccent = obj.item(1); const priceBg = obj.item(3); const priceTxt = obj.item(4);
-                            bedBgRect.set('fill', '#ffffff'); bedBgRect.set('stroke', '#cbd5e1'); topAccent.set('fill', '#10b981'); priceBg.set('fill', '#f8fafc'); priceTxt.set('fill', '#0f172a');
+                            _paintBed(obj, { bg:'#ffffff', stroke:'#cbd5e1', accent:'#10b981', priceBg:'#f8fafc', priceTxt:'#0f172a' });
                         }
                     });
-
-                    const selBedBgRect = options.target.item(0); const selTopAccent = options.target.item(1); const selPriceBg = options.target.item(3); const selPriceTxt = options.target.item(4);
-                    selBedBgRect.set('fill', '#eff6ff'); selBedBgRect.set('stroke', '#6366f1'); selTopAccent.set('fill', '#4f46e5'); selPriceBg.set('fill', '#6366f1'); selPriceTxt.set('fill', '#ffffff');
+                    _paintBed(options.target, { bg:'#eff6ff', stroke:'#6366f1', accent:'#4f46e5', priceBg:'#6366f1', priceTxt:'#ffffff' });
 
                     // The colour highlight above only shows on the fabric canvas itself — invisible
                     // when a snapshot photo is the primary view (see currentFloorSnapshotPrimary).
@@ -3162,12 +3177,27 @@
             currentSelectedBedId = bedId;
             const isMobile = window.innerWidth < 1024;
             const panel = isMobile ? document.getElementById('bedDetailPanelMobile') : document.getElementById('bedDetailPanel');
+            if (!panel) { console.warn('Bed detail panel not found'); return; }
             let parentRoom = null;
-            if (window.currentPropertyData && window.currentPropertyData.roomsAndBeds) { parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r.beds.some(b => b.id === bedId)); }
-            if (!parentRoom) { return; }
-
-            let targetBed = parentRoom.beds.find(b => b.id === bedId);
-            let dPrice = targetBed?.priceDaily || 0; let wPrice = targetBed?.priceWeekly || 0; let mPrice = targetBed?.priceMonthly || targetBed?.price || 5000;
+            if (window.currentPropertyData && Array.isArray(window.currentPropertyData.roomsAndBeds)) {
+                parentRoom = window.currentPropertyData.roomsAndBeds.find(r => r && Array.isArray(r.beds) && r.beds.some(b => b && b.id === bedId));
+            }
+            if (!parentRoom || !Array.isArray(parentRoom.beds)) {
+                panel.innerHTML = `<div class="p-4 text-center text-slate-500 text-sm font-bold">Bed information unavailable. Please refresh and try again.</div>`;
+                return;
+            }
+            let targetBed = parentRoom.beds.find(b => b && b.id === bedId);
+            if (!targetBed) {
+                panel.innerHTML = `<div class="p-4 text-center text-slate-500 text-sm font-bold">Selected bed no longer exists.</div>`;
+                return;
+            }
+            // FIX: block already-occupied beds from being selected
+            if (targetBed.status && targetBed.status !== 'available') {
+                panel.innerHTML = `<div class="p-4 text-center text-orange-600 text-sm font-bold">This bed is currently ${targetBed.status}. Please pick another bed.</div>`;
+                if (isMobile) openDetailSheet();
+                return;
+            }
+            let dPrice = targetBed.priceDaily || 0; let wPrice = targetBed.priceWeekly || 0; let mPrice = targetBed.priceMonthly || targetBed.price || 5000;
             let securityDep = window.currentPropertyData?.rules?.securityDeposit || 0;
             let allowedStays = window.currentPropertyData?.rules?.stayTypes || { monthly: true };
 
@@ -3575,14 +3605,43 @@
             const container = document.getElementById('blueprintGrid'); if(!container) return;
             const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
             const corridors = filteredBlocks.filter(b => b.type === 'corridor'); const rooms = filteredBlocks.filter(b => b.type === 'room');
-            let html = `<div class="blueprint-container layout-top" style="flex-wrap: wrap; justify-content: center;">`;
-            if(corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="flex: 0.2; min-height: 40px; font-size: 0.6rem;">Walkway</div>`;
-            let roomsHtml = `<div class="blueprint-rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; width: 100%; flex: 1;">`;
+            // FIX: actually honour AI-detected corridor position (left/right/top/bottom/center)
+            const pos = (corridors[0] && corridors[0].position) || 'top';
+            const isVertical = pos === 'left' || pos === 'right' || pos === 'center';
+            const flexDir = (pos === 'top') ? 'column'
+                          : (pos === 'bottom') ? 'column-reverse'
+                          : (pos === 'left') ? 'row'
+                          : (pos === 'right') ? 'row-reverse'
+                          : 'row'; // center handled specially below
+
+            const corridorStyle = isVertical
+                ? 'flex: 0 0 48px; min-width: 40px; writing-mode: vertical-rl; text-orientation: mixed;'
+                : 'flex: 0 0 40px; min-height: 40px; width: 100%;';
+
+            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:8px;">`;
+
+            // corridor "center" = corridor between two room groups
+            if (pos === 'center' && corridors.length > 0) {
+                const half = Math.ceil(rooms.length / 2);
+                const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
+                html += renderRoomsGrid(leftRooms);
+                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.6rem;">Walkway</div>`;
+                html += renderRoomsGrid(rightRooms);
+            } else {
+                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.6rem;">Walkway</div>`;
+                html += renderRoomsGrid(rooms);
+            }
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+        function renderRoomsGrid(rooms) {
+            let roomsHtml = `<div class="blueprint-rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: 100%; flex: 1;">`;
             rooms.forEach(block => {
-                let bedsHtml = block.beds.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-lg p-1 text-center"><span class="text-sm block mb-0.5">🛏️</span><span class="block text-[8px] font-black">₹${b.priceMonthly || b.price}</span></div>`).join('');
+                const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
+                let bedsHtml = bedsSafe.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-lg p-1 text-center"><span class="text-sm block mb-0.5">🛏️</span><span class="block text-[8px] font-black">₹${b.priceMonthly || b.price || 0}</span></div>`).join('');
                 roomsHtml += `<div class="blueprint-room" style="min-width: 100px;"><div class="border-b border-slate-100 pb-1.5 mb-1.5 text-center text-[10px] font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div class="grid grid-cols-2 gap-1.5 mb-1">${bedsHtml}</div></div>`;
             });
-            container.innerHTML = html + roomsHtml + `</div></div>`;
+            return roomsHtml + `</div>`;
         }
 
         // No back-dates anywhere in the app: search check-in date, DOB (no future birthdates),
@@ -3604,5 +3663,6 @@
             });
         }
     </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
 </body>
 </html>
