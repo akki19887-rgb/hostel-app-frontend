@@ -1376,6 +1376,7 @@
         let currentFloorSnapshotPrimary = false; // true when the real photo is the primary view and the canvas is an invisible tap layer
         let userLayoutCommonScale = null; // one shared scale for the WHOLE property, computed once — see computeFloorRawBounds()
         let userLayoutMaxWrapperHeight = null; // the wrapper's natural (CSS-defined, un-shrunk) height, captured once
+        let userLayoutMaxWrapperWidth = null; // the wrapper's natural (CSS-defined, un-shrunk) width, captured once
 
         // Reads a floor's TRUE size directly from its saved canvas JSON (left/top/width/height of every
         // object), with no rendering or zoom involved — so it's never affected by whatever zoom level a
@@ -2510,7 +2511,7 @@
                 }
                 if (id === 'screenUser2DLayout') {
                     // Reset the shared-scale cache so the mobile fit maths runs fresh
-                    try { userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null; } catch(e){}
+                    try { userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null; userLayoutMaxWrapperWidth = null; } catch(e){}
                     if (typeof selectUserFloor === 'function' && typeof currentUserFloor === 'string' && currentUserFloor) {
                         setTimeout(() => selectUserFloor(currentUserFloor), 120);
                     }
@@ -3213,7 +3214,7 @@
                 layoutSnapshotUrls: {} // deliberately empty — always shows the live canvas in preview, not a possibly-stale published photo
             };
             admin2DBlocks = window.currentPropertyData.layout2D;
-            userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null;
+            userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null; userLayoutMaxWrapperWidth = null;
             if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
             goTo('screenUser2DLayout');
@@ -3225,6 +3226,16 @@
             currentUserFloor = currentAdminFloor && uniqueFloors.includes(currentAdminFloor) ? currentAdminFloor : (uniqueFloors[0] || 'Ground Floor');
             const tabContainer = document.getElementById('userFloorTabsContainer');
             if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
+
+            const gridElP = document.getElementById('userSimpleBedGrid');
+            const canvasElP = document.getElementById('userFabricCanvas');
+            const snapImgP = document.getElementById('userLayoutSnapshotImg');
+            const toggleBtnP = document.getElementById('btnUserTestSimpleView');
+            if (gridElP) gridElP.classList.remove('hidden');
+            if (canvasElP) canvasElP.style.visibility = 'hidden';
+            if (snapImgP) snapImgP.style.visibility = 'hidden';
+            if (toggleBtnP) toggleBtnP.innerText = '🖼️ Photo View';
+            renderUserSimpleBedGrid();
 
             setTimeout(() => {
                 if (!userFabricCanvasInstance) {
@@ -3277,6 +3288,19 @@
                 uniqueFloors = uniqueFloors.filter(f => propertyData.publishedFloors.includes(f));
             }
             currentUserFloor = uniqueFloors[0] || 'Ground Floor';
+
+            // The simple room/bed grid is now the real, default view — show it immediately using
+            // the room/bed data we already have, instead of waiting on Fabric.js + the canvas/photo
+            // (which stays loading in the background purely as a fallback behind the "🖼️ Photo View" toggle).
+            const gridEl0 = document.getElementById('userSimpleBedGrid');
+            const canvasEl0 = document.getElementById('userFabricCanvas');
+            const snapImg0 = document.getElementById('userLayoutSnapshotImg');
+            const toggleBtn0 = document.getElementById('btnUserTestSimpleView');
+            if (gridEl0) gridEl0.classList.remove('hidden');
+            if (canvasEl0) canvasEl0.style.visibility = 'hidden';
+            if (snapImg0) snapImg0.style.visibility = 'hidden';
+            if (toggleBtn0) toggleBtn0.innerText = '🖼️ Photo View';
+            renderUserSimpleBedGrid();
 
             const tabContainer = document.getElementById('userFloorTabsContainer');
             if(uniqueFloors.length <= 1) { tabContainer.classList.add('hidden'); } else { tabContainer.classList.remove('hidden'); }
@@ -3359,7 +3383,7 @@
         // from any canvas/snapshot issues. Reuses the exact same showBedDetailsInPanel(bedId)
         // that the canvas tap handler calls, so selecting a bed here books it identically.
         // ==========================================
-        let userTestSimpleViewActive = false;
+        let userTestSimpleViewActive = true; // now the DEFAULT real view — the canvas/photo overlay is the fallback, reachable via the toggle button, not the other way around
         function findLiveBedForGrid(bedId) {
             if (!window.currentPropertyData || !Array.isArray(window.currentPropertyData.roomsAndBeds)) return null;
             for (const room of window.currentPropertyData.roomsAndBeds) {
@@ -3401,8 +3425,8 @@
             const isVertical = pos === 'left' || pos === 'right' || pos === 'center';
             const flexDir = (pos === 'top') ? 'column' : (pos === 'bottom') ? 'column-reverse' : (pos === 'left') ? 'row' : (pos === 'right') ? 'row-reverse' : 'row';
             const corridorStyle = isVertical
-                ? 'flex: 0 0 48px; min-width: 40px; writing-mode: vertical-rl; text-orientation: mixed;'
-                : 'flex: 0 0 40px; min-height: 40px; width: 100%;';
+                ? 'flex: 0 0 64px; min-width: 56px; writing-mode: vertical-rl; text-orientation: mixed;'
+                : 'flex: 0 0 56px; min-height: 56px; width: 100%;';
 
             function renderBed(bed) {
                 const liveBed = findLiveBedForGrid(bed.id);
@@ -3410,30 +3434,33 @@
                 const status = liveBed ? (liveBed.status || 'available') : 'available';
                 const isOccupied = status && status !== 'available';
                 const isSelected = currentSelectedBedId === bed.id;
-                let cls = 'border-2 rounded-lg p-1.5 text-center transition ';
+                let cls = 'border-2 rounded-xl p-3 text-center transition ';
                 if (isOccupied) cls += 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed';
                 else if (isSelected) cls += 'bg-indigo-500 border-indigo-600 text-white shadow-lg scale-105 cursor-pointer';
-                else cls += 'bg-slate-50 border-slate-200 hover:border-indigo-400 cursor-pointer';
+                else cls += 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:shadow-md cursor-pointer';
                 const clickAttr = isOccupied ? '' : ` onclick="showBedDetailsInPanel('${bed.id}'); renderUserSimpleBedGrid();"`;
-                return `<div${clickAttr} class="${cls}"><span class="text-lg block mb-0.5">🛏️</span><span class="block text-[9px] font-black ${isSelected ? 'text-white' : ''}">₹${price}</span></div>`;
+                return `<div${clickAttr} class="${cls}" style="min-width: 92px;"><span class="text-3xl block mb-1">🛏️</span><span class="block text-sm font-black ${isSelected ? 'text-white' : 'text-slate-800'}">₹${price}</span></div>`;
             }
+            // Rooms stack vertically, one per row, in their original order — this keeps Room 1/2/3
+            // in a clean single-file line every time, instead of a wrapping grid that could reorder
+            // them (e.g. pushing Room 3 down next to Room 1) depending on how many beds each room has.
             function renderRoomsBlock(blockList) {
-                let html = `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; width: 100%; flex: 1;">`;
+                let html = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
                 blockList.forEach(block => {
                     const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
-                    html += `<div class="blueprint-room" style="min-width: 110px;"><div class="border-b border-slate-100 pb-1.5 mb-1.5 text-center text-[11px] font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div class="grid grid-cols-2 gap-2 mb-1">${bedsSafe.map(renderBed).join('')}</div></div>`;
+                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsSafe.map(renderBed).join('')}</div></div>`;
                 });
                 return html + `</div>`;
             }
 
-            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:10px;">`;
+            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 20px;">`;
             if (pos === 'center' && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 html += renderRoomsBlock(rooms.slice(0, half));
-                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.65rem;">Walkway</div>`;
+                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem;">Walkway</div>`;
                 html += renderRoomsBlock(rooms.slice(half));
             } else {
-                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.65rem;">Walkway</div>`;
+                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem;">Walkway</div>`;
                 html += renderRoomsBlock(rooms);
             }
             html += `</div>`;
@@ -3699,6 +3726,7 @@
                                 // so every later height calculation has a stable ceiling to bound against —
                                 // never derived from the wrapper's OWN possibly-already-shrunk size.
                                 if (userLayoutMaxWrapperHeight === null) { userLayoutMaxWrapperHeight = wrapper.clientHeight; }
+                                if (userLayoutMaxWrapperWidth === null) { userLayoutMaxWrapperWidth = wrapper.clientWidth; }
 
                                 // FIX: the box was always the full available height regardless of how much
                                 // vertical space the content actually needed, leaving large empty bands of
@@ -3708,6 +3736,26 @@
                                 // cached, stable value above, not re-derived from the wrapper's current size.
                                 const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
                                 wrapper.style.height = desiredWrapperH + 'px';
+
+                                // FIX: same problem existed sideways — a narrow, tall room layout (rooms
+                                // stacked in one column) was fit by HEIGHT, so its scaled width ended up much
+                                // smaller than the wrapper's full box, leaving large empty bands of blank
+                                // space left and right of the layout. The wrapper now also hugs THIS floor's
+                                // actual scaled content width (never exceeding its natural max width, and
+                                // only on desktop — on mobile the box should always stay full-width so it
+                                // doesn't look randomly narrow on a phone). Uses max-width (not width) so it
+                                // can never grow past its normal lg:w-2/3 flex slot, only shrink within it.
+                                const isDesktopForWidthHug = window.innerWidth >= 1024;
+                                if (isDesktopForWidthHug) {
+                                    const desiredWrapperW = Math.min(Math.max(Math.round(width * scale + 48), 260), userLayoutMaxWrapperWidth);
+                                    wrapper.style.maxWidth = desiredWrapperW + 'px';
+                                    wrapper.style.marginLeft = 'auto';
+                                    wrapper.style.marginRight = 'auto';
+                                } else {
+                                    wrapper.style.maxWidth = '';
+                                    wrapper.style.marginLeft = '';
+                                    wrapper.style.marginRight = '';
+                                }
 
                                 // Match the actual <canvas> backing store to the wrapper box exactly — this is
                                 // what stops scrollbars appearing, since the canvas can never be bigger than its
