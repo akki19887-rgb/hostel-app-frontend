@@ -1418,7 +1418,13 @@
             else { alert("Please click/select an item on the canvas first to delete it."); }
         }
         function selectAllFabricElements() {
-            if(!adminFabricCanvasInstance) return; const allObjects = adminFabricCanvasInstance.getObjects().filter(o => o.selectable !== false && !(o.type === 'line' && (o.stroke === '#cbd5e1' || o.stroke === '#f1f5f9')));
+            if(!adminFabricCanvasInstance) return;
+            // Filter out background grid lines so they don't get selected
+            const allObjects = adminFabricCanvasInstance.getObjects().filter(o =>
+                o.selectable !== false &&
+                o.type !== 'line' &&
+                !(o.type === 'line' && (o.stroke === '#cbd5e1' || o.stroke === '#f1f5f9'))
+            );
             if(allObjects.length === 0) { alert("Canvas empty — nothing to select."); return; }
             const selection = new fabric.ActiveSelection(allObjects, { canvas: adminFabricCanvasInstance }); adminFabricCanvasInstance.setActiveObject(selection); adminFabricCanvasInstance.requestRenderAll();
         }
@@ -2554,29 +2560,34 @@
                         });
                     }
 
-                    // PERF: also save a compressed static snapshot (JPEG) of the finalized layout.
+                    // PERF: also save a compressed static snapshot of the finalized layout.
                     // User dashboard shows this instantly while the full interactive canvas JSON
                     // (heavier — read from Firestore) loads underneath, then swaps to it for bed clicks.
                     try {
-                        btn.innerText = "⏳ Generating fast preview...";
+                        btn.innerText = "⏳ Generating HD preview...";
                         // BUG FIX: JPEG has no transparency — any transparent canvas area was being
-                        // filled solid BLACK on export, which is why some floors' snapshots looked
-                        // broken (large black regions, blurry text). Force a white background before
-                        // exporting.
+                        // filled solid BLACK on export. Force a white background before exporting.
                         const prevBg = adminFabricCanvasInstance.backgroundColor;
                         adminFabricCanvasInstance.backgroundColor = '#ffffff';
+
+                        // FIX: hide the background grid lines just for this export so the published
+                        // photo is a clean layout, not cluttered with measurement-grid lines.
+                        const gridLines = adminFabricCanvasInstance.getObjects().filter(o => o.type === 'line' && (o.stroke === '#cbd5e1' || o.stroke === '#f1f5f9'));
+                        gridLines.forEach(o => o.visible = false);
                         adminFabricCanvasInstance.renderAll();
-                        // QUALITY FIRST: the crisp 2D layout snapshot is this app's standout feature —
-                        // never sacrifice how it looks for a marginal speed gain. This only trims
-                        // resolution that's genuinely wasted (far beyond what any phone/tablet screen
-                        // can even display), not anywhere near a compromise on sharpness.
+
+                        // QUALITY: switched to PNG (no compression blur at all, unlike JPEG) at a
+                        // higher resolution — but capped at 4x so a small layout can't balloon into
+                        // a huge, slow-to-upload file. Still always at least 1x the canvas's own size.
                         const rawW = adminFabricCanvasInstance.getWidth(), rawH = adminFabricCanvasInstance.getHeight();
                         const longerSide = Math.max(rawW, rawH) || 1;
-                        const snapMultiplier = Math.min(1, 2600 / longerSide);
-                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'jpeg', quality: 0.92, multiplier: snapMultiplier });
+                        const snapMultiplier = Math.min(4, Math.max(1, 3000 / longerSide));
+                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'png', multiplier: snapMultiplier });
+
+                        gridLines.forEach(o => o.visible = true);
                         adminFabricCanvasInstance.backgroundColor = prevBg;
                         adminFabricCanvasInstance.renderAll();
-                        const snapUrl = await uploadCanvasSnapshot(snapshotDataUrl, `layoutSnapshots/${currentAdminDocId}/${currentAdminFloor}.jpg`);
+                        const snapUrl = await uploadCanvasSnapshot(snapshotDataUrl, `layoutSnapshots/${currentAdminDocId}/${currentAdminFloor}.png`);
                         adminLayoutSnapshotUrls[currentAdminFloor] = snapUrl;
                     } catch (snapErr) {
                         console.warn('Snapshot generation failed — publishing without fast-preview image:', snapErr);
@@ -3401,6 +3412,16 @@
                                         userLayoutCommonScale = Math.min((wrapper.clientWidth - 40) / width, (wrapper.clientHeight - 40) / height);
                                     }
                                     if(!isFinite(userLayoutCommonScale) || userLayoutCommonScale <= 0) userLayoutCommonScale = 0.3;
+                                    // MOBILE FIX: on phones, make sure the layout fills the full available
+                                    // WIDTH at minimum (not just whatever the width+height-fit math gave),
+                                    // since width is almost always the tighter constraint on a phone screen.
+                                    // Still ONE shared value for every floor — this doesn't reintroduce the
+                                    // old per-floor-inconsistent-zoom bug, it just raises the shared floor.
+                                    const isMobileDevice = window.innerWidth < 1024;
+                                    if (isMobileDevice && maxW > 0) {
+                                        const widthFillScale = (wrapper.clientWidth - 20) / maxW;
+                                        if (widthFillScale > userLayoutCommonScale) userLayoutCommonScale = widthFillScale;
+                                    }
                                     // FIX: was hard-capped at exactly 1x (the admin's original drawing size),
                                     // which meant a small layout stayed tiny and hard to read even on a big
                                     // phone screen with lots of spare room. Now allowed to zoom in modestly
