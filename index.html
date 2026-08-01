@@ -1664,7 +1664,7 @@
             let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 });
             let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 });
             let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 });
-            let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true, isRoom: true, roomSlotIndex: 0 });
+            let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true, isRoom: true, roomSlotIndex: 0, roomId: 'CROOM-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
             adminFabricCanvasInstance.add(roomGroup);
             adminLastActiveRoom = roomGroup; // this new room becomes the auto-placement target for the very next bed/bath/table you add
             adminFabricCanvasInstance.setActiveObject(roomGroup);
@@ -2412,7 +2412,7 @@
 
         function selectFloorTab(floorName) { currentSelectedFloor = floorName; const floorData = floorMaps.find(f => f.floorName === floorName); if(floorData) { uploadedMapDataUrl = floorData.dataUrl; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; } renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); }
         function selectAdminFloor(floorName) {
-            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']); }
+            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice', 'isRoom', 'roomId', 'roomSlotIndex', 'isAmenityIcon', 'tooltipLabel']); }
             currentAdminFloor = floorName; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderAdminFloorTabs(uniqueFloors);
             let imgUrl = loadedBusinessData && loadedBusinessData.floorMapUrls ? loadedBusinessData.floorMapUrls[floorName] : (loadedBusinessData ? loadedBusinessData.mapImageUrl : '');
             document.getElementById('adminSideBySideImg').src = imgUrl || ''; redrawAdminCanvasForFloor();
@@ -2493,7 +2493,7 @@
 
         function addBedToRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; const newBed = {id: `${room.id}-B${room.beds.length + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000}; room.beds.push(newBed); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.push(newBed); } renderBusinessConfig(); renderAttractive2DPlan(); }
         function removeBedFromRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; if(room.beds.length > 1) { room.beds.pop(); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.pop(); } renderBusinessConfig(); renderAttractive2DPlan(); } else { alert("At least 1 bed required!"); } }
-        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 200); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; propagateRoomSync(roomIndex, 'photo'); renderBusinessConfig(); } }
+        async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 1080, 0.85); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; propagateRoomSync(roomIndex, 'photo'); renderBusinessConfig(); } }
 
         // FIX: onSnapshot listeners rebuild list HTML every time ANYTHING changes in Firestore
         // (not just this user's own data) — full innerHTML replace was resetting scroll position
@@ -2786,7 +2786,7 @@
                     while (!adminCanvasRenderReady && waited < 3000) { await new Promise(r => setTimeout(r, 100)); waited += 100; }
                 }
                 if (adminFabricCanvasInstance && currentAdminFloor) {
-                    const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']);
+                    const jsonState = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice', 'isRoom', 'roomId', 'roomSlotIndex', 'isAmenityIcon', 'tooltipLabel']);
                     if(jsonState.objects) { jsonState.objects.forEach(obj => { if(obj.isBed) obj.bedPrice = Number(obj.bedPrice) || 0; }); }
                     adminLocalCanvasStates[currentAdminFloor] = jsonState;
 
@@ -2796,23 +2796,55 @@
                     // stripped them out (it only shows beds it can find in that structured data). This
                     // reconciles the two: any bed drawn on the canvas that isn't already tracked gets a
                     // matching structured room+bed entry, so it actually appears — and is bookable — for users.
+                    // FIX: beds/amenity-icons dropped inside the same drawn room box now correctly group
+                    // under ONE shared room entry (matched by the room's roomId), instead of each orphan
+                    // bed generating its own separate synthetic "Room (from canvas)" — and bath/table icons,
+                    // which previously were pure decoration never saved anywhere, now publish too and show
+                    // up on the real user booking screen inside that room's card.
                     if (jsonState.objects) {
+                        const liveRooms = adminFabricCanvasInstance.getObjects().filter(o => o.isRoom && o.roomId);
+                        const liveBeds = adminFabricCanvasInstance.getObjects().filter(o => o.isBed && o.bedId);
+                        const liveIcons = adminFabricCanvasInstance.getObjects().filter(o => o.isAmenityIcon && o.tooltipLabel);
+                        const findContainingRoom = (obj) => {
+                            const b = obj.getBoundingRect(true);
+                            const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+                            return liveRooms.find(r => { const rb = r.getBoundingRect(true); return cx >= rb.left && cx <= rb.left + rb.width && cy >= rb.top && cy <= rb.top + rb.height; }) || null;
+                        };
+
                         const knownBedIds = new Set();
                         admin2DBlocks.forEach(b => { if (b.beds) b.beds.forEach(bd => knownBedIds.add(bd.id)); });
-                        jsonState.objects.forEach(obj => {
-                            if (!obj.isBed || !obj.bedId) return;
-                            if (knownBedIds.has(obj.bedId)) {
+                        const knownRoomIds = new Set(admin2DBlocks.filter(b => b.type === 'room').map(b => b.id));
+
+                        liveBeds.forEach(bedObj => {
+                            if (knownBedIds.has(bedObj.bedId)) {
                                 // Already tracked — keep its price in sync with whatever was set on the canvas.
-                                admin2DBlocks.forEach(b => { if (b.beds) { const bd = b.beds.find(x => x.id === obj.bedId); if (bd) { bd.price = obj.bedPrice; bd.priceMonthly = obj.bedPrice; } } });
-                            } else {
-                                // New bed drawn directly on the canvas — give it a real structured room entry.
-                                admin2DBlocks.push({
-                                    type: 'room', id: 'AUTO-' + obj.bedId, name: 'Room (from canvas)',
-                                    beds: [{ id: obj.bedId, price: obj.bedPrice, priceMonthly: obj.bedPrice, priceDaily: 0, priceWeekly: 0 }],
-                                    amenities: [], has_door: true, floor: currentAdminFloor
-                                });
-                                knownBedIds.add(obj.bedId);
+                                admin2DBlocks.forEach(b => { if (b.beds) { const bd = b.beds.find(x => x.id === bedObj.bedId); if (bd) { bd.price = bedObj.bedPrice; bd.priceMonthly = bedObj.bedPrice; } } });
+                                return;
                             }
+                            const containingRoom = findContainingRoom(bedObj);
+                            const targetRoomId = containingRoom ? 'CANVAS-' + containingRoom.roomId : 'AUTO-' + bedObj.bedId;
+                            let targetBlock = admin2DBlocks.find(b => b.type === 'room' && b.id === targetRoomId);
+                            if (!targetBlock) {
+                                targetBlock = { type: 'room', id: targetRoomId, name: containingRoom ? (containingRoom._objects && containingRoom._objects[2] && containingRoom._objects[2].text) || 'Room (from canvas)' : 'Room (from canvas)', beds: [], icons: [], amenities: [], has_door: true, floor: currentAdminFloor };
+                                admin2DBlocks.push(targetBlock);
+                                knownRoomIds.add(targetRoomId);
+                            }
+                            targetBlock.beds.push({ id: bedObj.bedId, price: bedObj.bedPrice, priceMonthly: bedObj.bedPrice, priceDaily: 0, priceWeekly: 0 });
+                            knownBedIds.add(bedObj.bedId);
+                        });
+
+                        liveIcons.forEach(iconObj => {
+                            const containingRoom = findContainingRoom(iconObj);
+                            if (!containingRoom) return; // an amenity icon floating outside any room has nowhere to attach
+                            const targetRoomId = 'CANVAS-' + containingRoom.roomId;
+                            let targetBlock = admin2DBlocks.find(b => b.type === 'room' && b.id === targetRoomId);
+                            if (!targetBlock) {
+                                targetBlock = { type: 'room', id: targetRoomId, name: (containingRoom._objects && containingRoom._objects[2] && containingRoom._objects[2].text) || 'Room (from canvas)', beds: [], icons: [], amenities: [], has_door: true, floor: currentAdminFloor };
+                                admin2DBlocks.push(targetBlock);
+                            }
+                            if (!targetBlock.icons) targetBlock.icons = [];
+                            const iconType = iconObj.tooltipLabel === 'Bathroom' ? 'bath' : (iconObj.tooltipLabel === 'Study Table' ? 'table' : 'other');
+                            if (!targetBlock.icons.some(ic => ic.type === iconType)) { targetBlock.icons.push({ type: iconType, label: iconObj.tooltipLabel }); }
                         });
                     }
 
@@ -3316,7 +3348,7 @@
         // (even unpublished changes) — no need to hit Publish and go find the property on the user
         // side just to check if tapping beds works.
         async function previewCurrentLayoutAsUser() {
-            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice']); }
+            if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice', 'isRoom', 'roomId', 'roomSlotIndex', 'isAmenityIcon', 'tooltipLabel']); }
             // Build the same room/bed shape used on publish, from whatever's in memory right now.
             const previewRoomsAndBeds = admin2DBlocks.filter(b => b.type === 'room').map(block => {
                 const existing = adminExistingRoomsAndBeds.find(r => r.id === block.id);
@@ -3562,11 +3594,16 @@
             // Rooms stack vertically, one per row, in their original order — this keeps Room 1/2/3
             // in a clean single-file line every time, instead of a wrapping grid that could reorder
             // them (e.g. pushing Room 3 down next to Room 1) depending on how many beds each room has.
+            function renderIcon(icon) {
+                const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
+                return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 92px; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" title="${icon.label || ''}"><span class="text-3xl block mb-1">${emoji}</span><span class="block text-[10px] font-black text-slate-600 uppercase tracking-wide">${icon.label || ''}</span></div>`;
+            }
             function renderRoomsBlock(blockList) {
                 let html = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
                 blockList.forEach(block => {
                     const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
-                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsSafe.map(renderBed).join('')}</div></div>`;
+                    const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
+                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsSafe.map(renderBed).join('')}${iconsSafe.map(renderIcon).join('')}</div></div>`;
                 });
                 return html + `</div>`;
             }
@@ -3932,7 +3969,11 @@
                         }
                         requestAnimationFrame(() => requestAnimationFrame(() => fitUserCanvasToScreen(4)));
 
-                }, function(jsonObj, fabricObj) { if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; } });
+                }, function(jsonObj, fabricObj) {
+                    if(jsonObj.isBed) { fabricObj.isBed = true; fabricObj.bedId = jsonObj.bedId; fabricObj.bedPrice = jsonObj.bedPrice; }
+                    if(jsonObj.isRoom) { fabricObj.isRoom = true; fabricObj.roomId = jsonObj.roomId; fabricObj.roomSlotIndex = jsonObj.roomSlotIndex || 0; }
+                    if(jsonObj.isAmenityIcon) { fabricObj.isAmenityIcon = true; fabricObj.tooltipLabel = jsonObj.tooltipLabel; }
+                });
             }
         }
 
@@ -4097,8 +4138,10 @@
             let roomsHtml = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
             rooms.forEach(block => {
                 const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
+                const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
                 let bedsHtml = bedsSafe.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 88px;"><span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span></div>`).join('');
-                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}</div></div>`;
+                let iconsHtml = iconsSafe.map(icon => { const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦'); return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};"><span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`; }).join('');
+                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
