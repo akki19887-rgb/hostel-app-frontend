@@ -1550,11 +1550,129 @@
         // 30-60+ of these objects — each with its own shadow — which was the single biggest
         // contributor to slow rendering, especially on lower-end phones. Flat borders keep the
         // same premium look at a fraction of the paint cost.
-        function addFabricBathroom() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 60, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('🚿 BATH', { left: 40, top: 30, fontSize: 13, fill: '#1d4ed8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricTable() { if(!adminFabricCanvasInstance) return; let bgRect = new fabric.Rect({ left: 0, top: 0, width: 80, height: 45, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 8, ry: 8 }); let iconText = new fabric.IText('📚 TABLE', { left: 40, top: 22.5, fontSize: 12, fill: '#b45309', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 1 }); let group = new fabric.Group([bgRect, iconText], { left: 150, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
+        // ==========================================
+        // AUTO-PLACEMENT: beds, bathrooms, and tables now find their own spot inside whichever
+        // room is currently selected (or the last room you touched) instead of always dropping
+        // at a fixed canvas position that had to be dragged into place by hand. Each room tracks
+        // its own simple internal grid of used slots.
+        // ==========================================
+        let adminLastActiveRoom = null; // updated whenever a room group is selected/added
+        function getActiveOrLastRoom() {
+            const active = adminFabricCanvasInstance && adminFabricCanvasInstance.getActiveObject();
+            if (active && active.isRoom) { adminLastActiveRoom = active; return active; }
+            return adminLastActiveRoom;
+        }
+        // Returns the next free {left, top} (absolute canvas coords) inside a room for a new
+        // item of the given pixel size, filling left-to-right, top-to-bottom below the title bar.
+        function getNextRoomSlot(room, itemW, itemH) {
+            if (!room.roomSlotIndex) room.roomSlotIndex = 0;
+            const pad = 14, topOffset = 50; // below the room's title bar
+            const cols = Math.max(1, Math.floor(((room.width * room.scaleX) - pad) / (itemW + pad)));
+            const col = room.roomSlotIndex % cols;
+            const row = Math.floor(room.roomSlotIndex / cols);
+            room.roomSlotIndex++;
+            return {
+                left: room.left + pad + col * (itemW + pad),
+                top: room.top + topOffset + row * (itemH + pad)
+            };
+        }
+        // Small floating label shown on hover (mouse) or a brief tap (touch) for icon-only objects —
+        // so a bath/table icon doesn't need a permanent text caption cluttering the room, but the
+        // admin can still always find out what it is.
+        function showAdminCanvasTooltip(label, pageX, pageY) {
+            let tip = document.getElementById('adminCanvasTooltip');
+            if (!tip) {
+                tip = document.createElement('div');
+                tip.id = 'adminCanvasTooltip';
+                tip.style.cssText = 'position:fixed; z-index:9999; background:#0f172a; color:#fff; font-weight:900; font-size:11px; padding:4px 10px; border-radius:8px; pointer-events:none; transform:translate(-50%,-130%); white-space:nowrap; box-shadow:0 4px 10px rgba(0,0,0,0.25);';
+                document.body.appendChild(tip);
+            }
+            tip.innerText = label;
+            tip.style.left = pageX + 'px';
+            tip.style.top = pageY + 'px';
+            tip.style.display = 'block';
+        }
+        function hideAdminCanvasTooltip() {
+            const tip = document.getElementById('adminCanvasTooltip');
+            if (tip) tip.style.display = 'none';
+        }
+        function attachAdminCanvasTooltips() {
+            if (!adminFabricCanvasInstance || adminFabricCanvasInstance._tooltipsAttached) return;
+            adminFabricCanvasInstance._tooltipsAttached = true;
+            adminFabricCanvasInstance.on('mouse:over', (opt) => {
+                if (opt.target && opt.target.tooltipLabel) {
+                    const p = opt.e && (opt.e.touches ? opt.e.touches[0] : opt.e);
+                    if (p) showAdminCanvasTooltip(opt.target.tooltipLabel, p.clientX, p.clientY);
+                }
+            });
+            adminFabricCanvasInstance.on('mouse:out', () => hideAdminCanvasTooltip());
+            // Touch devices don't have hover — show briefly on tap instead.
+            adminFabricCanvasInstance.on('mouse:down', (opt) => {
+                if (opt.target && opt.target.tooltipLabel) {
+                    const p = opt.e && (opt.e.touches ? opt.e.touches[0] : opt.e);
+                    if (p) {
+                        showAdminCanvasTooltip(opt.target.tooltipLabel, p.clientX, p.clientY);
+                        setTimeout(hideAdminCanvasTooltip, 1400);
+                    }
+                }
+            });
+            adminFabricCanvasInstance.on('selection:created', (opt) => { if (opt.selected && opt.selected[0] && opt.selected[0].isRoom) adminLastActiveRoom = opt.selected[0]; });
+            adminFabricCanvasInstance.on('selection:updated', (opt) => { if (opt.selected && opt.selected[0] && opt.selected[0].isRoom) adminLastActiveRoom = opt.selected[0]; });
+        }
+
+        function addFabricBathroom() {
+            if(!adminFabricCanvasInstance) return;
+            const w = 60, h = 60;
+            let bgRect = new fabric.Rect({ left: 0, top: 0, width: w, height: h, fill: '#eff6ff', stroke: '#3b82f6', strokeWidth: 2, rx: 10, ry: 10 });
+            let iconText = new fabric.Text('🚿', { left: w/2, top: h/2, fontSize: 28, originX: 'center', originY: 'center' });
+            const room = getActiveOrLastRoom();
+            const pos = room ? getNextRoomSlot(room, w, h) : { left: 50, top: 50 };
+            let group = new fabric.Group([bgRect, iconText], { left: pos.left, top: pos.top, selectable: true, hoverCursor: 'pointer', tooltipLabel: 'Bathroom', isAmenityIcon: true, parentRoomRef: room ? room.roomId || null : null });
+            adminFabricCanvasInstance.add(group);
+            attachAdminCanvasTooltips();
+        }
+        function addFabricTable() {
+            if(!adminFabricCanvasInstance) return;
+            const w = 60, h = 50;
+            let bgRect = new fabric.Rect({ left: 0, top: 0, width: w, height: h, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2, rx: 10, ry: 10 });
+            let iconText = new fabric.Text('📚', { left: w/2, top: h/2, fontSize: 26, originX: 'center', originY: 'center' });
+            const room = getActiveOrLastRoom();
+            const pos = room ? getNextRoomSlot(room, w, h) : { left: 150, top: 50 };
+            let group = new fabric.Group([bgRect, iconText], { left: pos.left, top: pos.top, selectable: true, hoverCursor: 'pointer', tooltipLabel: 'Study Table', isAmenityIcon: true, parentRoomRef: room ? room.roomId || null : null });
+            adminFabricCanvasInstance.add(group);
+            attachAdminCanvasTooltips();
+        }
         function addFabricText() { if(!adminFabricCanvasInstance) return; let text = new fabric.IText('Double Click to Edit', { left: 150, top: 120, fontSize: 18, fill: '#334155', fontWeight: '800', fontFamily: 'Plus Jakarta Sans' }); adminFabricCanvasInstance.add(text); }
-        function addFabricBed() { if(!adminFabricCanvasInstance) return; let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000; let bedBg = new fabric.Rect({ left: 0, top: 0, width: 70, height: 80, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 }); let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: 70, height: 8, fill: '#10b981', rx: 12, ry: 12 }); let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' }); let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 }); let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' }); let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: 150, top: 100, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer' }); adminFabricCanvasInstance.add(bedGroup); }
-        function addFabricRoom() { if(!adminFabricCanvasInstance) return; let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 }); let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 }); let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 }); let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 }); let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true }); adminFabricCanvasInstance.add(roomGroup); }
+        function addFabricBed() {
+            if(!adminFabricCanvasInstance) return;
+            let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000;
+            const w = 70, h = 80;
+            let bedBg = new fabric.Rect({ left: 0, top: 0, width: w, height: h, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 });
+            let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: w, height: 8, fill: '#10b981', rx: 12, ry: 12 });
+            let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' });
+            let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 });
+            let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' });
+            const room = getActiveOrLastRoom();
+            const pos = room ? getNextRoomSlot(room, w, h) : { left: 150, top: 100 };
+            let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: pos.left, top: pos.top, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer', tooltipLabel: 'Bed — ₹' + currentPrice });
+            adminFabricCanvasInstance.add(bedGroup);
+            attachAdminCanvasTooltips();
+        }
+        function addFabricRoom() {
+            if(!adminFabricCanvasInstance) return;
+            let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 });
+            let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 });
+            let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 });
+            let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 });
+            let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true, isRoom: true, roomSlotIndex: 0 });
+            adminFabricCanvasInstance.add(roomGroup);
+            adminLastActiveRoom = roomGroup; // this new room becomes the auto-placement target for the very next bed/bath/table you add
+            adminFabricCanvasInstance.setActiveObject(roomGroup);
+            attachAdminCanvasTooltips();
+            // Auto-fill: a brand-new room is empty, so drop in one starter bed right away instead
+            // of making you press "Bed" separately every single time.
+            addFabricBed();
+        }
         function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
         function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 65, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 32, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
 
@@ -2621,7 +2739,7 @@
             adminCanvasRenderReady = false;
             setTimeout(() => {
                 const wrapper = document.getElementById('fabricCanvasWrapper');
-                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: adminCanvasBaseSize.w, height: adminCanvasBaseSize.h, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); }
+                if(!adminFabricCanvasInstance) { adminFabricCanvasInstance = new fabric.Canvas('adminFabricCanvas', { width: adminCanvasBaseSize.w, height: adminCanvasBaseSize.h, backgroundColor: '#f8fafc', selection: true, selectionColor: 'rgba(99, 102, 241, 0.15)', selectionBorderColor: '#6366f1', selectionLineWidth: 2, preserveObjectStacking: true }); adminFabricCanvasInstance.on('mouse:wheel', function(opt) { if (opt.e.ctrlKey || opt.e.metaKey) { opt.e.preventDefault(); opt.e.stopPropagation(); const delta = opt.e.deltaY; zoomFabricCanvas(delta < 0 ? 1.1 : 0.9); } }); attachAdminCanvasTooltips(); }
                 adminFabricCanvasInstance.clear();
                 if (adminLocalCanvasStates[currentAdminFloor]) {
                     adminFabricCanvasInstance.renderOnAddRemove = false;
@@ -3734,24 +3852,36 @@
                                 // actual scaled content height (min 260px, never exceeding the natural max) —
                                 // safe against the earlier feedback-loop bug because `scale` here is the
                                 // cached, stable value above, not re-derived from the wrapper's current size.
-                                const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
-                                wrapper.style.height = desiredWrapperH + 'px';
+                                // BUG FIX: this hugging is for the CANVAS/PHOTO view only. The Test View grid
+                                // (#userSimpleBedGrid) sits in this same wrapper as an absolute inset-0 overlay,
+                                // so shrinking the wrapper here was also squeezing the grid into a tiny scrolling
+                                // box even though the grid was the visible view — leave the wrapper at its full
+                                // natural size whenever Test View is active.
+                                if (!userTestSimpleViewActive) {
+                                    const desiredWrapperH = Math.min(Math.max(Math.round(height * scale + 48), 260), userLayoutMaxWrapperHeight);
+                                    wrapper.style.height = desiredWrapperH + 'px';
 
-                                // FIX: same problem existed sideways — a narrow, tall room layout (rooms
-                                // stacked in one column) was fit by HEIGHT, so its scaled width ended up much
-                                // smaller than the wrapper's full box, leaving large empty bands of blank
-                                // space left and right of the layout. The wrapper now also hugs THIS floor's
-                                // actual scaled content width (never exceeding its natural max width, and
-                                // only on desktop — on mobile the box should always stay full-width so it
-                                // doesn't look randomly narrow on a phone). Uses max-width (not width) so it
-                                // can never grow past its normal lg:w-2/3 flex slot, only shrink within it.
-                                const isDesktopForWidthHug = window.innerWidth >= 1024;
-                                if (isDesktopForWidthHug) {
-                                    const desiredWrapperW = Math.min(Math.max(Math.round(width * scale + 48), 260), userLayoutMaxWrapperWidth);
-                                    wrapper.style.maxWidth = desiredWrapperW + 'px';
-                                    wrapper.style.marginLeft = 'auto';
-                                    wrapper.style.marginRight = 'auto';
+                                    // FIX: same problem existed sideways — a narrow, tall room layout (rooms
+                                    // stacked in one column) was fit by HEIGHT, so its scaled width ended up much
+                                    // smaller than the wrapper's full box, leaving large empty bands of blank
+                                    // space left and right of the layout. The wrapper now also hugs THIS floor's
+                                    // actual scaled content width (never exceeding its natural max width, and
+                                    // only on desktop — on mobile the box should always stay full-width so it
+                                    // doesn't look randomly narrow on a phone). Uses max-width (not width) so it
+                                    // can never grow past its normal lg:w-2/3 flex slot, only shrink within it.
+                                    const isDesktopForWidthHug = window.innerWidth >= 1024;
+                                    if (isDesktopForWidthHug) {
+                                        const desiredWrapperW = Math.min(Math.max(Math.round(width * scale + 48), 260), userLayoutMaxWrapperWidth);
+                                        wrapper.style.maxWidth = desiredWrapperW + 'px';
+                                        wrapper.style.marginLeft = 'auto';
+                                        wrapper.style.marginRight = 'auto';
+                                    } else {
+                                        wrapper.style.maxWidth = '';
+                                        wrapper.style.marginLeft = '';
+                                        wrapper.style.marginRight = '';
+                                    }
                                 } else {
+                                    wrapper.style.height = '';
                                     wrapper.style.maxWidth = '';
                                     wrapper.style.marginLeft = '';
                                     wrapper.style.marginRight = '';
@@ -3944,28 +4074,31 @@
                 ? 'flex: 0 0 48px; min-width: 40px; writing-mode: vertical-rl; text-orientation: mixed;'
                 : 'flex: 0 0 40px; min-height: 40px; width: 100%;';
 
-            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:8px;">`;
+            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
 
             // corridor "center" = corridor between two room groups
             if (pos === 'center' && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
                 html += renderRoomsGrid(leftRooms);
-                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.6rem;">Walkway</div>`;
+                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
                 html += renderRoomsGrid(rightRooms);
             } else {
-                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.6rem;">Walkway</div>`;
+                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
                 html += renderRoomsGrid(rooms);
             }
             html += `</div>`;
             container.innerHTML = html;
         }
+        // Rooms stack vertically, one per row, in their original order (Room 1, 2, 3 top-to-bottom)
+        // instead of an auto-fit grid that could reorder/wrap them depending on bed count — same
+        // clean single-file layout used on the real user booking screen's Test View.
         function renderRoomsGrid(rooms) {
-            let roomsHtml = `<div class="blueprint-rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: 100%; flex: 1;">`;
+            let roomsHtml = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
             rooms.forEach(block => {
                 const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
-                let bedsHtml = bedsSafe.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-lg p-1 text-center"><span class="text-sm block mb-0.5">🛏️</span><span class="block text-[8px] font-black">₹${b.priceMonthly || b.price || 0}</span></div>`).join('');
-                roomsHtml += `<div class="blueprint-room" style="min-width: 100px;"><div class="border-b border-slate-100 pb-1.5 mb-1.5 text-center text-[10px] font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div class="grid grid-cols-2 gap-1.5 mb-1">${bedsHtml}</div></div>`;
+                let bedsHtml = bedsSafe.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 88px;"><span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span></div>`).join('');
+                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
