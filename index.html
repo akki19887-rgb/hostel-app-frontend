@@ -199,6 +199,90 @@
                 border-radius: 0 !important; z-index: 100;
             }
         }
+
+        /* ============================================================
+           MOBILE FIX PACK (v40): admin edit expand + RedBus-style seat UX
+           ============================================================ */
+        @media (max-width: 1023px) {
+            /* --- ADMIN 2D EDITOR: give the canvas the entire screen on mobile --- */
+            #screenAdmin2DEditor { padding-top: 0 !important; }
+            #screenAdmin2DEditor > div:first-child {
+                padding: 8px 10px !important; gap: 6px !important;
+                flex-wrap: nowrap !important; overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            #screenAdmin2DEditor > div:first-child h2 { font-size: 1.05rem !important; }
+            #screenAdmin2DEditor > div:first-child p { font-size: 8px !important; margin-top: 0 !important; }
+            #screenAdmin2DEditor > div:first-child .w-12.h-12 { width: 34px !important; height: 34px !important; font-size: 14px !important; border-radius: 10px !important; }
+            #screenAdmin2DEditor > div:first-child > div.flex.gap-2 {
+                flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch;
+                padding: 4px !important; gap: 4px !important;
+            }
+            #screenAdmin2DEditor > div:first-child > div.flex.gap-2 button {
+                font-size: 10px !important; padding: 6px 8px !important; white-space: nowrap;
+            }
+            #screenAdmin2DEditor > div:first-child > div.flex.items-center.gap-4 { gap: 6px !important; }
+            #screenAdmin2DEditor > div:first-child > div.flex.items-center.gap-4 button {
+                padding: 6px 10px !important; font-size: 10px !important;
+            }
+            /* Hide floor-plan side panel by default on mobile — canvas gets full width */
+            #adminFloorPlanPanel { display: none !important; }
+            #screenAdmin2DEditor .flex-1.bg-slate-100\/60 { padding: 4px !important; gap: 0 !important; }
+            #adminCanvasPanel { border-width: 2px !important; border-radius: 14px !important; }
+            #fabricCanvasWrapper { padding: 4px !important; min-height: 60dvh; }
+            #adminFabricCanvas { touch-action: none; }
+
+            /* --- USER SIDE 2D LAYOUT: RedBus-style bigger seat area --- */
+            #userCanvasWrapper {
+                height: calc(100dvh - 260px) !important;
+                min-height: 58dvh !important;
+                padding: 4px !important;
+                border-radius: 18px !important;
+            }
+            #screenUser2DLayout .glass-panel.absolute.bottom-0 {
+                padding: 10px 14px !important;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+                gap: 8px !important;
+            }
+            #screenUser2DLayout .glass-panel.absolute.bottom-0 h3#smart2DTotalAmount { font-size: 1.35rem !important; }
+            #screenUser2DLayout .glass-panel.absolute.bottom-0 #btnSmartBookNow {
+                padding: 12px 18px !important; font-size: 13px !important; border-radius: 14px !important;
+            }
+            #userCanvasHint { top: auto !important; bottom: 4px; }
+            #screenUser2DLayout > div:first-child { padding: 8px 14px !important; gap: 8px !important; }
+            #screenUser2DLayout > div:first-child .w-12.h-12 { width: 36px !important; height: 36px !important; font-size: 16px !important; }
+            #screenUser2DLayout > div:first-child h2 { font-size: 1.15rem !important; }
+            #screenUser2DLayout .flex-1.flex.flex-col.lg\:flex-row {
+                padding: 6px !important; padding-bottom: 130px !important; gap: 6px !important;
+            }
+            /* Image-map (redbus) mode padding trim */
+            #screenUserImageRedbus .flex-1.overflow-y-auto { padding: 8px !important; }
+            #screenUserImageRedbus .glass-panel { padding: 12px 14px !important; }
+            #screenUserImageRedbus #btnImageBookNow { padding: 12px 20px !important; font-size: 13px !important; }
+            /* Larger tap targets for redbus-mode overlays */
+            #userBedOverlays > div {
+                min-width: 30px !important; min-height: 30px !important;
+                border-width: 2px !important; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                font-size: 11px !important;
+            }
+        }
+
+        /* RedBus-style seat visuals (apply on all viewports so admin preview matches) */
+        #userBedOverlays > div {
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            border-radius: 8px;
+        }
+        #userBedOverlays > div:hover { transform: scale(1.08); }
+        #userBedOverlays > div.selected {
+            background: rgba(16, 185, 129, 0.85) !important;
+            border-color: #059669 !important;
+            color: #ffffff !important;
+        }
+        #userBedOverlays > div.unavailable {
+            background: rgba(148, 163, 184, 0.75) !important;
+            border-color: #64748b !important;
+            color: #fff !important; cursor: not-allowed !important;
+        }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
@@ -2394,15 +2478,61 @@
             canvasExpanded = !canvasExpanded;
             const mapPanel = document.getElementById('adminFloorPlanPanel');
             const btn = document.getElementById('btnExpandCanvas');
+            const isMobile = window.innerWidth < 1024;
             if (canvasExpanded) {
-                mapPanel.classList.add('hidden');
+                // On mobile the CSS already hides #adminFloorPlanPanel; on desktop we hide it via .hidden.
+                if (!isMobile) mapPanel.classList.add('hidden');
                 btn.innerText = '⛶ Show Map';
             } else {
-                mapPanel.classList.remove('hidden');
+                if (!isMobile) mapPanel.classList.remove('hidden');
                 btn.innerText = '⛶ Expand';
             }
-            setTimeout(fitFabricCanvas, 100);
+            setTimeout(fitFabricCanvas, 120);
+            setTimeout(fitFabricCanvas, 400);
         }
+
+        // Mobile helper: whenever the admin editor screen becomes visible OR the user 2D layout
+        // becomes visible, re-fit the canvas after layout has settled. This is what makes the
+        // canvas actually FILL the screen on a phone (was rendering at pre-layout tiny size).
+        (function installMobileFitObserver(){
+            function refit(id) {
+                if (id === 'screenAdmin2DEditor' && typeof fitFabricCanvas === 'function') {
+                    setTimeout(fitFabricCanvas, 60);
+                    setTimeout(fitFabricCanvas, 300);
+                    setTimeout(fitFabricCanvas, 800);
+                }
+                if (id === 'screenUser2DLayout') {
+                    // Reset the shared-scale cache so the mobile fit maths runs fresh
+                    try { userLayoutCommonScale = null; userLayoutMaxWrapperHeight = null; } catch(e){}
+                    if (typeof selectUserFloor === 'function' && typeof currentUserFloor === 'string' && currentUserFloor) {
+                        setTimeout(() => selectUserFloor(currentUserFloor), 120);
+                    }
+                }
+            }
+            const targets = ['screenAdmin2DEditor', 'screenUser2DLayout'];
+            targets.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const mo = new MutationObserver(() => {
+                    if (!el.classList.contains('hidden')) refit(id);
+                });
+                mo.observe(el, { attributes: true, attributeFilter: ['class'] });
+            });
+            window.addEventListener('resize', () => {
+                targets.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.classList.contains('hidden')) refit(id);
+                });
+            });
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    targets.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && !el.classList.contains('hidden')) refit(id);
+                    });
+                }, 300);
+            });
+        })();
 
         async function deleteAdminProperty(docId, propertyName) {
             if (!confirm(`Delete "${propertyName}" (ID: ${docId.substring(0,8).toUpperCase()})? This cannot be undone — the listing, all its rooms/beds, and photos will be permanently removed.`)) return;
@@ -2576,14 +2706,47 @@
                         gridLines.forEach(o => o.visible = false);
                         adminFabricCanvasInstance.renderAll();
 
+                        // BUG FIX (real bed-tap not registering on the published photo, even though
+                        // "Preview & Test" worked fine): the user-side screen shows this exported photo
+                        // as the visible picture while an INVISIBLE fabric canvas sits on top purely to
+                        // detect taps. That invisible layer positions/sizes itself using the bounding
+                        // box of the actual room/bed objects (measured with pan/zoom reset to zero).
+                        // Previously this export captured the ENTIRE raw canvas exactly as the admin
+                        // had it panned/zoomed at the moment of publishing — which almost never matches
+                        // that bounding box 1:1 — so the invisible tap layer and the visible photo
+                        // drifted apart and taps landed on the wrong spot (or nowhere). Preview & Test
+                        // never showed this bug because preview always shows the live canvas directly,
+                        // never a photo. Fix: reset the canvas to identity pan/zoom, measure the exact
+                        // same bounding box the user-side screen will use, and crop the export to that
+                        // box — so the photo's pixels line up perfectly with the invisible tap layer.
+                        const prevVpt = adminFabricCanvasInstance.viewportTransform.slice();
+                        adminFabricCanvasInstance.setViewportTransform([1, 0, 0, 1, 0, 0]);
+                        let snapBounds = null;
+                        adminFabricCanvasInstance.getObjects().forEach(o => {
+                            if (o.visible === false) return;
+                            const b = o.getBoundingRect(true);
+                            if (!snapBounds) { snapBounds = { left: b.left, top: b.top, right: b.left + b.width, bottom: b.top + b.height }; }
+                            else {
+                                snapBounds.left = Math.min(snapBounds.left, b.left);
+                                snapBounds.top = Math.min(snapBounds.top, b.top);
+                                snapBounds.right = Math.max(snapBounds.right, b.left + b.width);
+                                snapBounds.bottom = Math.max(snapBounds.bottom, b.top + b.height);
+                            }
+                        });
+                        adminFabricCanvasInstance.renderAll();
+
                         // QUALITY: switched to PNG (no compression blur at all, unlike JPEG) at a
                         // higher resolution — but capped at 4x so a small layout can't balloon into
                         // a huge, slow-to-upload file. Still always at least 1x the canvas's own size.
-                        const rawW = adminFabricCanvasInstance.getWidth(), rawH = adminFabricCanvasInstance.getHeight();
+                        const rawW = snapBounds ? (snapBounds.right - snapBounds.left) : adminFabricCanvasInstance.getWidth();
+                        const rawH = snapBounds ? (snapBounds.bottom - snapBounds.top) : adminFabricCanvasInstance.getHeight();
                         const longerSide = Math.max(rawW, rawH) || 1;
                         const snapMultiplier = Math.min(4, Math.max(1, 3000 / longerSide));
-                        const snapshotDataUrl = adminFabricCanvasInstance.toDataURL({ format: 'png', multiplier: snapMultiplier });
+                        const snapshotDataUrl = snapBounds
+                            ? adminFabricCanvasInstance.toDataURL({ format: 'png', multiplier: snapMultiplier, left: snapBounds.left, top: snapBounds.top, width: rawW, height: rawH })
+                            : adminFabricCanvasInstance.toDataURL({ format: 'png', multiplier: snapMultiplier });
 
+                        adminFabricCanvasInstance.setViewportTransform(prevVpt);
                         gridLines.forEach(o => o.visible = true);
                         adminFabricCanvasInstance.backgroundColor = prevBg;
                         adminFabricCanvasInstance.renderAll();
