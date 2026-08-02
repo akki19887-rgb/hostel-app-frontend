@@ -943,6 +943,7 @@
             <div class="flex gap-2 flex-wrap items-center">
                 <button type="button" onclick="addBusinessCorridor('vertical')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl">↕️ V-COR</button>
                 <button type="button" onclick="addBusinessCorridor('horizontal')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl">↔️ H-COR</button>
+                <button type="button" onclick="addBusinessCorridor('middle')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl" title="Rooms on both sides, corridor running horizontally between them">⬍ MID-COR</button>
                 <button type="button" onclick="addCustomRoom()" class="btn-gradient px-3 py-2 text-white text-xs font-black rounded-xl shadow-sm">➕ ADD ROOM</button>
                 <button type="button" onclick="toggleBusinessPreviewPanel()" id="bizPreviewToggleBtn" class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-black rounded-xl hover:border-indigo-400 transition">🔽 Hide Preview</button>
             </div>
@@ -1108,6 +1109,11 @@
                  all canvas/photo alignment entirely — every bed is a real clickable div, so this is
                  a good way to confirm bed data + click wiring is correct on its own. -->
             <button type="button" id="btnUserTestSimpleView" onclick="toggleUserTestSimpleView()" class="text-xs bg-white border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2.5 rounded-xl shadow-sm hover:bg-indigo-50 transition whitespace-nowrap">🧪 Test View</button>
+            <!-- ADMIN-ONLY: lets an admin previewing their own layout edit rooms/beds/bath/table right
+                 here, without switching to Architect Mode. Stays hidden (display:none) unless JS
+                 explicitly reveals it after confirming isPreviewingAsUser — real booking customers
+                 must never see this, so it defaults to hidden rather than relying on JS alone. -->
+            <button type="button" id="btnTestViewEditMode" onclick="toggleTestViewEditMode()" style="display:none;" class="text-xs bg-amber-50 border-2 border-amber-300 text-amber-700 font-black px-4 py-2.5 rounded-xl shadow-sm hover:bg-amber-100 transition whitespace-nowrap">✏️ Edit Here</button>
         </div>
 
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
@@ -2433,7 +2439,7 @@
             globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: newRoomId, name: newRoom.name, beds: newBedArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: defaultFloor });
             refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
         }
-        function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : 'top'; admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
+        function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : (orientation === 'middle' ? 'middle' : 'top'); admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
         function removeRoom(index) {
             const roomId = globalDynamicRooms[index].id; globalDynamicRooms.splice(index, 1); admin2DBlocks = admin2DBlocks.filter(b => b.id !== roomId);
             // Any room that was synced FROM the one just deleted goes back to independent/editable.
@@ -3388,10 +3394,13 @@
             const canvasElP = document.getElementById('userFabricCanvas');
             const snapImgP = document.getElementById('userLayoutSnapshotImg');
             const toggleBtnP = document.getElementById('btnUserTestSimpleView');
+            const editBtnP = document.getElementById('btnTestViewEditMode');
             if (gridElP) gridElP.classList.remove('hidden');
             if (canvasElP) canvasElP.style.visibility = 'hidden';
             if (snapImgP) snapImgP.style.visibility = 'hidden';
             if (toggleBtnP) toggleBtnP.innerText = '🖼️ Photo View';
+            if (editBtnP) { editBtnP.style.display = 'inline-block'; editBtnP.innerText = '✏️ Edit Here'; }
+            testViewEditModeActive = false;
             renderUserSimpleBedGrid();
 
             setTimeout(() => {
@@ -3412,6 +3421,12 @@
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
+            // SAFETY: this is the REAL booking flow for an actual customer — make absolutely sure no
+            // admin-only editing state or controls can leak in from a previous Preview & Test session.
+            isPreviewingAsUser = false;
+            testViewEditModeActive = false;
+            const editBtnReal = document.getElementById('btnTestViewEditMode');
+            if (editBtnReal) editBtnReal.style.display = 'none';
             userLayoutCommonScale = null; // fresh property — recompute the shared true-size scale once, below
             userLayoutMaxWrapperHeight = null;
 
@@ -3453,10 +3468,12 @@
             const canvasEl0 = document.getElementById('userFabricCanvas');
             const snapImg0 = document.getElementById('userLayoutSnapshotImg');
             const toggleBtn0 = document.getElementById('btnUserTestSimpleView');
+            const editBtn0 = document.getElementById('btnTestViewEditMode');
             if (gridEl0) gridEl0.classList.remove('hidden');
             if (canvasEl0) canvasEl0.style.visibility = 'hidden';
             if (snapImg0) snapImg0.style.visibility = 'hidden';
             if (toggleBtn0) toggleBtn0.innerText = '🖼️ Photo View';
+            if (editBtn0) editBtn0.style.display = 'none';
             renderUserSimpleBedGrid();
 
             const tabContainer = document.getElementById('userFloorTabsContainer');
@@ -3541,6 +3558,17 @@
         // that the canvas tap handler calls, so selecting a bed here books it identically.
         // ==========================================
         let userTestSimpleViewActive = true; // now the DEFAULT real view — the canvas/photo overlay is the fallback, reachable via the toggle button, not the other way around
+        // Lets an admin edit rooms/beds/bath/table directly on THIS screen (same one real users book
+        // from) instead of switching to Architect Mode's separate HD Canvas panel. Gated hard behind
+        // isPreviewingAsUser — a real customer booking a bed must never see or reach this.
+        let testViewEditModeActive = false;
+        function toggleTestViewEditMode() {
+            if (!isPreviewingAsUser) return; // safety net: never allow this outside admin preview
+            testViewEditModeActive = !testViewEditModeActive;
+            const btn = document.getElementById('btnTestViewEditMode');
+            if (btn) btn.innerText = testViewEditModeActive ? '✅ Done Editing' : '✏️ Edit Here';
+            renderUserSimpleBedGrid();
+        }
         function findLiveBedForGrid(bedId) {
             if (!window.currentPropertyData || !Array.isArray(window.currentPropertyData.roomsAndBeds)) return null;
             for (const room of window.currentPropertyData.roomsAndBeds) {
@@ -3577,13 +3605,29 @@
             const filteredBlocks = (admin2DBlocks || []).filter(b => (b.floor || 'Ground Floor') === currentUserFloor);
             const corridors = filteredBlocks.filter(b => b.type === 'corridor');
             const rooms = filteredBlocks.filter(b => b.type === 'room');
-            if (rooms.length === 0) { container.innerHTML = `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`; return; }
+            if (rooms.length === 0) {
+                if (testViewEditModeActive && isPreviewingAsUser) {
+                    container.innerHTML = `<div class="p-10 text-center"><p class="text-slate-400 font-bold mb-4">No rooms on this floor yet.</p><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`;
+                } else {
+                    container.innerHTML = `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`;
+                }
+                return;
+            }
             const pos = (corridors[0] && corridors[0].position) || 'top';
-            const isVertical = pos === 'left' || pos === 'right' || pos === 'center';
-            const flexDir = (pos === 'top') ? 'column' : (pos === 'bottom') ? 'column-reverse' : (pos === 'left') ? 'row' : (pos === 'right') ? 'row-reverse' : 'row';
+            // FIX: side-by-side room groups (left/right/center corridor positions) forced a lot of
+            // horizontal scrolling on narrow phone screens to see the far side. On mobile, always
+            // stack top-to-bottom instead — the corridor direction visually flips from vertical to
+            // horizontal, but nothing about the actual room/bed data changes, and there's no more
+            // sideways scrolling needed to reach every room.
+            const isNarrowScreen = window.innerWidth < 640;
+            const effectivePos = isNarrowScreen && (pos === 'left' || pos === 'right' || pos === 'center') ? 'middle' : pos;
+            const isVertical = effectivePos === 'left' || effectivePos === 'right' || effectivePos === 'center';
+            const flexDir = (effectivePos === 'top') ? 'column' : (effectivePos === 'bottom') ? 'column-reverse' : (effectivePos === 'left') ? 'row' : (effectivePos === 'right') ? 'row-reverse' : (effectivePos === 'middle') ? 'column' : 'row';
             const corridorStyle = isVertical
                 ? 'flex: 0 0 64px; min-width: 56px; writing-mode: vertical-rl; text-orientation: mixed;'
                 : 'flex: 0 0 56px; min-height: 56px; width: 100%;';
+
+            const editHere = testViewEditModeActive && isPreviewingAsUser; // double-checked: only ever true for an admin previewing, never a real booking customer
 
             function renderBed(bed) {
                 const liveBed = findLiveBedForGrid(bed.id);
@@ -3591,6 +3635,9 @@
                 const status = liveBed ? (liveBed.status || 'available') : 'available';
                 const isOccupied = status && status !== 'available';
                 const isSelected = currentSelectedBedId === bed.id;
+                if (editHere) {
+                    return `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 92px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span><span class="text-3xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${price}</span></div>`;
+                }
                 let cls = 'border-2 rounded-xl p-3 text-center transition ';
                 if (isOccupied) cls += 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed';
                 else if (isSelected) cls += 'bg-indigo-500 border-indigo-600 text-white shadow-lg scale-105 cursor-pointer';
@@ -3601,29 +3648,40 @@
             // Rooms stack vertically, one per row, in their original order — this keeps Room 1/2/3
             // in a clean single-file line every time, instead of a wrapping grid that could reorder
             // them (e.g. pushing Room 3 down next to Room 1) depending on how many beds each room has.
-            function renderIcon(icon) {
+            function renderIcon(icon, blockId, iconIndex) {
                 const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
-                return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 92px; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" title="${icon.label || ''}"><span class="text-3xl block mb-1">${emoji}</span><span class="block text-[10px] font-black text-slate-600 uppercase tracking-wide">${icon.label || ''}</span></div>`;
+                const delBtn = editHere ? `<span onclick="event.stopPropagation(); qeDeleteIcon('${blockId}',${iconIndex});" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
+                return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 92px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" title="${icon.label || ''}">${delBtn}<span class="text-3xl block mb-1">${emoji}</span><span class="block text-[10px] font-black text-slate-600 uppercase tracking-wide">${icon.label || ''}</span></div>`;
             }
             function renderRoomsBlock(blockList) {
                 let html = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
                 blockList.forEach(block => {
                     const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
                     const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
-                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsSafe.map(renderBed).join('')}${iconsSafe.map(renderIcon).join('')}</div></div>`;
+                    const bedsHtml = bedsSafe.map(b => renderBed(b).split('__ROOMID__').join(block.id)).join('');
+                    const iconsHtml = iconsSafe.map((ic, idx) => renderIcon(ic, block.id, idx)).join('');
+                    const header = editHere
+                        ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div></div>`
+                        : `<div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div>`;
+                    const addBtns = editHere ? `
+                        <div onclick="qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 92px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>
+                        <div onclick="qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 92px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>
+                        <div onclick="qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 92px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
+                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;">${header}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBtns}</div></div>`;
                 });
                 return html + `</div>`;
             }
 
-            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 20px;">`;
+            let addRoomToolbar = editHere ? `<div style="padding: 0 4px 14px;"><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>` : '';
+            let html = addRoomToolbar + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 20px;">`;
             // TWO corridors on this floor = an L / T / + shaped walkway junction — same cross-shape
             // renderer used in Architect Mode's own preview, so what the admin designed is exactly
             // what the real user sees here.
             if (corridors.length >= 2) {
-                container.innerHTML = renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock);
+                container.innerHTML = addRoomToolbar + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock);
                 return;
             }
-            if (pos === 'center' && corridors.length > 0) {
+            if ((effectivePos === 'center' || effectivePos === 'middle') && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 html += renderRoomsBlock(rooms.slice(0, half));
                 html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem;">Walkway</div>`;
@@ -4112,6 +4170,14 @@
             `;
         }
 
+        // Quick Edit changes must show up wherever the layout is currently visible — the admin's
+        // own HD Canvas panel AND/OR the "Choose Your Bed" Test View (if an admin is editing there
+        // directly). Re-render whichever of these are actually present/visible right now.
+        function qeRefreshAll() {
+            if (document.getElementById('blueprintGrid')) renderAttractive2DPlan();
+            const testGrid = document.getElementById('userSimpleBedGrid');
+            if (testGrid && !testGrid.classList.contains('hidden')) renderUserSimpleBedGrid();
+        }
         let blueprintEditMode = false;
         function toggleBlueprintEditMode() {
             blueprintEditMode = !blueprintEditMode;
@@ -4124,24 +4190,25 @@
             const roomNum = admin2DBlocks.filter(b => b.type === 'room' && (b.floor || 'Ground Floor') === floor).length + 1;
             const bedId = 'QE-B' + Date.now();
             admin2DBlocks.push({ type: 'room', id: 'QE-R' + Date.now(), name: 'Room ' + roomNum, floor: floor, quadrant: 'NW', beds: [{ id: bedId, price: 5000, priceMonthly: 5000, priceDaily: 0, priceWeekly: 0 }], icons: [], amenities: [], has_door: true });
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeRenameRoom(blockId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
             const newName = prompt('Room name:', block.name);
-            if (newName && newName.trim()) { block.name = newName.trim(); renderAttractive2DPlan(); }
+            if (newName && newName.trim()) { block.name = newName.trim(); qeRefreshAll(); }
         }
         function qeDeleteRoom(blockId) {
             if (!confirm('Delete this room and all its beds? This cannot be undone.')) return;
             admin2DBlocks = admin2DBlocks.filter(b => b.id !== blockId);
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeAddBed(blockId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
             if (!block.beds) block.beds = [];
-            const price = Number(document.getElementById('adminCanvasSetPrice') && document.getElementById('adminCanvasSetPrice').value) || 5000;
+            const priceInput = document.getElementById('adminCanvasSetPrice');
+            const price = Number(priceInput && priceInput.value) || 5000;
             block.beds.push({ id: 'QE-B' + Date.now(), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0 });
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeAddIcon(blockId, type) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
@@ -4149,7 +4216,7 @@
             const label = type === 'bath' ? 'Bathroom' : 'Study Table';
             if (block.icons.some(ic => ic.type === type)) { alert('This room already has a ' + label.toLowerCase() + '.'); return; }
             block.icons.push({ type: type, label: label });
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeEditBedPrice(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
@@ -4159,18 +4226,18 @@
             const newPrice = Number(input);
             if (!isFinite(newPrice) || newPrice < 0) { alert('Enter a valid number.'); return; }
             bed.price = newPrice; bed.priceMonthly = newPrice;
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeDeleteBed(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
             if (!confirm('Remove this bed?')) return;
             block.beds = block.beds.filter(b => b.id !== bedId);
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         function qeDeleteIcon(blockId, iconIndex) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.icons) return;
             block.icons.splice(iconIndex, 1);
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
         // ==========================================
         // MULTI-CORRIDOR SHAPES (L / T / + junctions): most floors have one straight corridor, but
@@ -4199,7 +4266,7 @@
         function qeSetQuadrant(blockId, quadrant) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
             block.quadrant = quadrant;
-            renderAttractive2DPlan();
+            qeRefreshAll();
         }
 
         function renderAttractive2DPlan() {
@@ -4213,6 +4280,7 @@
                           : (pos === 'bottom') ? 'column-reverse'
                           : (pos === 'left') ? 'row'
                           : (pos === 'right') ? 'row-reverse'
+                          : (pos === 'middle') ? 'column'
                           : 'row'; // center handled specially below
 
             const corridorStyle = isVertical
@@ -4233,8 +4301,8 @@
 
             let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
 
-            // corridor "center" = corridor between two room groups
-            if (pos === 'center' && corridors.length > 0) {
+            // corridor "center" = split left/right; "middle" = split top/bottom (rooms both sides, horizontal corridor)
+            if ((pos === 'center' || pos === 'middle') && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
                 html += renderRoomsGrid(leftRooms);
