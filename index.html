@@ -955,8 +955,8 @@
                 <div class="bg-slate-100 text-slate-500 text-[10px] font-black uppercase px-3 py-1.5 border-b border-slate-200 flex items-center gap-2 tracking-widest shrink-0"><span>🖼️</span> Original Map (Click to Zoom)</div>
                 <div class="flex-1 p-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden"><img id="businessRawImageDisplay" src="" class="max-w-full max-h-full object-contain mix-blend-multiply"></div>
             </div>
-            <div class="w-full md:w-2/3 bg-white border-2 border-indigo-200 rounded-2xl flex flex-col overflow-hidden relative shadow-sm h-full cursor-zoom-in" onclick="zoomBlueprintContainer()">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-black uppercase px-3 py-1.5 flex items-center gap-2 tracking-widest shrink-0"><span>✨</span> AI Generated 2D Blueprint (Click to Zoom)</div>
+            <div class="w-full md:w-2/3 bg-white border-2 border-indigo-200 rounded-2xl flex flex-col overflow-hidden relative shadow-sm h-full">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[10px] font-black uppercase px-3 py-1.5 flex items-center gap-2 tracking-widest shrink-0 justify-between cursor-zoom-in" onclick="zoomBlueprintContainer()"><span class="flex items-center gap-2"><span>✨</span> AI Generated 2D Blueprint (Click to Zoom)</span><button type="button" onclick="event.stopPropagation(); toggleBlueprintEditMode();" id="blueprintEditToggleBtn" class="bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg text-[9px] tracking-widest normal-case font-black">✏️ Quick Edit</button></div>
                 <div id="blueprintGrid" class="flex-1 p-3 overflow-y-auto layout-scroll bg-slate-50/50"></div>
             </div>
         </div>
@@ -2316,8 +2316,15 @@
             goTo('screenMapUploadPipeline');
         }
 
-        function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; goTo('screenPropertyTypeSelection'); }
+        // PERF: the AI scan backend is hosted on a free tier that "sleeps" after inactivity and can
+        // take 30-60+ seconds to wake up on its very first request. Firing a harmless, ignored ping
+        // as soon as the admin starts a property (well before they actually reach "Analyze") gives
+        // the server a head start waking up, so by the time they hit the real AI request it's often
+        // already warm. This never blocks anything — failures are silently ignored.
+        function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
+        function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
         async function addFloorMap() {
+            wakeUpAIBackend();
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
             if(!name || !fileInput.files[0]) { alert("Kripya Floor ka naam aur map ki photo dono dalein!"); return; }
             const compressedFile = await compressImage(fileInput.files[0], 500); const localPreviewUrl = URL.createObjectURL(compressedFile);
@@ -2566,7 +2573,7 @@
 
         window.openBusinessEdit = async function(docId) {
             editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
-            loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || []; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor';
+            loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || []; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor'; wakeUpAIBackend();
             floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
             document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
         }
@@ -3609,6 +3616,13 @@
             }
 
             let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 20px;">`;
+            // TWO corridors on this floor = an L / T / + shaped walkway junction — same cross-shape
+            // renderer used in Architect Mode's own preview, so what the admin designed is exactly
+            // what the real user sees here.
+            if (corridors.length >= 2) {
+                container.innerHTML = renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock);
+                return;
+            }
             if (pos === 'center' && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 html += renderRoomsBlock(rooms.slice(0, half));
@@ -4098,6 +4112,96 @@
             `;
         }
 
+        let blueprintEditMode = false;
+        function toggleBlueprintEditMode() {
+            blueprintEditMode = !blueprintEditMode;
+            const btn = document.getElementById('blueprintEditToggleBtn');
+            if (btn) btn.innerText = blueprintEditMode ? '✅ Done Editing' : '✏️ Quick Edit';
+            renderAttractive2DPlan();
+        }
+        function qeAddRoom() {
+            const floor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
+            const roomNum = admin2DBlocks.filter(b => b.type === 'room' && (b.floor || 'Ground Floor') === floor).length + 1;
+            const bedId = 'QE-B' + Date.now();
+            admin2DBlocks.push({ type: 'room', id: 'QE-R' + Date.now(), name: 'Room ' + roomNum, floor: floor, quadrant: 'NW', beds: [{ id: bedId, price: 5000, priceMonthly: 5000, priceDaily: 0, priceWeekly: 0 }], icons: [], amenities: [], has_door: true });
+            renderAttractive2DPlan();
+        }
+        function qeRenameRoom(blockId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
+            const newName = prompt('Room name:', block.name);
+            if (newName && newName.trim()) { block.name = newName.trim(); renderAttractive2DPlan(); }
+        }
+        function qeDeleteRoom(blockId) {
+            if (!confirm('Delete this room and all its beds? This cannot be undone.')) return;
+            admin2DBlocks = admin2DBlocks.filter(b => b.id !== blockId);
+            renderAttractive2DPlan();
+        }
+        function qeAddBed(blockId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
+            if (!block.beds) block.beds = [];
+            const price = Number(document.getElementById('adminCanvasSetPrice') && document.getElementById('adminCanvasSetPrice').value) || 5000;
+            block.beds.push({ id: 'QE-B' + Date.now(), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0 });
+            renderAttractive2DPlan();
+        }
+        function qeAddIcon(blockId, type) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
+            if (!block.icons) block.icons = [];
+            const label = type === 'bath' ? 'Bathroom' : 'Study Table';
+            if (block.icons.some(ic => ic.type === type)) { alert('This room already has a ' + label.toLowerCase() + '.'); return; }
+            block.icons.push({ type: type, label: label });
+            renderAttractive2DPlan();
+        }
+        function qeEditBedPrice(blockId, bedId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
+            const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
+            const input = prompt('Monthly price (₹):', bed.priceMonthly || bed.price || 5000);
+            if (input === null) return;
+            const newPrice = Number(input);
+            if (!isFinite(newPrice) || newPrice < 0) { alert('Enter a valid number.'); return; }
+            bed.price = newPrice; bed.priceMonthly = newPrice;
+            renderAttractive2DPlan();
+        }
+        function qeDeleteBed(blockId, bedId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
+            if (!confirm('Remove this bed?')) return;
+            block.beds = block.beds.filter(b => b.id !== bedId);
+            renderAttractive2DPlan();
+        }
+        function qeDeleteIcon(blockId, iconIndex) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.icons) return;
+            block.icons.splice(iconIndex, 1);
+            renderAttractive2DPlan();
+        }
+        // ==========================================
+        // MULTI-CORRIDOR SHAPES (L / T / + junctions): most floors have one straight corridor, but
+        // some have TWO — a horizontal one and a vertical one crossing — forming a "+" junction, or
+        // (if rooms only exist on some sides) an "L" or "T" bend. Rooms are grouped into 4 quadrants
+        // (NW/NE/SW/SE, via each room's `quadrant` field) and laid out around a real cross-shaped
+        // walkway. If a floor only has ONE corridor (the normal case), this is skipped entirely and
+        // the original single-strip layout is used, unchanged.
+        // ==========================================
+        function renderCrossShapeHTML(rooms, corridorLabel, renderRoomsBlockFn) {
+            const groups = { NW: [], NE: [], SW: [], SE: [] };
+            rooms.forEach(r => { const q = groups[r.quadrant] ? r.quadrant : 'NW'; groups[q].push(r); });
+            const corridorArmStyle = 'background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 12px); border: 2px dashed #94a3b8; border-radius: 8px;';
+            return `<div style="display:grid; grid-template-columns: 1fr 44px 1fr; grid-template-rows: auto 44px auto; gap: 14px; padding: 16px; width:100%;">
+                <div style="grid-column:1; grid-row:1;">${renderRoomsBlockFn(groups.NW)}</div>
+                <div style="grid-column:2; grid-row:1; ${corridorArmStyle}"></div>
+                <div style="grid-column:3; grid-row:1;">${renderRoomsBlockFn(groups.NE)}</div>
+                <div style="grid-column:1; grid-row:2; ${corridorArmStyle}"></div>
+                <div style="grid-column:2; grid-row:2; ${corridorArmStyle} display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#475569; text-align:center;">${corridorLabel}</div>
+                <div style="grid-column:3; grid-row:2; ${corridorArmStyle}"></div>
+                <div style="grid-column:1; grid-row:3;">${renderRoomsBlockFn(groups.SW)}</div>
+                <div style="grid-column:2; grid-row:3; ${corridorArmStyle}"></div>
+                <div style="grid-column:3; grid-row:3;">${renderRoomsBlockFn(groups.SE)}</div>
+            </div>`;
+        }
+        function qeSetQuadrant(blockId, quadrant) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
+            block.quadrant = quadrant;
+            renderAttractive2DPlan();
+        }
+
         function renderAttractive2DPlan() {
             const container = document.getElementById('blueprintGrid'); if(!container) return;
             const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
@@ -4115,7 +4219,19 @@
                 ? 'flex: 0 0 48px; min-width: 40px; writing-mode: vertical-rl; text-orientation: mixed;'
                 : 'flex: 0 0 40px; min-height: 40px; width: 100%;';
 
-            let html = `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
+            let toolbarHtml = '';
+            if (blueprintEditMode) {
+                toolbarHtml = `<div style="padding: 10px 16px 0;"><button type="button" onclick="event.stopPropagation(); qeAddRoom();" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`;
+            }
+
+            // TWO corridors on the same floor = an L / T / + shaped walkway junction, not a single
+            // straight strip — route to the cross-shape renderer instead of the normal split-in-half logic.
+            if (corridors.length >= 2) {
+                container.innerHTML = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid);
+                return;
+            }
+
+            let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
 
             // corridor "center" = corridor between two room groups
             if (pos === 'center' && corridors.length > 0) {
@@ -4133,15 +4249,32 @@
         }
         // Rooms stack vertically, one per row, in their original order (Room 1, 2, 3 top-to-bottom)
         // instead of an auto-fit grid that could reorder/wrap them depending on bed count — same
-        // clean single-file layout used on the real user booking screen's Test View.
+        // clean single-file layout used on the real user booking screen's Test View. In Quick Edit
+        // mode, the same cards also become editable — no need to open the full canvas editor for
+        // simple changes like renaming a room, tweaking a price, or adding/removing a bed.
         function renderRoomsGrid(rooms) {
             let roomsHtml = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
             rooms.forEach(block => {
                 const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
                 const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
-                let bedsHtml = bedsSafe.map(b => `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 88px;"><span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span></div>`).join('');
-                let iconsHtml = iconsSafe.map(icon => { const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦'); return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};"><span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`; }).join('');
-                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;"><div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div><div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}</div></div>`;
+                let bedsHtml = bedsSafe.map(b => {
+                    const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteBed('${block.id}','${b.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
+                    const clickAttr = blueprintEditMode ? ` onclick="event.stopPropagation(); qeEditBedPrice('${block.id}','${b.id}');" style="cursor:pointer;"` : '';
+                    return `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 88px; position:relative;"${clickAttr}>${delBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span></div>`;
+                }).join('');
+                let iconsHtml = iconsSafe.map((icon, idx) => {
+                    const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
+                    const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteIcon('${block.id}',${idx});" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
+                    return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};">${delBtn}<span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`;
+                }).join('');
+                const quadrantPicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:6px; justify-content:center;">${['NW','NE','SW','SE'].map(q => `<span onclick="event.stopPropagation(); qeSetQuadrant('${block.id}','${q}');" style="font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px; cursor:pointer; ${((block.quadrant || 'NW') === q) ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${q}</span>`).join('')}</div>` : '';
+                const headerHtml = blueprintEditMode
+                    ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div>${quadrantPicker}</div>`
+                    : `<div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div>`;
+                const addBedBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 88px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>` : '';
+                const addBathBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 88px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>` : '';
+                const addTableBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 88px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
+                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;">${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
