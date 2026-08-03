@@ -19,9 +19,10 @@
     <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
     <script>
         window.addEventListener('load', function() {
-            if (window.Sentry) {
+            const SENTRY_DSN_FRONTEND = "PASTE_YOUR_SENTRY_DSN_HERE"; // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
+            if (window.Sentry && SENTRY_DSN_FRONTEND && SENTRY_DSN_FRONTEND.indexOf('PASTE_YOUR') !== 0) {
                 Sentry.init({
-                    dsn: "PASTE_YOUR_SENTRY_DSN_HERE", // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
+                    dsn: SENTRY_DSN_FRONTEND,
                     tracesSampleRate: 0.2,
                     beforeSend(event) { if (!event.exception) return null; return event; } // sirf real errors bhejo, sab kuch nahi
                 });
