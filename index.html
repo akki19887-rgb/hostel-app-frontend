@@ -1023,20 +1023,17 @@
             </div>
 
             <div class="flex gap-2 bg-slate-50/80 p-2 border border-slate-200/60 rounded-2xl flex-wrap">
-                <button onclick="addFabricBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🛏️ Bed</button>
-                <button onclick="addFabricRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
-                <button onclick="addFabricVerticalCorridor()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↕️ V-Cor</button>
-                <button onclick="addFabricHorizontalCorridor()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↔️ H-Cor</button>
+                <button onclick="architectAddBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">🛏️ Bed</button>
+                <button onclick="qeAddRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
+                <button onclick="addBusinessCorridor('vertical')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↕️ V-Cor</button>
+                <button onclick="addBusinessCorridor('horizontal')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↔️ H-Cor</button>
+                <button onclick="addBusinessCorridor('middle')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Rooms on both sides, corridor running horizontally between them">⬍ Mid-Cor</button>
                 <div class="w-px bg-slate-300 mx-1"></div>
-                <button onclick="addFabricBathroom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🚿 Bath</button>
-                <button onclick="addFabricTable()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">📚 Table</button>
-                <button onclick="addFabricText()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">T Text</button>
-                <button onclick="deleteSelectedFabricElement()" class="text-xs bg-red-50 border border-red-100 text-red-600 font-black px-4 py-2 rounded-xl shadow-sm hover:bg-red-500 hover:text-white transition ml-2">🗑️ Delete</button>
+                <button onclick="architectAddBath()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">🚿 Bath</button>
+                <button onclick="architectAddTable()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">📚 Table</button>
+                <button onclick="architectRenameSelectedRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">✏️ Rename</button>
+                <button onclick="architectDeleteSelectedRoom()" class="text-xs bg-red-50 border border-red-100 text-red-600 font-black px-4 py-2 rounded-xl shadow-sm hover:bg-red-500 hover:text-white transition ml-2" title="Tap a room below first to select it">🗑️ Delete Room</button>
                 <div class="w-px bg-slate-300 mx-1"></div>
-                <button onclick="selectAllFabricElements()" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 font-black px-3 py-2 rounded-xl shadow-sm hover:bg-indigo-500 hover:text-white transition">☑️ Select All</button>
-                <button onclick="zoomFabricCanvas(1.2)" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">🔍+</button>
-                <button onclick="zoomFabricCanvas(0.8)" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">🔍−</button>
-                <button onclick="fitFabricCanvas()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">⛶ Fit</button>
                 <button onclick="toggleAdminFloorPlanPanel()" id="floorPanelToggleBtn" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition">◧ Hide Plan</button>
             </div>
 
@@ -1059,12 +1056,13 @@
             <div id="adminCanvasPanel" class="flex-1 bg-white rounded-3xl shadow-xl border-4 border-indigo-50 flex flex-col overflow-hidden relative transition-all duration-300">
                 <div class="btn-gradient text-white p-3 text-center text-xs font-black uppercase tracking-widest shadow-sm z-10 flex justify-between items-center px-4 gap-2">
                     <button type="button" onclick="event.stopPropagation(); toggleCanvasExpand()" id="btnExpandCanvas" class="shrink-0 bg-white/20 hover:bg-white/30 rounded-lg px-2.5 py-1.5 text-[10px] font-black transition">⛶ Expand</button>
-                    <span class="truncate">Architectural HD Canvas</span>
-                    <span class="text-[10px] opacity-80 hidden lg:inline whitespace-nowrap">Tip: Hold Shift/Ctrl + click for multi-select · Drag to lasso-select · Ctrl+A = Select All</span>
+                    <span class="truncate">Architectural Blueprint</span>
+                    <span class="text-[10px] opacity-80 hidden lg:inline whitespace-nowrap">Tap a room to select it, then use the toolbar above</span>
                 </div>
-                <div class="flex-1 overflow-auto layout-scroll bg-slate-50 p-4" id="fabricCanvasWrapper">
-                    <canvas id="adminFabricCanvas"></canvas>
-                </div>
+                <div class="flex-1 overflow-auto layout-scroll bg-slate-50 p-4" id="architectBlueprintGrid"></div>
+                <!-- Hidden on purpose: kept only so the background fabric.js instance (used for publish-time
+                     snapshot generation) has a valid element to attach to. Never shown to the admin. -->
+                <div style="display:none;"><canvas id="adminFabricCanvas"></canvas></div>
             </div>
         </div>
     </div>
@@ -2426,9 +2424,9 @@
         function selectFloorTab(floorName) { currentSelectedFloor = floorName; const floorData = floorMaps.find(f => f.floorName === floorName); if(floorData) { uploadedMapDataUrl = floorData.dataUrl; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; } renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); }
         function selectAdminFloor(floorName) {
             if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice', 'isRoom', 'roomId', 'roomSlotIndex', 'isAmenityIcon', 'tooltipLabel']); }
-            currentAdminFloor = floorName; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderAdminFloorTabs(uniqueFloors);
+            currentAdminFloor = floorName; currentSelectedFloor = floorName; architectSelectedRoomId = null; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderAdminFloorTabs(uniqueFloors);
             let imgUrl = loadedBusinessData && loadedBusinessData.floorMapUrls ? loadedBusinessData.floorMapUrls[floorName] : (loadedBusinessData ? loadedBusinessData.mapImageUrl : '');
-            document.getElementById('adminSideBySideImg').src = imgUrl || ''; redrawAdminCanvasForFloor();
+            document.getElementById('adminSideBySideImg').src = imgUrl || ''; redrawAdminCanvasForFloor(); renderAttractive2DPlan();
         }
         function refreshRoomsLabel() { document.getElementById('detectedRoomsLabel').innerText = `${globalDynamicRooms.length} Rooms Found`; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; }
 
@@ -4173,12 +4171,33 @@
         // Quick Edit changes must show up wherever the layout is currently visible — the admin's
         // own HD Canvas panel AND/OR the "Choose Your Bed" Test View (if an admin is editing there
         // directly). Re-render whichever of these are actually present/visible right now.
+        // Architect Mode's toolbar (Bed/Bath/Table/Rename/Delete Room) acts on whichever room card
+        // was last tapped in the grid below it — since there's no canvas selection anymore, room
+        // cards themselves are the "selection" (tap a room, it highlights, then use the toolbar).
+        let architectSelectedRoomId = null;
+        function selectArchitectRoom(blockId) {
+            architectSelectedRoomId = (architectSelectedRoomId === blockId) ? null : blockId; // tap again to deselect
+            renderAttractive2DPlan();
+        }
+        function architectRequireSelectedRoom() {
+            if (!architectSelectedRoomId || !admin2DBlocks.find(b => b.id === architectSelectedRoomId)) {
+                alert('Pehle neeche kisi room ko tap karke select karo, phir ye button dabao.');
+                return null;
+            }
+            return architectSelectedRoomId;
+        }
+        function architectAddBed() { const id = architectRequireSelectedRoom(); if (id) qeAddBed(id); }
+        function architectAddBath() { const id = architectRequireSelectedRoom(); if (id) qeAddIcon(id, 'bath'); }
+        function architectAddTable() { const id = architectRequireSelectedRoom(); if (id) qeAddIcon(id, 'table'); }
+        function architectRenameSelectedRoom() { const id = architectRequireSelectedRoom(); if (id) qeRenameRoom(id); }
+        function architectDeleteSelectedRoom() { const id = architectRequireSelectedRoom(); if (id) { qeDeleteRoom(id); architectSelectedRoomId = null; } }
+
         function qeRefreshAll() {
-            if (document.getElementById('blueprintGrid')) renderAttractive2DPlan();
+            if (document.getElementById('blueprintGrid') || document.getElementById('architectBlueprintGrid')) renderAttractive2DPlan();
             const testGrid = document.getElementById('userSimpleBedGrid');
             if (testGrid && !testGrid.classList.contains('hidden')) renderUserSimpleBedGrid();
         }
-        let blueprintEditMode = false;
+        let blueprintEditMode = true; // Architect Mode's grid panel has no separate toggle — it's always editable. The onboarding "Review & Correct" screen keeps its own toggle button to turn this off if wanted.
         function toggleBlueprintEditMode() {
             blueprintEditMode = !blueprintEditMode;
             const btn = document.getElementById('blueprintEditToggleBtn');
@@ -4250,13 +4269,13 @@
         function renderCrossShapeHTML(rooms, corridorLabel, renderRoomsBlockFn) {
             const groups = { NW: [], NE: [], SW: [], SE: [] };
             rooms.forEach(r => { const q = groups[r.quadrant] ? r.quadrant : 'NW'; groups[q].push(r); });
-            const corridorArmStyle = 'background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 12px); border: 2px dashed #94a3b8; border-radius: 8px;';
-            return `<div style="display:grid; grid-template-columns: 1fr 44px 1fr; grid-template-rows: auto 44px auto; gap: 14px; padding: 16px; width:100%;">
+            const corridorArmStyle = 'background: #cbd5e1; border: 3px dashed #64748b; border-radius: 6px; min-height: 60px; min-width: 60px;';
+            return `<div style="display:grid; grid-template-columns: 1fr 60px 1fr; grid-template-rows: auto 60px auto; gap: 14px; padding: 16px; width:100%; align-items:stretch;">
                 <div style="grid-column:1; grid-row:1;">${renderRoomsBlockFn(groups.NW)}</div>
                 <div style="grid-column:2; grid-row:1; ${corridorArmStyle}"></div>
                 <div style="grid-column:3; grid-row:1;">${renderRoomsBlockFn(groups.NE)}</div>
                 <div style="grid-column:1; grid-row:2; ${corridorArmStyle}"></div>
-                <div style="grid-column:2; grid-row:2; ${corridorArmStyle} display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#475569; text-align:center;">${corridorLabel}</div>
+                <div style="grid-column:2; grid-row:2; ${corridorArmStyle} display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#1e293b; text-align:center;">${corridorLabel}</div>
                 <div style="grid-column:3; grid-row:2; ${corridorArmStyle}"></div>
                 <div style="grid-column:1; grid-row:3;">${renderRoomsBlockFn(groups.SW)}</div>
                 <div style="grid-column:2; grid-row:3; ${corridorArmStyle}"></div>
@@ -4270,7 +4289,8 @@
         }
 
         function renderAttractive2DPlan() {
-            const container = document.getElementById('blueprintGrid'); if(!container) return;
+            const containers = ['blueprintGrid', 'architectBlueprintGrid'].map(id => document.getElementById(id)).filter(Boolean);
+            if (containers.length === 0) return;
             const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
             const corridors = filteredBlocks.filter(b => b.type === 'corridor'); const rooms = filteredBlocks.filter(b => b.type === 'room');
             // FIX: actually honour AI-detected corridor position (left/right/top/bottom/center)
@@ -4292,28 +4312,28 @@
                 toolbarHtml = `<div style="padding: 10px 16px 0;"><button type="button" onclick="event.stopPropagation(); qeAddRoom();" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`;
             }
 
+            let finalHtml;
             // TWO corridors on the same floor = an L / T / + shaped walkway junction, not a single
             // straight strip — route to the cross-shape renderer instead of the normal split-in-half logic.
             if (corridors.length >= 2) {
-                container.innerHTML = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid);
-                return;
-            }
-
-            let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
-
-            // corridor "center" = split left/right; "middle" = split top/bottom (rooms both sides, horizontal corridor)
-            if ((pos === 'center' || pos === 'middle') && corridors.length > 0) {
-                const half = Math.ceil(rooms.length / 2);
-                const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
-                html += renderRoomsGrid(leftRooms);
-                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
-                html += renderRoomsGrid(rightRooms);
+                finalHtml = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid);
             } else {
-                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
-                html += renderRoomsGrid(rooms);
+                let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
+                // corridor "center" = split left/right; "middle" = split top/bottom (rooms both sides, horizontal corridor)
+                if ((pos === 'center' || pos === 'middle') && corridors.length > 0) {
+                    const half = Math.ceil(rooms.length / 2);
+                    const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
+                    html += renderRoomsGrid(leftRooms);
+                    html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
+                    html += renderRoomsGrid(rightRooms);
+                } else {
+                    if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">Walkway</div>`;
+                    html += renderRoomsGrid(rooms);
+                }
+                html += `</div>`;
+                finalHtml = html;
             }
-            html += `</div>`;
-            container.innerHTML = html;
+            containers.forEach(c => { c.innerHTML = finalHtml; });
         }
         // Rooms stack vertically, one per row, in their original order (Room 1, 2, 3 top-to-bottom)
         // instead of an auto-fit grid that could reorder/wrap them depending on bed count — same
@@ -4342,7 +4362,9 @@
                 const addBedBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 88px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>` : '';
                 const addBathBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 88px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>` : '';
                 const addTableBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 88px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
-                roomsHtml += `<div class="blueprint-room" style="width:100%; padding: 14px;">${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
+                const isArchSelected = block.id === architectSelectedRoomId;
+                const roomCardStyle = isArchSelected ? 'width:100%; padding: 14px; box-shadow: 0 0 0 3px #6366f1; cursor:pointer;' : 'width:100%; padding: 14px; cursor:pointer;';
+                roomsHtml += `<div class="blueprint-room" style="${roomCardStyle}" onclick="selectArchitectRoom('${block.id}')">${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
