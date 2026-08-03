@@ -29,6 +29,9 @@
         });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- 360° VIRTUAL TOUR: Pannellum is a free, open-source panorama viewer. CSS loads eagerly
+         (tiny), JS is lazy-loaded only when a 360 photo is actually opened — see loadScriptOnce(). -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
     <style>
         :root {
             --primary: #4f46e5;
@@ -346,18 +349,37 @@
     <div id="modalTnC" class="zoom-modal hidden" onclick="document.getElementById('modalTnC').classList.add('hidden')">
         <div class="bg-white p-8 rounded-[2rem] max-w-lg w-full relative max-h-[85vh] overflow-y-auto layout-scroll" onclick="event.stopPropagation()">
             <button onclick="document.getElementById('modalTnC').classList.add('hidden')" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
-            <h2 class="display-font text-2xl font-black text-slate-900 mb-4 border-b border-slate-200 pb-3">📜 Booking & Refund Policy</h2>
-            <div class="text-sm text-slate-600 space-y-4 font-medium">
+            <div class="flex items-center justify-between gap-3 mb-4 border-b border-slate-200 pb-3 pr-12">
+                <h2 class="display-font text-2xl font-black text-slate-900">📜 Booking & Refund Policy</h2>
+                <div class="flex gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
+                    <button type="button" id="tncBtnEn" onclick="setTnCLang('en')" class="text-[11px] font-black px-3 py-1.5 rounded-lg transition">EN</button>
+                    <button type="button" id="tncBtnHi" onclick="setTnCLang('hi')" class="text-[11px] font-black px-3 py-1.5 rounded-lg transition">हिं</button>
+                </div>
+            </div>
+            <div id="tncContentEn" class="text-sm text-slate-600 space-y-4 font-medium hidden">
+                <p><b class="text-slate-800">1. Booking Confirmation:</b> Your booking is confirmed only once full payment or the required advance amount has been paid.</p>
+                <p><b class="text-slate-800">2. Cancellation Charges:</b><br>- 3+ days before check-in: 80% refund.<br>- 1 day before check-in: 50% refund.<br>- On check-in day or 'No-Show': 0% refund.</p>
+                <p><b class="text-slate-800">3. Monthly Stays & Deposit:</b><br>- Security deposit is refunded only if the room is returned in the same condition as check-in.<br>- At least 15-30 days' notice is required before vacating the room.</p>
+                <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- The advance amount is Non-Refundable.</p>
+            </div>
+            <div id="tncContentHi" class="text-sm text-slate-600 space-y-4 font-medium hidden">
                 <p><b class="text-slate-800">1. Booking Confirmation:</b> Aapki booking tabhi confirm maani jayegi jab aap poori payment ya required advance amount pay kar denge.</p>
                 <p><b class="text-slate-800">2. Cancellation Charges:</b><br>- Check-in se 3 din pehle: 80% refund.<br>- Check-in se 1 din pehle: 50% refund.<br>- Check-in ke din ya 'No-Show': 0% refund.</p>
                 <p><b class="text-slate-800">3. Monthly Stays & Deposit:</b><br>- Security Deposit tabhi wapas hoga jab room check-in jaisi sthiti mein wapas kiya jayega.<br>- Room khali karne se kam se kam 15-30 din pehle notice dena zaroori hai.</p>
                 <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- Advance amount 'Non-Refundable' hoti hai.</p>
             </div>
-            <button onclick="document.getElementById('modalTnC').classList.add('hidden')" class="mt-6 w-full btn-dark py-3 text-white font-black rounded-xl">I Understand</button>
+            <button onclick="document.getElementById('modalTnC').classList.add('hidden')" class="mt-6 w-full btn-dark py-3 text-white font-black rounded-xl" id="tncUnderstandBtn">I Understand</button>
         </div>
     </div>
 
     <!-- Rating Modal -->
+    <!-- 360° VIRTUAL TOUR VIEWER (shared: admin preview + real user booking screen) -->
+    <div id="modal360Viewer" class="hidden" style="position:fixed; inset:0; z-index:9999; background:#000;">
+        <button type="button" onclick="close360Panorama()" class="absolute top-4 right-4 z-10 w-11 h-11 bg-white/90 rounded-full font-bold text-slate-800 hover:bg-white shadow-lg">✕</button>
+        <div id="pannellumContainer" style="width:100%; height:100%;"></div>
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-xs font-bold bg-black/40 px-4 py-2 rounded-full">👆 Drag to look around · Pinch/scroll to zoom</div>
+    </div>
+
     <div id="modalRating" class="zoom-modal hidden" onclick="document.getElementById('modalRating').classList.add('hidden')">
         <div class="bg-white p-8 rounded-[2rem] max-w-sm w-full relative text-center" onclick="event.stopPropagation()">
             <button onclick="document.getElementById('modalRating').classList.add('hidden')" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
@@ -1178,9 +1200,21 @@
                 <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest" id="grfHostelNameHeading">Hostel Name</p>
             </div>
         </div>
-        <p class="text-xs text-slate-500 font-medium mb-6">Required by the hostel owner for security & verification. A copy is saved for you and sent to the hostel owner.</p>
+        <p class="text-xs text-slate-500 font-medium mb-4">Required by the hostel owner for security & verification. A copy is saved for you and sent to the hostel owner.</p>
+
+        <!-- MULTI-STEP PROGRESS BAR: breaks a long ~20-field form into 5 short, manageable steps
+             instead of one overwhelming scroll — same fields, same data, just less intimidating. -->
+        <div class="flex items-center gap-1.5 mb-6" id="grfProgressBar">
+            <div class="grf-dot flex-1 h-1.5 rounded-full bg-indigo-500" data-dot="1"></div>
+            <div class="grf-dot flex-1 h-1.5 rounded-full bg-slate-200" data-dot="2"></div>
+            <div class="grf-dot flex-1 h-1.5 rounded-full bg-slate-200" data-dot="3"></div>
+            <div class="grf-dot flex-1 h-1.5 rounded-full bg-slate-200" data-dot="4"></div>
+            <div class="grf-dot flex-1 h-1.5 rounded-full bg-slate-200" data-dot="5"></div>
+        </div>
+        <p class="text-[11px] font-black text-indigo-500 uppercase tracking-widest mb-4" id="grfStepLabel">Step 1 of 5 — Personal Info</p>
 
         <div class="space-y-5">
+            <div class="grf-step" data-step="1">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Full Name</label>
@@ -1192,7 +1226,7 @@
                     <p class="text-[9px] text-slate-400 font-semibold mt-1">Tap to open camera directly, or choose from gallery</p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Date of Birth</label>
                     <input type="date" id="grfDob" max="" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
@@ -1202,6 +1236,9 @@
                     <select id="grfGender" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select>
                 </div>
             </div>
+            </div>
+            <div class="grf-step hidden" data-step="2">
+            <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3">ID Proof</h5>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Number</label>
@@ -1209,10 +1246,11 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Upload Aadhar Card Photo</label>
-                    <input type="file" id="grfAadharPhoto" accept="image/*" capture="environment" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
+                    <input type="file" id="grfAadharPhoto" accept="image/*" capture="environment" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar(this)">
+                    <p class="text-[9px] text-slate-400 font-semibold mt-1" id="grfAadharAutoFillStatus"></p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Blood Group</label>
                     <input type="text" id="grfBloodGroup" placeholder="e.g. B+" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
@@ -1222,7 +1260,7 @@
                     <input type="text" id="grfCollegeName" placeholder="Institute name, or your workplace if a working professional" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Status</label>
                     <select id="grfOccupationType" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option value="Student">Student</option><option value="Working Professional">Working Professional</option></select>
@@ -1232,9 +1270,10 @@
                     <input type="text" id="grfCourseYear" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
+            </div>
 
-            <div class="pt-2 border-t border-slate-100">
-                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-3">Parent / Guardian Details</h5>
+            <div class="grf-step hidden" data-step="3">
+                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3">Parent / Guardian Details</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Father's Name</label>
@@ -1247,10 +1286,13 @@
                 </div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact Number</label><input type="tel" id="grfEmergencyContact" maxlength="10" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Permanent Address</label><textarea id="grfAddress" rows="2" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></textarea></div>
+                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-5">Health & Emergency</h5>
+                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Any Medical Condition / Allergy</label><input type="text" id="grfMedicalCondition" placeholder="Write 'None' if not applicable" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative)</label><input type="text" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
             </div>
 
-            <div class="pt-2 border-t border-slate-100">
-                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-3">Hostel Preferences</h5>
+            <div class="grf-step hidden" data-step="4">
+                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3">Hostel Preferences</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Room Type</label><input type="text" id="grfRoomType" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 bg-slate-100 cursor-not-allowed"></div>
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Date of Joining</label><input type="date" id="grfJoiningDate" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-500 bg-slate-100 cursor-not-allowed"><p class="text-[9px] text-slate-400 font-semibold mt-1">Set automatically from the check-in date you picked earlier</p></div>
@@ -1261,26 +1303,23 @@
                 </div>
             </div>
 
-            <div class="pt-2 border-t border-slate-100">
-                <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-3">Health & Emergency</h5>
-                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Any Medical Condition / Allergy</label><input type="text" id="grfMedicalCondition" placeholder="Write 'None' if not applicable" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-                <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative)</label><input type="text" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-            </div>
-
-            <div class="pt-4 border-t border-slate-100 flex items-start gap-3 bg-slate-50 p-4 rounded-xl">
+            <div class="grf-step hidden" data-step="5">
+            <div class="pt-2 border-t border-slate-100 flex items-start gap-3 bg-slate-50 p-4 rounded-xl">
                 <input type="checkbox" id="grfDeclarationAgree" class="w-5 h-5 mt-0.5 accent-indigo-600 cursor-pointer">
                 <label for="grfDeclarationAgree" class="text-xs font-semibold text-slate-600 cursor-pointer">I declare that all the information given above is correct, and I agree to follow all hostel rules. I consent to my Aadhar number, photo, and other personal details being collected, stored, and shared with the hostel owner solely for identity verification and booking purposes.</label>
             </div>
-            <div>
+            <div class="mt-4">
                 <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Signature (Type Full Name)</label>
                 <input type="text" id="grfSignature" placeholder="Type your full name as signature" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+            </div>
             </div>
             <p id="grfFormError" class="hidden text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl"></p>
         </div>
 
         <div class="flex justify-between items-center mt-8 pt-4 border-t border-slate-100">
-            <button type="button" onclick="closeGuestRegistrationForm()" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">Cancel</button>
-            <button type="button" onclick="submitGuestRegistrationForm()" id="grfSubmitBtn" class="btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Save & Proceed to Pay →</button>
+            <button type="button" id="grfBackBtn" onclick="grfPrevStep()" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">← Back</button>
+            <button type="button" onclick="grfNextStep()" id="grfNextBtn" class="btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Next →</button>
+            <button type="button" onclick="submitGuestRegistrationForm()" id="grfSubmitBtn" class="hidden btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Save & Proceed to Pay →</button>
         </div>
     </div>
 
@@ -1331,9 +1370,47 @@
         // or pick a location on the map. They're now loaded on-demand, once, the first time they're
         // actually needed — cached so repeat calls are instant and never re-download.
         const FABRIC_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js';
+        const PANNELLUM_CDN = 'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js';
         const JSPDF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
         const MAPS_CDN = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBpb8-7Y3Nc08U7sa3MlfXAFS3sXqmKrd4&libraries=marker,places';
         const _loadedScripts = {};
+        // 360° VIRTUAL TOUR: lazy-loads Pannellum only the first time it's actually needed, then
+        // reuses the same viewer instance/container for every subsequent open (admin preview or a
+        // real user tapping "🎥 360° View" on the booking screen).
+        let pannellumViewerInstance = null;
+        async function preview360Panorama(url) {
+            if (!url) return;
+            document.getElementById('modal360Viewer').classList.remove('hidden');
+            try { await loadScriptOnce(PANNELLUM_CDN); }
+            catch (e) { alert('Could not load the 360° viewer. Check your connection and try again.'); close360Panorama(); return; }
+            if (pannellumViewerInstance) { try { pannellumViewerInstance.destroy(); } catch (e) {} }
+            pannellumViewerInstance = window.pannellum.viewer('pannellumContainer', {
+                type: 'equirectangular',
+                panorama: url,
+                autoLoad: true,
+                compass: false,
+                showZoomCtrl: true
+            });
+        }
+        function close360Panorama() {
+            document.getElementById('modal360Viewer').classList.add('hidden');
+            if (pannellumViewerInstance) { try { pannellumViewerInstance.destroy(); } catch (e) {} pannellumViewerInstance = null; }
+        }
+        // Admin-side: uploading/removing a room's 360° photo during onboarding, before it's published.
+        async function saveRoom360Locally(roomIndex, inputElement) {
+            let file = inputElement.files[0]; if (!file) return;
+            inputElement.parentElement.innerHTML = "⏳ Wait...";
+            file = await compressImage(file, 4000, 0.85); // higher resolution than normal photos — panoramas need the detail
+            globalDynamicRooms[roomIndex].raw360File = file;
+            globalDynamicRooms[roomIndex].panorama360Url = URL.createObjectURL(file);
+            renderRoomEditorPage(roomIndex);
+        }
+        function remove360Panorama(roomIndex) {
+            globalDynamicRooms[roomIndex].panorama360Url = null;
+            globalDynamicRooms[roomIndex].raw360File = null;
+            renderRoomEditorPage(roomIndex);
+        }
+
         function loadScriptOnce(src) {
             if (_loadedScripts[src]) return _loadedScripts[src];
             _loadedScripts[src] = new Promise((resolve, reject) => {
@@ -2624,7 +2701,7 @@
                 let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
                 if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
                 let cleanRoomsData = [];
-                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; cleanRoomsData.push(cleanRoom); }
+                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; if (cleanRoom.raw360File) { const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`; cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360); delete cleanRoom.raw360File; } cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
                 if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
                 if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); }
@@ -3046,6 +3123,14 @@
         }
 
         function refreshUserDash() {
+            // Wishlist: stored locally in this browser (no login system exists yet), keyed by property ID.
+            window.getWishlist = function() { try { return JSON.parse(localStorage.getItem('hostelom_wishlist') || '[]'); } catch (e) { return []; } };
+            window.toggleWishlist = function(propId, btnEl) {
+                let list = getWishlist();
+                if (list.includes(propId)) { list = list.filter(id => id !== propId); if (btnEl) btnEl.innerText = '🤍'; }
+                else { list.push(propId); if (btnEl) btnEl.innerText = '❤️'; }
+                localStorage.setItem('hostelom_wishlist', JSON.stringify(list));
+            };
             const container = document.getElementById('userPropertyContainer');
             container.innerHTML = skeletonCards(6, 'h-72');
             try {
@@ -3059,7 +3144,22 @@
                         const data = doc.data(); allApprovedProperties.push({ id: doc.id, ...data });
                         const imgUrl = data.coverPhotoUrl || data.mapImageUrl || "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=60&w=500";
 
-                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> </div> </div> <div class="p-4 pt-0 flex flex-col gap-3"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient w-full py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> </div> </div>`;
+                        // Live availability numbers, computed fresh from roomsAndBeds every render —
+                        // used for the urgency badge and the occupancy % bar below.
+                        let totalBedsCount = 0, availableBedsCount = 0;
+                        (data.roomsAndBeds || []).forEach(r => (r.beds || []).forEach(b => { totalBedsCount++; if (!b.status || b.status === 'available') availableBedsCount++; }));
+                        const occupiedPct = totalBedsCount > 0 ? Math.round(((totalBedsCount - availableBedsCount) / totalBedsCount) * 100) : 0;
+                        const urgencyBadge = (availableBedsCount > 0 && availableBedsCount <= 3)
+                            ? `<span class="absolute top-4 right-4 chip bg-red-500 text-white border-red-600 shadow-lg animate-pulse">🔥 Only ${availableBedsCount} left</span>` : '';
+                        // "New" for properties published within the last 7 days.
+                        const isNew = data.layout2DPublishedAt && ((Date.now() - new Date(data.layout2DPublishedAt).getTime()) < 7 * 24 * 60 * 60 * 1000);
+                        const newBadge = isNew ? `<span class="chip" style="background:#ecfdf5; border-color:#6ee7b7; color:#047857;">🆕 New</span>` : '';
+                        const occupancyHtml = totalBedsCount > 0 ? `<div class="flex items-center gap-2 mb-2"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full" style="width:${occupiedPct}%;"></div></div><span class="text-[10px] font-black text-slate-500 shrink-0">${occupiedPct}% full</span></div>` : '';
+                        const ownerPhone = (data.businessProfile && data.businessProfile.phone) ? data.businessProfile.phone.replace(/\D/g, '') : '';
+                        const whatsappBtn = ownerPhone ? `<a href="https://wa.me/${ownerPhone.length === 10 ? '91' + ownerPhone : ownerPhone}?text=${encodeURIComponent('Hi, I saw ' + (data.businessProfile?.company || data.propertyType) + ' on HostelOM and wanted to ask about availability.')}" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 border-2 border-emerald-200 rounded-xl text-xl hover:bg-emerald-500 hover:text-white transition shrink-0" title="Chat on WhatsApp">💬</a>` : '';
+                        const isWishlisted = getWishlist().includes(doc.id);
+
+                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
@@ -3131,10 +3231,61 @@
             document.getElementById('grfJoiningDate').value = window.selectedCheckInDate || '';
             const todayStr = new Date().toISOString().split('T')[0];
             document.getElementById('grfDob').max = todayStr; // no future date-of-birth
+            grfResetSteps();
             goTo('screenGuestRegistrationForm');
         }
 
         function closeGuestRegistrationForm() { goTo(grfReturnScreen); }
+        // Reads the uploaded Aadhar photo via the backend's Gemini-powered OCR endpoint and auto-fills
+        // Name, DOB, Gender, Aadhar Number, Address, and Father's/Guardian's Name — saves the guest
+        // from typing all of this by hand. Never blocks the form: if it fails, they just type manually.
+        async function grfAutoFillFromAadhar(inputElement) {
+            const file = inputElement.files[0]; if (!file) return;
+            const statusEl = document.getElementById('grfAadharAutoFillStatus');
+            statusEl.innerText = '⏳ Reading Aadhar card...'; statusEl.className = 'text-[9px] text-indigo-500 font-black mt-1';
+            try {
+                const formData = new FormData(); formData.append('aadhar_photo', file);
+                const response = await fetch(`${BACKEND_URL}/extract-aadhar`, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error('Server error');
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                let filledCount = 0;
+                const setIfEmpty = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) { el.value = val; filledCount++; } };
+                setIfEmpty('grfFullName', data.full_name);
+                setIfEmpty('grfDob', data.dob);
+                setIfEmpty('grfAadharNumber', (data.aadhar_number || '').replace(/\D/g, ''));
+                setIfEmpty('grfAddress', data.address);
+                setIfEmpty('grfFatherName', data.father_or_guardian_name);
+                if (data.gender && document.getElementById('grfGender')) {
+                    const g = /female/i.test(data.gender) ? 'Female' : /male/i.test(data.gender) ? 'Male' : 'Other';
+                    document.getElementById('grfGender').value = g; filledCount++;
+                }
+                statusEl.innerText = filledCount > 0 ? `✅ Auto-filled ${filledCount} fields from your Aadhar — please double-check them.` : '⚠️ Could not read details clearly — please fill manually.';
+                statusEl.className = filledCount > 0 ? 'text-[9px] text-emerald-600 font-black mt-1' : 'text-[9px] text-amber-600 font-black mt-1';
+            } catch (err) {
+                console.error('Aadhar auto-fill failed:', err);
+                statusEl.innerText = '⚠️ Could not auto-read this photo — please fill the fields manually.';
+                statusEl.className = 'text-[9px] text-amber-600 font-black mt-1';
+            }
+        }
+        // Multi-step registration form: purely visual grouping (same fields, same submit logic) —
+        // makes a long ~20-field form feel like 5 short steps instead of one overwhelming scroll.
+        const GRF_TOTAL_STEPS = 5;
+        const GRF_STEP_LABELS = { 1: 'Personal Info', 2: 'ID Proof', 3: 'Guardian & Health', 4: 'Preferences', 5: 'Confirm & Sign' };
+        let grfCurrentStep = 1;
+        function grfRenderStepUI() {
+            document.querySelectorAll('.grf-step').forEach(el => { el.classList.toggle('hidden', Number(el.dataset.step) !== grfCurrentStep); });
+            document.querySelectorAll('.grf-dot').forEach(dot => { dot.classList.toggle('bg-indigo-500', Number(dot.dataset.dot) <= grfCurrentStep); dot.classList.toggle('bg-slate-200', Number(dot.dataset.dot) > grfCurrentStep); });
+            document.getElementById('grfStepLabel').innerText = `Step ${grfCurrentStep} of ${GRF_TOTAL_STEPS} — ${GRF_STEP_LABELS[grfCurrentStep]}`;
+            document.getElementById('grfBackBtn').style.visibility = grfCurrentStep === 1 ? 'hidden' : 'visible';
+            document.getElementById('grfNextBtn').classList.toggle('hidden', grfCurrentStep === GRF_TOTAL_STEPS);
+            document.getElementById('grfSubmitBtn').classList.toggle('hidden', grfCurrentStep !== GRF_TOTAL_STEPS);
+            document.getElementById('screenGuestRegistrationForm').scrollTop = 0;
+        }
+        function grfNextStep() { if (grfCurrentStep < GRF_TOTAL_STEPS) { grfCurrentStep++; grfRenderStepUI(); } }
+        function grfPrevStep() { if (grfCurrentStep > 1) { grfCurrentStep--; grfRenderStepUI(); } }
+        function grfResetSteps() { grfCurrentStep = 1; grfRenderStepUI(); }
 
         // Asks for the browser's location permission and returns { lat, lng, accuracy } if granted,
         // or null if denied / unavailable / times out — booking always continues either way, this
@@ -3680,23 +3831,29 @@
                 const status = liveBed ? (liveBed.status || 'available') : 'available';
                 const isOccupied = status && status !== 'available';
                 const isSelected = currentSelectedBedId === bed.id;
+                const tipText = ('₹' + price + (isOccupied ? ' · Booked' : ' · Available')).replace(/'/g, "\\'");
                 if (editHere) {
-                    return `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 92px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span><span class="text-3xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${price}</span></div>`;
+                    // While editing, the toggle reflects bed.status on admin2DBlocks (what qeToggleBedStatus
+                    // actually mutates) — not the live published status, which only updates after this syncs.
+                    const editIsOcc = bed.status === 'occupied';
+                    const editCardCls = editIsOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl flex items-center justify-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl flex items-center justify-center';
+                    return `<div class="${editCardCls}" style="width:60px; height:60px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">✕</span><span onclick="event.stopPropagation(); qeToggleBedStatus('__ROOMID__','${bed.id}');" title="Tap to mark ${editIsOcc ? 'Available' : 'Occupied'}" style="position:absolute; top:-6px; left:-6px; background:${editIsOcc ? '#ef4444' : '#10b981'}; color:white; border-radius:9999px; width:18px; height:18px; font-size:9px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">${editIsOcc ? '●' : '○'}</span><span class="text-2xl">🛏️</span></div>`;
                 }
-                let cls = 'border-2 rounded-xl p-3 text-center transition ';
+                let cls = 'border-2 rounded-xl flex items-center justify-center transition ';
                 if (isOccupied) cls += 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed';
-                else if (isSelected) cls += 'bg-indigo-500 border-indigo-600 text-white shadow-lg scale-105 cursor-pointer';
+                else if (isSelected) cls += 'bg-indigo-500 border-indigo-600 shadow-lg scale-105 cursor-pointer';
                 else cls += 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:shadow-md cursor-pointer';
-                const clickAttr = isOccupied ? '' : ` onclick="showBedDetailsInPanel('${bed.id}'); renderUserSimpleBedGrid();"`;
-                return `<div${clickAttr} class="${cls}" style="min-width: 92px;"><span class="text-3xl block mb-1">🛏️</span><span class="block text-sm font-black ${isSelected ? 'text-white' : 'text-slate-800'}">₹${price}</span></div>`;
+                const clickAttr = isOccupied ? '' : ` onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); showBedDetailsInPanel('${bed.id}'); renderUserSimpleBedGrid();"`;
+                return `<div${clickAttr} class="${cls}" style="width:60px; height:60px;"><span class="text-2xl">🛏️</span></div>`;
             }
             // Rooms stack vertically, one per row, in their original order — this keeps Room 1/2/3
             // in a clean single-file line every time, instead of a wrapping grid that could reorder
             // them (e.g. pushing Room 3 down next to Room 1) depending on how many beds each room has.
             function renderIcon(icon, blockId, iconIndex) {
                 const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
-                const delBtn = editHere ? `<span onclick="event.stopPropagation(); qeDeleteIcon('${blockId}',${iconIndex});" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
-                return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 92px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" title="${icon.label || ''}">${delBtn}<span class="text-3xl block mb-1">${emoji}</span><span class="block text-[10px] font-black text-slate-600 uppercase tracking-wide">${icon.label || ''}</span></div>`;
+                const label = (icon.label || '').replace(/'/g, "\\'");
+                const delBtn = editHere ? `<span onclick="event.stopPropagation(); qeDeleteIcon('${blockId}',${iconIndex});" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">✕</span>` : '';
+                return `<div class="border-2 rounded-xl flex items-center justify-center" style="width:60px; height:60px; position:relative; cursor:pointer; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" onclick="showAdminCanvasTooltip('${label}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400);">${delBtn}<span class="text-2xl">${emoji}</span></div>`;
             }
             function renderRoomsBlock(blockList) {
                 let html = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
@@ -3794,7 +3951,7 @@
             if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}${parentRoom.panorama360Url ? `<button type="button" onclick="preview360Panorama('${parentRoom.panorama360Url.replace(/'/g, "\\'")}')" class="mt-3 w-full flex items-center justify-center gap-2 bg-purple-50 border-2 border-purple-200 text-purple-700 font-black py-3 rounded-xl hover:bg-purple-100 transition text-sm">🎥 Explore in 360° View</button>` : ''}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice);
@@ -4199,6 +4356,17 @@
                 priceHTML += `</div>`;
             }
 
+            // ---- 360° Panorama section: needs a real equirectangular (360°) photo, not a normal
+            // photo — taken with a 360 camera app (e.g. Google Street View app's "Camera" mode, or
+            // any panorama-stitching app that exports a 2:1 equirectangular JPG). A normal photo
+            // uploaded here will just look stretched/wrong in the viewer.
+            let panorama360HTML;
+            if (room.panorama360Url) {
+                panorama360HTML = `<div class="flex items-center justify-between gap-2 mb-3 bg-purple-50 border border-purple-100 rounded-xl p-3"><span class="text-xs font-black text-purple-600">🎥 360° photo added</span><div class="flex gap-2"><button type="button" onclick="preview360Panorama('${room.panorama360Url.replace(/'/g, "\\'")}')" class="text-[10px] font-black text-purple-600 bg-white px-2.5 py-1.5 rounded-lg border border-purple-200">👁️ Preview</button><button type="button" onclick="remove360Panorama(${index})" class="text-[10px] font-black text-red-500 bg-white px-2.5 py-1.5 rounded-lg border border-red-100">Remove</button></div></div>`;
+            } else {
+                panorama360HTML = `<label class="block p-4 border-2 border-dashed border-purple-200 text-center rounded-2xl bg-purple-50/50 cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition text-[10px] font-black text-purple-500 uppercase tracking-widest shadow-sm mb-3">🎥 Upload 360° Photo (equirectangular)<input type="file" class="hidden" accept="image/*" onchange="saveRoom360Locally(${index}, this); renderRoomEditorPage(${index});"></label>`;
+            }
+
             content.innerHTML = `
                 <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between mb-4">
                     <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Bed Count:</span>
@@ -4210,6 +4378,8 @@
                 </div>
                 <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Room Photos</h5>
                 ${photosHTML}
+                <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-4">360° Virtual Tour <span class="normal-case text-slate-400 font-bold">(optional)</span></h5>
+                ${panorama360HTML}
                 <h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-2">Pricing</h5>
                 ${priceHTML}
             `;
@@ -4245,6 +4415,16 @@
             if (testGrid && !testGrid.classList.contains('hidden')) renderUserSimpleBedGrid();
         }
         let blueprintEditMode = true; // Architect Mode's grid panel has no separate toggle — it's always editable. The onboarding "Review & Correct" screen keeps its own toggle button to turn this off if wanted.
+        let tncLang = 'hi';
+        function setTnCLang(lang) {
+            tncLang = lang;
+            document.getElementById('tncContentEn').classList.toggle('hidden', lang !== 'en');
+            document.getElementById('tncContentHi').classList.toggle('hidden', lang !== 'hi');
+            document.getElementById('tncBtnEn').className = 'text-[11px] font-black px-3 py-1.5 rounded-lg transition ' + (lang === 'en' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500');
+            document.getElementById('tncBtnHi').className = 'text-[11px] font-black px-3 py-1.5 rounded-lg transition ' + (lang === 'hi' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500');
+            document.getElementById('tncUnderstandBtn').innerText = lang === 'hi' ? 'Samajh Gaya' : 'I Understand';
+        }
+        document.addEventListener('DOMContentLoaded', () => { if (document.getElementById('tncBtnHi')) setTnCLang('hi'); });
         function toggleBlueprintEditMode() {
             blueprintEditMode = !blueprintEditMode;
             const btn = document.getElementById('blueprintEditToggleBtn');
@@ -4273,7 +4453,7 @@
             if (!block.beds) block.beds = [];
             const priceInput = document.getElementById('adminCanvasSetPrice');
             const price = Number(priceInput && priceInput.value) || 5000;
-            block.beds.push({ id: 'QE-B' + Date.now(), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0 });
+            block.beds.push({ id: 'QE-B' + Date.now(), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0, status: 'available' });
             qeRefreshAll();
         }
         function qeAddIcon(blockId, type) {
@@ -4283,6 +4463,33 @@
             if (block.icons.some(ic => ic.type === type)) { alert('This room already has a ' + label.toLowerCase() + '.'); return; }
             block.icons.push({ type: type, label: label });
             qeRefreshAll();
+        }
+        // Marking a bed occupied/available (e.g. for a walk-in or cash-paying guest who didn't book
+        // through the app) needs to take effect immediately — unlike prices/rooms/layout, it shouldn't
+        // require a full "Publish Blueprint" to go live, since occupancy can change several times a day.
+        // This writes straight to Firestore's roomsAndBeds field for just this one bed.
+        async function qeToggleBedStatus(blockId, bedId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
+            const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
+            const newStatus = (bed.status === 'occupied') ? 'available' : 'occupied';
+            bed.status = newStatus; // reflect immediately in the local edit view
+            qeRefreshAll();
+            if (!currentAdminDocId) return; // nothing to sync yet (still onboarding, not published) — local change is enough
+            try {
+                const snap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
+                let docData = null; snap.forEach(d => { if (d.id === currentAdminDocId) docData = d.data(); });
+                if (!docData || !Array.isArray(docData.roomsAndBeds)) return;
+                const room = docData.roomsAndBeds.find(r => r.id === blockId);
+                if (room && Array.isArray(room.beds)) {
+                    const liveBed = room.beds.find(b => b.id === bedId);
+                    if (liveBed) liveBed.status = newStatus;
+                }
+                await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { roomsAndBeds: docData.roomsAndBeds });
+                showAppToast(newStatus === 'occupied' ? '🔴 Bed marked Occupied — live for users now.' : '🟢 Bed marked Available — live for users now.');
+            } catch (err) {
+                console.error('Bed status sync failed:', err);
+                alert('Status changed here, but could not sync to live users: ' + err.message);
+            }
         }
         function qeEditBedPrice(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
@@ -4393,9 +4600,12 @@
                 const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
                 const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
                 let bedsHtml = bedsSafe.map(b => {
+                    const isOcc = b.status === 'occupied';
                     const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteBed('${block.id}','${b.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
+                    const statusBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeToggleBedStatus('${block.id}','${b.id}');" title="Tap to mark ${isOcc ? 'Available' : 'Occupied'}" style="position:absolute; top:-6px; left:-6px; background:${isOcc ? '#ef4444' : '#10b981'}; color:white; border-radius:9999px; width:18px; height:18px; font-size:9px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">${isOcc ? '●' : '○'}</span>` : '';
                     const clickAttr = blueprintEditMode ? ` onclick="event.stopPropagation(); qeEditBedPrice('${block.id}','${b.id}');" style="cursor:pointer;"` : '';
-                    return `<div class="border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center" style="min-width: 88px; position:relative;"${clickAttr}>${delBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span></div>`;
+                    const bedCardCls = isOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl p-3 text-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center';
+                    return `<div class="${bedCardCls}" style="min-width: 88px; position:relative;"${clickAttr}>${delBtn}${statusBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span>${isOcc ? '<span class="block text-[8px] font-black text-red-500 uppercase">Occupied</span>' : ''}</div>`;
                 }).join('');
                 let iconsHtml = iconsSafe.map((icon, idx) => {
                     const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
