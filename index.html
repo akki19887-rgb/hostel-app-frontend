@@ -363,10 +363,10 @@
                 <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- The advance amount is Non-Refundable.</p>
             </div>
             <div id="tncContentHi" class="text-sm text-slate-600 space-y-4 font-medium hidden">
-                <p><b class="text-slate-800">1. Booking Confirmation:</b> Aapki booking tabhi confirm maani jayegi jab aap poori payment ya required advance amount pay kar denge.</p>
-                <p><b class="text-slate-800">2. Cancellation Charges:</b><br>- Check-in se 3 din pehle: 80% refund.<br>- Check-in se 1 din pehle: 50% refund.<br>- Check-in ke din ya 'No-Show': 0% refund.</p>
-                <p><b class="text-slate-800">3. Monthly Stays & Deposit:</b><br>- Security Deposit tabhi wapas hoga jab room check-in jaisi sthiti mein wapas kiya jayega.<br>- Room khali karne se kam se kam 15-30 din pehle notice dena zaroori hai.</p>
-                <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- Advance amount 'Non-Refundable' hoti hai.</p>
+                <p><b class="text-slate-800">1. बुकिंग की पुष्टि:</b> आपकी बुकिंग तभी पक्की मानी जाएगी जब आप पूरी राशि या आवश्यक अग्रिम राशि (एडवांस) का भुगतान कर देंगे।</p>
+                <p><b class="text-slate-800">2. रद्दीकरण शुल्क:</b><br>- चेक-इन से 3 दिन पहले: 80% वापसी।<br>- चेक-इन से 1 दिन पहले: 50% वापसी।<br>- चेक-इन के दिन या बिना बताए न आने पर: 0% वापसी।</p>
+                <p><b class="text-slate-800">3. मासिक ठहराव और जमा राशि:</b><br>- सुरक्षा जमा राशि (सिक्योरिटी डिपॉज़िट) तभी वापस होगी जब कमरा चेक-इन जैसी स्थिति में वापस किया जाएगा।<br>- कमरा खाली करने से कम से कम 15-30 दिन पहले सूचना देना ज़रूरी है।</p>
+                <p><b class="text-slate-800">4. दैनिक/साप्ताहिक ठहराव:</b><br>- अग्रिम राशि (एडवांस) वापस नहीं की जाएगी।</p>
             </div>
             <button onclick="document.getElementById('modalTnC').classList.add('hidden')" class="mt-6 w-full btn-dark py-3 text-white font-black rounded-xl" id="tncUnderstandBtn">I Understand</button>
         </div>
@@ -1124,11 +1124,6 @@
                     <p class="text-xs gradient-text font-black mt-1 uppercase tracking-widest">Tap any bed to see photos, price & amenities</p>
                 </div>
             </div>
-            <!-- TEST ONLY: switches the left panel to the same clean HTML room/bed grid used in
-                 Architect Mode's blueprint preview, instead of the photo/canvas tap-layer. Bypasses
-                 all canvas/photo alignment entirely — every bed is a real clickable div, so this is
-                 a good way to confirm bed data + click wiring is correct on its own. -->
-            <button type="button" id="btnUserTestSimpleView" onclick="toggleUserTestSimpleView()" class="text-xs bg-white border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2.5 rounded-xl shadow-sm hover:bg-indigo-50 transition whitespace-nowrap">🧪 Test View</button>
             <!-- ADMIN-ONLY: lets an admin previewing their own layout edit rooms/beds/bath/table right
                  here, without switching to Architect Mode. Stays hidden (display:none) unless JS
                  explicitly reveals it after confirming isPreviewingAsUser — real booking customers
@@ -3339,13 +3334,22 @@
             const propIdForLock = (window.currentPropertyData && window.currentPropertyData.id) || 'unknown';
             const bedIdForLock = (grfBookingContext && grfBookingContext.beds && grfBookingContext.beds[0]) ? grfBookingContext.beds[0].id : 'unknown';
             const lockId = `${propIdForLock}_${bedIdForLock}_${joiningDateVal}`.replace(/[^a-zA-Z0-9_-]/g, '');
+            const LOCK_EXPIRY_MS = 20 * 60 * 1000; // 20 minutes — if a lock is older than this and was
+            // never confirmed (payment step abandoned), it's treated as expired and safely reclaimed,
+            // instead of permanently blocking that bed+date for every future guest.
             if (typeof db !== 'undefined' && bedIdForLock !== 'unknown') {
                 try {
                     await runTransaction(db, async (transaction) => {
                         const lockRef = doc(db, 'bedLocks', lockId);
                         const lockSnap = await transaction.get(lockRef);
-                        if (lockSnap.exists()) { throw new Error('ALREADY_BOOKED'); }
-                        transaction.set(lockRef, { propertyId: propIdForLock, bedId: bedIdForLock, joiningDate: joiningDateVal, lockedAt: new Date().toISOString() });
+                        if (lockSnap.exists()) {
+                            const existing = lockSnap.data();
+                            const isConfirmed = existing.confirmed === true;
+                            const lockAgeMs = existing.lockedAt ? (Date.now() - new Date(existing.lockedAt).getTime()) : Infinity;
+                            if (isConfirmed || lockAgeMs < LOCK_EXPIRY_MS) { throw new Error('ALREADY_BOOKED'); }
+                            // Stale, unconfirmed lock — safe to reclaim.
+                        }
+                        transaction.set(lockRef, { propertyId: propIdForLock, bedId: bedIdForLock, joiningDate: joiningDateVal, lockedAt: new Date().toISOString(), confirmed: false });
                     });
                 } catch (lockErr) {
                     submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
@@ -4422,7 +4426,7 @@
             document.getElementById('tncContentHi').classList.toggle('hidden', lang !== 'hi');
             document.getElementById('tncBtnEn').className = 'text-[11px] font-black px-3 py-1.5 rounded-lg transition ' + (lang === 'en' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500');
             document.getElementById('tncBtnHi').className = 'text-[11px] font-black px-3 py-1.5 rounded-lg transition ' + (lang === 'hi' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500');
-            document.getElementById('tncUnderstandBtn').innerText = lang === 'hi' ? 'Samajh Gaya' : 'I Understand';
+            document.getElementById('tncUnderstandBtn').innerText = lang === 'hi' ? 'समझ गया' : 'I Understand';
         }
         document.addEventListener('DOMContentLoaded', () => { if (document.getElementById('tncBtnHi')) setTnCLang('hi'); });
         function toggleBlueprintEditMode() {
