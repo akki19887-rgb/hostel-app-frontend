@@ -2699,10 +2699,11 @@
                     const myIds = window._myPropertyIds || null; // set by refreshBusinessDash's property listener
                     qs.forEach(d => {
                         const n = d.data();
-                        // Only show this business's own activity: either the notification is tied to
-                        // one of THEIR properties, or it's a generic one with no property (e.g. booking
-                        // confirmations that already only ever get created for the right owner).
-                        if (myIds && n.propertyId && !myIds.includes(n.propertyId)) return;
+                        // Show a business owner ONLY: (a) activity tied to one of THEIR OWN properties,
+                        // or (b) an admin broadcast meant for everyone. Anything else (e.g. "new business
+                        // onboarded" — an admin-only activity log entry) is hidden from owner dashboards.
+                        const isMine = n.propertyId && myIds && myIds.includes(n.propertyId);
+                        if (!isMine && !n.isBroadcast) return;
                         items.push({ ...n, _docId: d.id }); if (!n.read) unread++;
                     });
                     items.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
@@ -3703,6 +3704,7 @@
         }
 
         async function openUser2DLayout(docId) {
+            userAccordionOpenRoomId = null;
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
@@ -3847,6 +3849,14 @@
         // from) instead of switching to Architect Mode's separate HD Canvas panel. Gated hard behind
         // isPreviewingAsUser — a real customer booking a bed must never see or reach this.
         let testViewEditModeActive = false;
+        // ACCORDION: only one room's beds are shown "open" at a time — everything else collapses to
+        // just its name, keeping the page short even for hostels with many rooms. Reset to null (no
+        // room forced open — the first room auto-opens on render) whenever the floor/property changes.
+        let userAccordionOpenRoomId = null;
+        function toggleRoomAccordion(roomId) {
+            userAccordionOpenRoomId = (userAccordionOpenRoomId === roomId) ? null : roomId;
+            renderUserSimpleBedGrid();
+        }
         function toggleTestViewEditMode() {
             if (!isPreviewingAsUser) return; // safety net: never allow this outside admin preview
             testViewEditModeActive = !testViewEditModeActive;
@@ -3945,20 +3955,28 @@
                 return `<div class="border-2 rounded-xl flex items-center justify-center" style="width:60px; height:60px; position:relative; cursor:pointer; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};" onclick="showAdminCanvasTooltip('${label}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400);">${delBtn}<span class="text-2xl">${emoji}</span></div>`;
             }
             function renderRoomsBlock(blockList) {
-                let html = `<div style="display:flex; flex-direction:column; gap: 14px; width: 100%; flex: 1;">`;
+                // Auto-open the very first room the first time this renders (so the page never
+                // opens with everything collapsed and nothing to tap) — but never override a room
+                // the guest has deliberately opened or closed since then.
+                if (userAccordionOpenRoomId === null && blockList.length > 0) { userAccordionOpenRoomId = blockList[0].id; }
+                let html = `<div style="display:flex; flex-direction:column; gap: 10px; width: 100%; flex: 1;">`;
                 blockList.forEach(block => {
+                    const isOpen = block.id === userAccordionOpenRoomId;
                     const bedsSafe = Array.isArray(block.beds) ? block.beds : [];
                     const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
                     const bedsHtml = bedsSafe.map(b => renderBed(b).split('__ROOMID__').join(block.id)).join('');
                     const iconsHtml = iconsSafe.map((ic, idx) => renderIcon(ic, block.id, idx)).join('');
+                    const summary = `${bedsSafe.length} bed${bedsSafe.length === 1 ? '' : 's'}${iconsSafe.length ? ' · ' + iconsSafe.map(ic => ic.type === 'bath' ? '🚿' : '📚').join(' ') : ''}`;
                     const header = editHere
-                        ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div></div>`
-                        : `<div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div>`;
+                        ? `<div class="flex items-center justify-between gap-2 p-3.5 cursor-pointer" onclick="toggleRoomAccordion('${block.id}')"><div class="flex items-center gap-2"><span class="text-xs text-slate-400">${isOpen ? '▲' : '▼'}</span><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-sm font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span></div><div class="flex items-center gap-2"><span class="text-[10px] font-bold text-slate-400">${summary}</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️</span></div></div>`
+                        : `<div class="flex items-center justify-between gap-2 p-3.5 cursor-pointer" onclick="toggleRoomAccordion('${block.id}')"><div class="flex items-center gap-2"><span class="text-xs text-slate-400">${isOpen ? '▲' : '▼'}</span><span class="text-sm font-black text-slate-800 uppercase tracking-widest">${block.name}</span></div><span class="text-[10px] font-bold text-slate-400">${summary}</span></div>`;
                     const addBtns = editHere ? `
                         <div onclick="qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 92px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>
                         <div onclick="qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 92px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>
                         <div onclick="qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 92px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
-                    html += `<div class="blueprint-room" style="width:100%; padding: 14px;">${header}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBtns}</div></div>`;
+                    const bodyHtml = isOpen ? `<div class="border-t border-slate-100 p-3.5" style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBtns}</div>` : '';
+                    const borderCls = isOpen ? 'border-2 border-indigo-200' : 'border-2 border-slate-200';
+                    html += `<div class="blueprint-room ${borderCls}" style="width:100%; padding: 0;">${header}${bodyHtml}</div>`;
                 });
                 return html + `</div>`;
             }
@@ -4076,6 +4094,7 @@
 
         function selectUserFloor(floorName) {
             currentUserFloor = floorName;
+            userAccordionOpenRoomId = null;
             if (typeof userTestSimpleViewActive !== 'undefined' && userTestSimpleViewActive) { renderUserSimpleBedGrid(); }
             let uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
             if (window.currentPropertyData && window.currentPropertyData.publishedFloors && window.currentPropertyData.publishedFloors.length > 0) {
