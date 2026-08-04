@@ -292,7 +292,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
             authDomain: "hostel-om.firebaseapp.com",
@@ -316,6 +316,8 @@
         window.auth = auth;
         window.RecaptchaVerifier = RecaptchaVerifier;
         window.signInWithPhoneNumber = signInWithPhoneNumber;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.signInWithPopup = signInWithPopup;
         window.firebaseSignOut = signOut;
         window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -1911,7 +1913,28 @@
         // the "Skip & Search" option from the welcome screen.
         function skipToSearch() { accountMode = 'user'; goTo('screenUserDashboard'); }
 
-        function selectMethod(method) { currentMethod = method; if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); } else { goTo('screenProfileCompletion'); } }
+        async function selectMethod(method) {
+            currentMethod = method;
+            if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); return; }
+            if (method === 'Google') {
+                if (!window.auth || !window.GoogleAuthProvider || !window.signInWithPopup) {
+                    alert('Google Sign-In is still loading. Please wait a moment and try again.');
+                    return;
+                }
+                try {
+                    const result = await window.signInWithPopup(window.auth, new window.GoogleAuthProvider());
+                    // Pre-fill the name Google already gave us, so the next screen is just a quick confirm.
+                    const nameInput = document.getElementById('profileName');
+                    if (nameInput && result.user && result.user.displayName) { nameInput.value = result.user.displayName; }
+                } catch (err) {
+                    console.error('Google sign-in failed:', err);
+                    if (err.code === 'auth/popup-closed-by-user') { return; } // user just closed the popup — no error needed
+                    alert('Google Sign-In failed: ' + (err.message || 'Please try again.'));
+                    return;
+                }
+            }
+            goTo('screenProfileCompletion');
+        }
 
         // ==== REAL OTP FLOW (Firebase Phone Authentication) ====
         // Requirements before this works in production:
