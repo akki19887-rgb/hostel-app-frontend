@@ -2060,6 +2060,7 @@
             goTo('screenFlatHouseDetails');
         }
 
+        function proceedAfterPinLocation() {
             if (selectedPropertyType === 'House/Flat') { goTo('screenFlatHouseDetails'); }
             else { goTo('screenBusinessSecureForm'); }
         }
@@ -3693,6 +3694,7 @@
             }
         }
 
+        function openGuestRegistrationForm() {
             const hostelName = (window.currentPropertyData && (window.currentPropertyData.businessName || window.currentPropertyData.name || window.currentPropertyData.companyName || (window.currentPropertyData.businessProfile && window.currentPropertyData.businessProfile.company))) || 'Selected Hostel';
             document.getElementById('grfHostelNameHeading').innerText = hostelName;
 
