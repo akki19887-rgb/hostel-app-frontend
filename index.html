@@ -817,7 +817,72 @@
             <span class="absolute left-4 top-4 text-xl text-slate-400">🔍</span>
         </div>
         <div id="map" class="flex-1 bg-slate-200 rounded-[2rem] border-4 border-white shadow-inner overflow-hidden"></div>
-        <div class="mt-6 flex justify-end"><button type="button" onclick="goTo('screenBusinessSecureForm')" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
+        <div class="mt-6 flex justify-end"><button type="button" onclick="proceedAfterPinLocation()" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
+    </div>
+
+    <!-- FLAT/HOUSE DETAILS — completely separate from the hostel bed/room flow, since a flat/house
+         is rented as ONE whole unit, not bed-by-bed. No AI floor scan needed here. -->
+    <div id="screenFlatHouseDetails" class="hidden premium-card p-8 rounded-[2rem] max-w-2xl w-full max-h-[90vh] overflow-y-auto layout-scroll screen-panel">
+        <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">🏡</div>
+            <div><h2 class="display-font text-2xl font-black text-slate-900">Flat / House Details</h2><p class="text-xs text-slate-500 font-semibold">Tell guests what this place is like</p></div>
+        </div>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Property Name <span class="text-red-500">*</span></label><input type="text" id="fhName" required placeholder="e.g. Sunshine 2BHK, Sector 12" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Unit Type</label><select id="fhBhk" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option>1 RK</option><option selected>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4+ BHK</option><option>Independent House</option></select></div>
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Bathrooms</label><input type="number" id="fhBathrooms" min="1" value="1" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Furnishing</label><select id="fhFurnishing" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option>Unfurnished</option><option>Semi-Furnished</option><option selected>Fully Furnished</option></select></div>
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Area (sq.ft)</label><input type="number" id="fhArea" placeholder="e.g. 850" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Floor</label><input type="text" id="fhFloor" placeholder="e.g. 3rd of 5" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Tenant Preference</label><select id="fhTenantPref" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option>Family</option><option>Bachelors</option><option>Company Lease</option><option>Anyone</option></select></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Monthly Rent (₹)</label><input type="number" id="fhRent" placeholder="e.g. 15000" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Security Deposit (₹)</label><input type="number" id="fhDeposit" placeholder="e.g. 30000" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Amenities</label>
+                <div class="flex flex-wrap gap-2" id="fhAmenitiesPicker">
+                    <span onclick="toggleFhAmenity(this,'Parking')" class="fh-amenity-chip chip chip-outline cursor-pointer">🚗 Parking</span>
+                    <span onclick="toggleFhAmenity(this,'Lift')" class="fh-amenity-chip chip chip-outline cursor-pointer">🛗 Lift</span>
+                    <span onclick="toggleFhAmenity(this,'Power Backup')" class="fh-amenity-chip chip chip-outline cursor-pointer">🔋 Power Backup</span>
+                    <span onclick="toggleFhAmenity(this,'Gated Society')" class="fh-amenity-chip chip chip-outline cursor-pointer">🏘️ Gated Society</span>
+                    <span onclick="toggleFhAmenity(this,'Pet Friendly')" class="fh-amenity-chip chip chip-outline cursor-pointer">🐾 Pet Friendly</span>
+                    <span onclick="toggleFhAmenity(this,'24x7 Water')" class="fh-amenity-chip chip chip-outline cursor-pointer">💧 24x7 Water</span>
+                    <span onclick="toggleFhAmenity(this,'Gas Pipeline')" class="fh-amenity-chip chip chip-outline cursor-pointer">🔥 Gas Pipeline</span>
+                    <span onclick="toggleFhAmenity(this,'Balcony')" class="fh-amenity-chip chip chip-outline cursor-pointer">🌇 Balcony</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Booking Mode <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div onclick="setFlatBookingMode('instant')" id="fhModeInstantCard" class="method-option p-4 rounded-2xl cursor-pointer border-2 border-indigo-400 bg-indigo-50"><span class="font-black text-sm text-slate-800">⚡ Instant Book</span><p class="text-[10px] text-slate-500 font-semibold mt-1">Guest can book & pay directly</p></div>
+                    <div onclick="setFlatBookingMode('visit')" id="fhModeVisitCard" class="method-option p-4 rounded-2xl cursor-pointer border-2 border-slate-200"><span class="font-black text-sm text-slate-800">📅 Schedule Visit</span><p class="text-[10px] text-slate-500 font-semibold mt-1">Guest requests interest, you contact them</p></div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Photos (Living Room, Kitchen, Bedroom, etc.)</label>
+                <div class="grid grid-cols-3 gap-2" id="fhPhotosGrid">
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot0"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(0, this)">📷</label>
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot1"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(1, this)">📷</label>
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot2"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(2, this)">📷</label>
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot3"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(3, this)">📷</label>
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot4"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(4, this)">📷</label>
+                    <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot5"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(5, this)">📷</label>
+                </div>
+            </div>
+
+            <p id="fhFormError" class="hidden text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl"></p>
+        </div>
+        <button type="button" onclick="saveFlatHouseListing()" id="fhSaveBtn" class="btn-gradient w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SAVE & PUBLISH →</button>
     </div>
 
     <!-- BUSINESS SECURE FORM -->
@@ -983,6 +1048,7 @@
                 <button type="button" onclick="addBusinessCorridor('vertical')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl">↕️ V-COR</button>
                 <button type="button" onclick="addBusinessCorridor('horizontal')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl">↔️ H-COR</button>
                 <button type="button" onclick="addBusinessCorridor('middle')" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl" title="Rooms on both sides, corridor running horizontally between them">⬍ MID-COR</button>
+                <button type="button" onclick="addBusinessHCorridor()" class="btn-dark px-3 py-2 text-white text-xs font-black rounded-xl" title="Two SEPARATE parallel corridors with a room-row between/around them — like the letter H">🏢 H-SHAPE</button>
                 <button type="button" onclick="addCustomRoom()" class="btn-gradient px-3 py-2 text-white text-xs font-black rounded-xl shadow-sm">➕ ADD ROOM</button>
                 <button type="button" onclick="toggleBusinessPreviewPanel()" id="bizPreviewToggleBtn" class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-black rounded-xl hover:border-indigo-400 transition">🔽 Hide Preview</button>
             </div>
@@ -1128,6 +1194,48 @@
                 <h3 id="redbusTotalAmountLabel" class="display-font text-3xl font-black text-slate-900">₹0</h3>
             </div>
             <button type="button" onclick="confirmImageBooking()" id="btnImageBookNow" disabled class="px-10 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl transition cursor-not-allowed">Select a Seat First</button>
+        </div>
+    </div>
+
+    <!-- FLAT/HOUSE DETAIL VIEW (user-facing) — whole-unit rental, no bed selection, just details +
+         Book Now (instant mode) or Schedule Visit (visit mode) depending on what the owner chose. -->
+    <div id="screenFlatHouseView" class="hidden premium-card p-0 rounded-[2rem] max-w-2xl w-full max-h-[95vh] overflow-y-auto layout-scroll screen-panel">
+        <div class="relative">
+            <button type="button" onclick="goTo('screenUserDashboard')" class="absolute top-4 left-4 z-10 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center font-bold text-slate-700 shadow-md">←</button>
+            <div id="fhViewPhotoGallery" class="flex gap-1 overflow-x-auto h-64 snap-x snap-mandatory"></div>
+        </div>
+        <div class="p-6">
+            <h2 id="fhViewName" class="display-font text-2xl font-black text-slate-900 mb-1">—</h2>
+            <p id="fhViewBhkLine" class="text-sm font-bold text-slate-500 mb-4">—</p>
+            <div class="flex items-baseline gap-2 mb-5">
+                <span id="fhViewRent" class="display-font text-3xl font-black text-indigo-600">₹0</span><span class="text-sm font-bold text-slate-400">/month</span>
+                <span id="fhViewDeposit" class="text-xs font-bold text-slate-400 ml-2">· Deposit ₹0</span>
+            </div>
+            <div id="fhViewAmenities" class="flex flex-wrap gap-2 mb-6"></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Details</p>
+                <div id="fhViewDetailsGrid" class="grid grid-cols-2 gap-y-2 text-xs font-bold text-slate-700"></div>
+            </div>
+            <button type="button" id="fhViewActionBtn" onclick="fhViewPrimaryAction()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-lg tracking-wide text-sm">Book Now →</button>
+        </div>
+    </div>
+
+    <!-- SCHEDULE VISIT (visit-mode flats/houses) — simple interest form, no payment, just notifies the owner -->
+    <div id="screenScheduleVisit" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
+        <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">📅</div>
+            <div><h2 class="display-font text-xl font-black text-slate-900">Schedule a Visit</h2><p class="text-xs text-slate-500 font-semibold">Owner will contact you to confirm a time</p></div>
+        </div>
+        <div class="space-y-4">
+            <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Your Name</label><input type="text" id="svName" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Phone Number</label><input type="tel" id="svPhone" maxlength="10" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Preferred Date</label><input type="date" id="svDate" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Message (optional)</label><textarea id="svMessage" rows="2" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></textarea></div>
+            <p id="svFormError" class="hidden text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl"></p>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <button type="button" onclick="goTo('screenFlatHouseView')" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">Back</button>
+            <button type="button" onclick="submitScheduleVisit()" id="svSubmitBtn" class="btn-gradient flex-1 py-3.5 text-white font-black rounded-2xl shadow-lg tracking-wide">Request Visit →</button>
         </div>
     </div>
 
@@ -1294,6 +1402,7 @@
                     </div>
                 </div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact Number</label><input type="tel" id="grfEmergencyContact" maxlength="10" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Parent's Email <span class="text-slate-400 normal-case">(optional — for check-in updates)</span></label><input type="email" id="grfParentEmail" placeholder="parent@example.com" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Permanent Address</label><textarea id="grfAddress" rows="2" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></textarea></div>
                 <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-5">Health & Emergency</h5>
                 <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Any Medical Condition / Allergy</label><input type="text" id="grfMedicalCondition" placeholder="Write 'None' if not applicable" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
@@ -1350,6 +1459,8 @@
             <div class="flex justify-between"><span>Plan</span><span id="paySumPlan" class="font-black text-slate-800">—</span></div>
             <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Payable</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
         </div>
+
+        <a href="#" id="btnNotifyParentWhatsapp" target="_blank" class="hidden w-full mb-4 flex items-center justify-center gap-2 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-black py-3 rounded-xl hover:bg-emerald-100 transition text-sm">💬 Notify Parent via WhatsApp</a>
 
         <button type="button" id="btnPayNow" onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
         <button type="button" onclick="goTo('screenUserDashboard')" class="w-full mt-3 text-xs font-bold text-slate-500 hover:text-slate-700 py-2 transition">Cancel Payment</button>
@@ -1817,6 +1928,141 @@
             if(userMapMarkers.length > 0) { userMapInstance.fitBounds(bounds); }
         }
 
+        // ==== FLAT / HOUSE LISTING (whole-unit rental — separate data model from hostel beds) ====
+        let fhSelectedAmenities = [];
+        let fhBookingMode = 'instant';
+        let fhPhotoFiles = [null, null, null, null, null, null];
+        let fhPhotoPreviewUrls = ['', '', '', '', '', ''];
+
+        function toggleFhAmenity(el, name) {
+            el.classList.toggle('chip-primary');
+            if (fhSelectedAmenities.includes(name)) { fhSelectedAmenities = fhSelectedAmenities.filter(a => a !== name); }
+            else { fhSelectedAmenities.push(name); }
+        }
+        function setFlatBookingMode(mode) {
+            fhBookingMode = mode;
+            document.getElementById('fhModeInstantCard').className = 'method-option p-4 rounded-2xl cursor-pointer border-2 ' + (mode === 'instant' ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200');
+            document.getElementById('fhModeVisitCard').className = 'method-option p-4 rounded-2xl cursor-pointer border-2 ' + (mode === 'visit' ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200');
+        }
+        async function saveFlatPhotoLocally(slotIndex, inputEl) {
+            let file = inputEl.files[0]; if (!file) return;
+            const slotLabel = document.getElementById('fhPhotoSlot' + slotIndex);
+            slotLabel.innerText = '⏳';
+            file = await compressImage(file, 1080, 0.85);
+            fhPhotoFiles[slotIndex] = file;
+            const url = URL.createObjectURL(file);
+            fhPhotoPreviewUrls[slotIndex] = url;
+            slotLabel.style.backgroundImage = `url(${url})`;
+            slotLabel.style.backgroundSize = 'cover'; slotLabel.style.backgroundPosition = 'center';
+            slotLabel.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(${slotIndex}, this)">`;
+        }
+        // Resets all Flat/House form state — called when starting a fresh listing, so leftover data
+        // from a previous flat doesn't accidentally leak into a new one.
+        function resetFlatHouseForm() {
+            fhSelectedAmenities = []; fhBookingMode = 'instant'; fhPhotoFiles = [null,null,null,null,null,null]; fhPhotoPreviewUrls = ['','','','','',''];
+            editingFlatHouseDocId = null;
+            document.getElementById('fhSaveBtn').innerText = 'SAVE & PUBLISH →';
+            ['fhName','fhArea','fhFloor','fhRent','fhDeposit'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            document.querySelectorAll('.fh-amenity-chip').forEach(c => c.classList.remove('chip-primary'));
+            setFlatBookingMode('instant');
+            for (let i = 0; i < 6; i++) { const slot = document.getElementById('fhPhotoSlot' + i); if (slot) { slot.style.backgroundImage = ''; slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(${i}, this)">📷`; } }
+            document.getElementById('fhFormError').classList.add('hidden');
+        }
+        async function saveFlatHouseListing() {
+            const name = (document.getElementById('fhName').value || '').trim();
+            const errBox = document.getElementById('fhFormError');
+            if (!name) { errBox.innerText = 'Please enter a property name.'; errBox.classList.remove('hidden'); return; }
+            const rent = Number(document.getElementById('fhRent').value) || 0;
+            if (!rent) { errBox.innerText = 'Please enter the monthly rent.'; errBox.classList.remove('hidden'); return; }
+            errBox.classList.add('hidden');
+            const btn = document.getElementById('fhSaveBtn'); btn.disabled = true; btn.innerText = '⏳ Publishing...';
+            try {
+                const hostelSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+                const photoUrls = [];
+                for (let i = 0; i < fhPhotoFiles.length; i++) {
+                    if (fhPhotoFiles[i]) { const path = `business_rooms/${hostelSlug}/${Date.now()}_flat_photo_${i}`; photoUrls.push(await uploadFileToStorage(fhPhotoFiles[i], path)); }
+                    else if (fhPhotoPreviewUrls[i] && fhPhotoPreviewUrls[i].startsWith('http')) { photoUrls.push(fhPhotoPreviewUrls[i]); } // preserve an existing (already-uploaded) photo when editing and this slot wasn't touched
+                }
+                const flatDetails = {
+                    bhk: document.getElementById('fhBhk').value,
+                    bathrooms: Number(document.getElementById('fhBathrooms').value) || 1,
+                    furnishing: document.getElementById('fhFurnishing').value,
+                    areaSqft: Number(document.getElementById('fhArea').value) || null,
+                    floor: document.getElementById('fhFloor').value || '',
+                    tenantPreference: document.getElementById('fhTenantPref').value,
+                    monthlyRent: rent,
+                    securityDeposit: Number(document.getElementById('fhDeposit').value) || 0,
+                    amenities: fhSelectedAmenities,
+                    bookingMode: fhBookingMode, // 'instant' or 'visit'
+                    photos: photoUrls,
+                    status: 'available' // becomes 'booked' once someone completes an instant booking
+                };
+                const docData = {
+                    propertyType: 'House/Flat',
+                    businessProfile: { company: name, ...(globalBizProfile || {}) },
+                    businessName: name,
+                    coverPhotoUrl: photoUrls[0] || (editingFlatHouseDocId ? undefined : ''),
+                    flatDetails,
+                    coordinates: (typeof businessCoordinates !== 'undefined') ? businessCoordinates : null,
+                    status: 'pending_approval', // same moderation flow/status string as hostels — admin approves before it's publicly visible
+                    ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                    createdAt: new Date().toISOString()
+                };
+                if (editingFlatHouseDocId) {
+                    // Editing: keep existing photos for any slot that wasn't re-uploaded this time.
+                    if (photoUrls.length === 0) delete docData.coverPhotoUrl;
+                    await window.updateDoc(window.doc(window.db, 'businesses', editingFlatHouseDocId), docData);
+                    editingFlatHouseDocId = null;
+                } else {
+                    await window.addDoc(window.collection(window.db, 'businesses'), docData);
+                }
+                resetFlatHouseForm();
+                alert('✅ Your flat/house listing has been saved!');
+                goTo('screenBusinessDashboard');
+            } catch (err) {
+                console.error('Flat/House save failed:', err);
+                errBox.innerText = 'Could not save: ' + err.message; errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false; btn.innerText = 'SAVE & PUBLISH →';
+            }
+        }
+        let editingFlatHouseDocId = null;
+        async function approveFlatHouseListing(docId) {
+            try {
+                await window.updateDoc(window.doc(window.db, "businesses", docId), { status: "approved_2d" });
+                showAppToast('✅ Flat/House listing approved and live for users.');
+            } catch (err) {
+                alert('Could not approve: ' + err.message);
+            }
+        }
+        window.openFlatHouseEdit = async function(docId) {
+            const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
+            let busData = null; docSnap.forEach(d => { if (d.id === docId) busData = d.data(); });
+            if (!busData) return;
+            editingFlatHouseDocId = null;
+            const fd = busData.flatDetails || {};
+            resetFlatHouseForm();
+            editingFlatHouseDocId = docId;
+            document.getElementById('fhName').value = busData.businessName || '';
+            document.getElementById('fhBhk').value = fd.bhk || '1 BHK';
+            document.getElementById('fhBathrooms').value = fd.bathrooms || 1;
+            document.getElementById('fhFurnishing').value = fd.furnishing || 'Fully Furnished';
+            document.getElementById('fhArea').value = fd.areaSqft || '';
+            document.getElementById('fhFloor').value = fd.floor || '';
+            document.getElementById('fhTenantPref').value = fd.tenantPreference || 'Anyone';
+            document.getElementById('fhRent').value = fd.monthlyRent || '';
+            document.getElementById('fhDeposit').value = fd.securityDeposit || '';
+            fhSelectedAmenities = [...(fd.amenities || [])];
+            document.querySelectorAll('.fh-amenity-chip').forEach(chip => { if (fhSelectedAmenities.some(a => chip.innerText.includes(a))) chip.classList.add('chip-primary'); });
+            setFlatBookingMode(fd.bookingMode || 'instant');
+            (fd.photos || []).forEach((url, i) => { if (i < 6 && url) { const slot = document.getElementById('fhPhotoSlot' + i); if (slot) { slot.style.backgroundImage = `url(${url})`; slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center'; slot.innerHTML = ''; fhPhotoPreviewUrls[i] = url; } } });
+            document.getElementById('fhSaveBtn').innerText = '💾 SAVE CHANGES';
+            goTo('screenFlatHouseDetails');
+        }
+
+            if (selectedPropertyType === 'House/Flat') { goTo('screenFlatHouseDetails'); }
+            else { goTo('screenBusinessSecureForm'); }
+        }
         function selectPropertyType(type) { selectedPropertyType = type; goTo('screenGoogleMap'); }
         // PERF: compress images before upload — big files (5-10MB phone photos) were slowing down
         // both the upload itself AND every later page load that displays them. Falls back to the
@@ -2486,7 +2732,7 @@
         // the server a head start waking up, so by the time they hit the real AI request it's often
         // already warm. This never blocks anything — failures are silently ignored.
         function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
-        function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
+        function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; if (typeof resetFlatHouseForm === 'function') resetFlatHouseForm(); wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
         async function addFloorMap() {
             wakeUpAIBackend();
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
@@ -2540,12 +2786,19 @@
                     if (aiData.corridor_detected) {
                         if (corridorShape === 'straight') {
                             admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: layoutPos, floor: thisFloor });
+                        } else if (corridorShape === 'H') {
+                            // Two SEPARATE parallel straight corridors (not crossing) with 3 room-rows
+                            // around/between them — a fundamentally different layout from L/T/cross,
+                            // handled by its own renderer (renderHShapeHTML).
+                            admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: 'center', shape: 'H', floor: thisFloor });
+                            admin2DBlocks.push({ type: 'corridor', id: 'C2-' + i, name: 'Corridor Walkway', position: 'middle', shape: 'H', floor: thisFloor });
                         } else {
                             // L / T / cross shapes need TWO corridor blocks (one vertical-style, one
                             // horizontal-style) — the renderer switches to the 4-quadrant cross-shape
-                            // layout automatically whenever a floor has 2+ corridors.
-                            admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: 'center', floor: thisFloor });
-                            admin2DBlocks.push({ type: 'corridor', id: 'C2-' + i, name: 'Corridor Walkway', position: 'middle', floor: thisFloor });
+                            // layout automatically whenever a floor has 2+ corridors, hiding whichever
+                            // arms don't apply based on the tagged shape (L hides 2, T hides 1).
+                            admin2DBlocks.push({ type: 'corridor', id: 'C1-' + i, name: 'Corridor Walkway', position: 'center', shape: corridorShape, floor: thisFloor });
+                            admin2DBlocks.push({ type: 'corridor', id: 'C2-' + i, name: 'Corridor Walkway', position: 'middle', shape: corridorShape, floor: thisFloor });
                         }
                     }
                     if (aiData.rooms && aiData.rooms.length > 0) {
@@ -2559,8 +2812,10 @@
                             if (roomAmenities.some(a => /bath/i.test(a))) roomIcons.push({ type: 'bath', label: 'Bathroom' });
                             if (roomAmenities.some(a => /table|study/i.test(a))) roomIcons.push({ type: 'table', label: 'Study Table' });
                             const validQuadrant = ['NW', 'NE', 'SW', 'SE'].includes(r.quadrant) ? r.quadrant : 'NW';
+                            const validRow = ['top', 'middle', 'bottom'].includes(r.row) ? r.row : 'top';
+                            const validSide = ['left', 'right'].includes(r.side) ? r.side : 'left';
                             let newRoom = { id: roomId, name: r.room_no ? `Room ${r.room_no}` : `Room ${idx + 1}`, floor: thisFloor, type: `${bedsCount}-Seater`, price: 5000, beds: bedsArr, photos: ['', '', ''], amenities: roomAmenities, has_door: r.has_door !== false };
-                            globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, icons: roomIcons, quadrant: validQuadrant, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: thisFloor });
+                            globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: roomId, name: newRoom.name, beds: bedsArr, icons: roomIcons, quadrant: validQuadrant, row: validRow, side: validSide, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: thisFloor });
                         });
                     }
                 });
@@ -2616,6 +2871,12 @@
             refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
         }
         function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : (orientation === 'middle' ? 'middle' : 'top'); admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
+        function addBusinessHCorridor() {
+            const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
+            admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now() + '-1', name: 'Corridor Walkway', position: 'center', shape: 'H', floor: defaultFloor });
+            admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now() + '-2', name: 'Corridor Walkway', position: 'middle', shape: 'H', floor: defaultFloor });
+            renderAttractive2DPlan();
+        }
         function removeRoom(index) {
             const roomId = globalDynamicRooms[index].id; globalDynamicRooms.splice(index, 1); admin2DBlocks = admin2DBlocks.filter(b => b.id !== roomId);
             // Any room that was synced FROM the one just deleted goes back to independent/editable.
@@ -2785,6 +3046,15 @@
                         const data = doc.data(); let statusText = data.status === 'approved_2d' ? '✅ Active' : '⏳ Pending'; let statusChip = data.status === 'approved_2d' ? 'chip chip-success' : 'chip chip-warning';
                         let uploadedAtText = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString('en-IN') : (data.dateSubmitted ? 'Earlier' : '—');
                         let editedAtText = data.lastEditedAt ? new Date(data.lastEditedAt).toLocaleString('en-IN') : 'Not edited yet';
+                        if (data.propertyType === 'House/Flat') {
+                            // Flat/House is a whole-unit rental — no rooms/beds/Architect Mode here,
+                            // just its own details form and rent/deposit summary.
+                            const fd = data.flatDetails || {};
+                            statusText = data.status === 'pending_approval' ? '⏳ Pending' : (data.flatDetails && data.flatDetails.status === 'booked' ? '🔴 Booked' : '✅ Active');
+                            statusChip = data.status === 'pending_approval' ? 'chip chip-warning' : (data.flatDetails && data.flatDetails.status === 'booked' ? 'chip' : 'chip chip-success');
+                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> </div>`;
+                            return;
+                        }
                         htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> </div>`;
                     });
                     window._myPropertyIds = myIds; // used to scope this business's notification feed too
@@ -2945,7 +3215,17 @@
                     const isPaused = data.status === 'paused_by_admin';
                     const pausedBadgeHtml = isPaused ? `<span class="chip" style="background:#fef3c7; border-color:#fcd34d; color:#92400e;">⏸️ PAUSED — hidden from users</span>` : '';
                     const pauseBtnHtml = `<button type="button" onclick="togglePausePublish('${doc.id}', ${isPaused})" class="px-4 py-2.5 ${isPaused ? 'bg-emerald-50 border-2 border-emerald-200 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500' : 'bg-amber-50 border-2 border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white hover:border-amber-500'} font-bold rounded-xl text-xs transition">${isPaused ? '▶️ Resume' : '⏸️ Pause'}</button>`;
-                    const cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', '${(data.propertyType || 'this property').replace(/'/g, "\\'")}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div></div>`;
+                    let cardHtml;
+                    if (data.propertyType === 'House/Flat') {
+                        // Whole-unit rental — nothing to review in Architect Mode (no rooms/beds/layout),
+                        // so admin gets a details summary and can approve directly.
+                        const fd = data.flatDetails || {};
+                        const flatSummaryHtml = `<div class="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-200"><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 border-b border-slate-200 pb-1">🏡 ${data.businessName || 'Flat/House'}</p><div class="flex flex-wrap gap-x-4 gap-y-1 mt-1"><span class="text-xs font-bold text-slate-800">${fd.bhk || '—'}</span><span class="text-xs font-bold text-slate-800">🚿 ${fd.bathrooms || 1} bath</span><span class="text-xs font-bold text-slate-800">💰 ₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/mo</span><span class="text-xs font-bold text-slate-800">🔒 Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></div></div>`;
+                        const flatPhotosHtml = (fd.photos && fd.photos.length) ? `<div class="flex gap-2 mb-3 overflow-x-auto">${fd.photos.map(p => `<img src="${p}" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shrink-0">`).join('')}</div>` : '';
+                        cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">House/Flat <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${fd.bookingMode === 'visit' ? '📅 VISIT' : '⚡ INSTANT'}</span></div>${bizProfileHtml}${flatSummaryHtml}${flatPhotosHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', 'this flat/house')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3">${data.status === 'pending_approval' ? `<button type="button" onclick="approveFlatHouseListing('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✅ Approve & Publish</button>` : ''}</div></div></div>`;
+                    } else {
+                        cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', '${(data.propertyType || 'this property').replace(/'/g, "\\'")}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div></div>`;
+                    }
                     if (data.status === 'pending_approval') pendingHtml += cardHtml; else if (data.status === 'approved_2d' || data.status === 'approved' || data.status === 'paused_by_admin') liveHtml += cardHtml;
                 });
                 updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`);
@@ -3271,6 +3551,13 @@
                         const whatsappBtn = ownerPhone ? `<a href="https://wa.me/${ownerPhone.length === 10 ? '91' + ownerPhone : ownerPhone}?text=${encodeURIComponent('Hi, I saw ' + (data.businessProfile?.company || data.propertyType) + ' on HostelOM and wanted to ask about availability.')}" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 border-2 border-emerald-200 rounded-xl text-xl hover:bg-emerald-500 hover:text-white transition shrink-0" title="Chat on WhatsApp">💬</a>` : '';
                         const isWishlisted = getWishlist().includes(doc.id);
 
+                        if (data.propertyType === 'House/Flat') {
+                            const fd = data.flatDetails || {};
+                            const isBooked = fd.status === 'booked';
+                            const bookedBadge = isBooked ? `<span class="absolute top-4 right-4 chip bg-slate-700 text-white border-slate-800 shadow-lg">🔴 Booked</span>` : '';
+                            htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">🏡 ${fd.bhk || 'Flat/House'}</span> ${bookedBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-1">${data.businessName || 'Flat/House'}</h3> <p class="text-sm font-black text-indigo-600 mb-2">₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/month <span class="text-slate-400 font-bold text-xs">· Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></p> </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openFlatHouseView('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">${fd.bookingMode === 'visit' ? 'View & Schedule Visit →' : 'View & Book Now →'}</button> ${whatsappBtn} </div> </div>`;
+                            return;
+                        }
                         htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
@@ -3324,7 +3611,88 @@
         let grfReturnScreen = 'screenUserDashboard'; // where to go back to if user cancels the form
         let grfBookingContext = null; // { beds, totalPrice, mode: 'image' | '2d' }
 
-        function openGuestRegistrationForm() {
+        // ==== FLAT/HOUSE USER-FACING VIEW ====
+        let currentFlatHouseData = null;
+        window.openFlatHouseView = async function(docId) {
+            const prop = allApprovedProperties.find(p => p.id === docId);
+            if (!prop) { alert('Could not load this listing.'); return; }
+            currentFlatHouseData = { ...prop, id: docId };
+            const fd = prop.flatDetails || {};
+
+            // Photo gallery
+            const photos = (fd.photos && fd.photos.length) ? fd.photos : [prop.coverPhotoUrl || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&q=60&w=500'];
+            document.getElementById('fhViewPhotoGallery').innerHTML = photos.map(p => `<img src="${p}" loading="lazy" class="w-full h-64 object-cover snap-center shrink-0" style="min-width:100%;">`).join('');
+
+            document.getElementById('fhViewName').innerText = prop.businessName || 'Flat/House';
+            document.getElementById('fhViewBhkLine').innerText = `${fd.bhk || ''} · ${fd.furnishing || ''} · ${fd.areaSqft ? fd.areaSqft + ' sq.ft' : ''}`;
+            document.getElementById('fhViewRent').innerText = `₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}`;
+            document.getElementById('fhViewDeposit').innerText = `· Deposit ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}`;
+
+            const amenityIcons = { 'Parking':'🚗','Lift':'🛗','Power Backup':'🔋','Gated Society':'🏘️','Pet Friendly':'🐾','24x7 Water':'💧','Gas Pipeline':'🔥','Balcony':'🌇' };
+            document.getElementById('fhViewAmenities').innerHTML = (fd.amenities || []).map(a => `<span class="chip chip-outline">${amenityIcons[a] || '✓'} ${a}</span>`).join('') || '<span class="text-xs text-slate-400 font-semibold">No amenities listed</span>';
+
+            document.getElementById('fhViewDetailsGrid').innerHTML = `
+                <div>🛏️ ${fd.bhk || '—'}</div><div>🚿 ${fd.bathrooms || 1} Bathroom(s)</div>
+                <div>🛋️ ${fd.furnishing || '—'}</div><div>🏢 Floor ${fd.floor || '—'}</div>
+                <div>👪 ${fd.tenantPreference || 'Anyone'}</div><div>📐 ${fd.areaSqft ? fd.areaSqft + ' sq.ft' : '—'}</div>
+            `;
+
+            const isBooked = fd.status === 'booked';
+            const actionBtn = document.getElementById('fhViewActionBtn');
+            if (isBooked) {
+                actionBtn.innerText = '🔴 Already Booked'; actionBtn.disabled = true; actionBtn.className = 'w-full py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed text-sm';
+            } else if (fd.bookingMode === 'visit') {
+                actionBtn.innerText = '📅 Schedule a Visit'; actionBtn.disabled = false; actionBtn.className = 'btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-lg tracking-wide text-sm';
+            } else {
+                actionBtn.innerText = 'Book Now →'; actionBtn.disabled = false; actionBtn.className = 'btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-lg tracking-wide text-sm';
+            }
+            goTo('screenFlatHouseView');
+        }
+        function fhViewPrimaryAction() {
+            if (!currentFlatHouseData) return;
+            const fd = currentFlatHouseData.flatDetails || {};
+            if (fd.bookingMode === 'visit') { goTo('screenScheduleVisit'); return; }
+            // Instant book — reuse the existing guest registration + payment pipeline, treating the
+            // whole flat as a single "bed" unit so the same lock/payment logic applies unchanged.
+            window.currentPropertyData = currentFlatHouseData;
+            grfReturnScreen = 'screenFlatHouseView';
+            grfBookingContext = { beds: [{ id: 'FLAT-WHOLE', price: fd.monthlyRent || 0, plan: 'Monthly Rent' }], totalPrice: fd.monthlyRent || 0, mode: 'flat' };
+            document.getElementById('grfRoomType').value = `${fd.bhk || 'Flat'} — Whole Unit`;
+            document.getElementById('grfHostelNameHeading').innerText = currentFlatHouseData.businessName || 'Flat/House';
+            document.getElementById('grfFormError').classList.add('hidden');
+            document.getElementById('grfJoiningDate').value = window.selectedCheckInDate || new Date().toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('grfDob').max = todayStr;
+            grfResetSteps();
+            goTo('screenGuestRegistrationForm');
+        }
+        async function submitScheduleVisit() {
+            const name = (document.getElementById('svName').value || '').trim();
+            const phone = (document.getElementById('svPhone').value || '').trim();
+            const errBox = document.getElementById('svFormError');
+            if (!name || !phone) { errBox.innerText = 'Please enter your name and phone number.'; errBox.classList.remove('hidden'); return; }
+            if (!currentFlatHouseData) { errBox.innerText = 'Something went wrong — please go back and try again.'; errBox.classList.remove('hidden'); return; }
+            errBox.classList.add('hidden');
+            const btn = document.getElementById('svSubmitBtn'); btn.disabled = true; btn.innerText = '⏳ Sending...';
+            try {
+                await window.addDoc(window.collection(window.db, 'notifications'), {
+                    propertyId: currentFlatHouseData.id,
+                    role: 'business',
+                    type: 'visit_request',
+                    message: `📅 Visit request for "${currentFlatHouseData.businessName || 'your flat/house'}" from ${name} (+91 ${phone})${document.getElementById('svDate').value ? ' — preferred date: ' + document.getElementById('svDate').value : ''}${document.getElementById('svMessage').value ? ' — "' + document.getElementById('svMessage').value.replace(/"/g,"'") + '"' : ''}`,
+                    read: false,
+                    createdAt: new Date().toISOString()
+                });
+                alert('✅ Visit request sent! The owner will contact you to confirm.');
+                document.getElementById('svName').value = ''; document.getElementById('svPhone').value = ''; document.getElementById('svDate').value = ''; document.getElementById('svMessage').value = '';
+                goTo('screenFlatHouseView');
+            } catch (err) {
+                errBox.innerText = 'Could not send request: ' + err.message; errBox.classList.remove('hidden');
+            } finally {
+                btn.disabled = false; btn.innerText = 'Request Visit →';
+            }
+        }
+
             const hostelName = (window.currentPropertyData && (window.currentPropertyData.businessName || window.currentPropertyData.name || window.currentPropertyData.companyName || (window.currentPropertyData.businessProfile && window.currentPropertyData.businessProfile.company))) || 'Selected Hostel';
             document.getElementById('grfHostelNameHeading').innerText = hostelName;
 
@@ -3494,6 +3862,7 @@
                 fatherName: document.getElementById('grfFatherName').value.trim(),
                 motherName: document.getElementById('grfMotherName').value.trim(),
                 emergencyContact: document.getElementById('grfEmergencyContact').value.trim(),
+                parentEmail: document.getElementById('grfParentEmail').value.trim(),
                 address: document.getElementById('grfAddress').value.trim(),
                 roomType: document.getElementById('grfRoomType').value,
                 joiningDate: document.getElementById('grfJoiningDate').value,
@@ -3618,6 +3987,15 @@
                                 body: JSON.stringify({ guestName: formData.fullName, hostelName: formData.hostelName, pdfUrl })
                             });
                         } catch (emailErr) { console.warn('Email notification failed (continuing):', emailErr); }
+                        // Best-effort: email the parent too, if they gave an email address.
+                        if (formData.parentEmail) {
+                            try {
+                                await fetch(`${BACKEND_URL}/notify-parent`, {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ parentEmail: formData.parentEmail, guestName: formData.fullName, hostelName: formData.hostelName })
+                                });
+                            } catch (parentEmailErr) { console.warn('Parent email failed (continuing):', parentEmailErr); }
+                        }
                     } catch (dbErr) { console.warn('Could not save registration to Firestore (continuing):', dbErr); }
                 }
 
@@ -3637,6 +4015,17 @@
                 document.getElementById('payHostelName').innerText = formData.hostelName;
                 document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
                 document.getElementById('paySumPlan').innerText = planLabel;
+                // "Notify Parent via WhatsApp" — pre-fills a message to the Emergency Contact number
+                // (the guest just taps Send, no automatic/paid WhatsApp API involved).
+                const notifyBtn = document.getElementById('btnNotifyParentWhatsapp');
+                const parentPhoneDigits = (formData.emergencyContact || '').replace(/\D/g, '');
+                if (parentPhoneDigits.length === 10) {
+                    const waMsg = encodeURIComponent(`Hi, this is to let you know that ${formData.fullName} has checked in / registered at ${formData.hostelName}. — via HostelOM`);
+                    notifyBtn.href = `https://wa.me/91${parentPhoneDigits}?text=${waMsg}`;
+                    notifyBtn.classList.remove('hidden');
+                } else {
+                    notifyBtn.classList.add('hidden');
+                }
                 document.getElementById('paySumTotal').innerText = '₹' + totalPrice;
                 // Cache the payment context so the Razorpay handler can read it
                 window._pendingPayment = {
@@ -4007,11 +4396,16 @@
 
             let addRoomToolbar = editHere ? `<div style="padding: 0 4px 14px;"><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>` : '';
             let html = addRoomToolbar + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 20px;">`;
-            // TWO corridors on this floor = an L / T / + shaped walkway junction — same cross-shape
-            // renderer used in Architect Mode's own preview, so what the admin designed is exactly
-            // what the real user sees here.
+            // TWO corridors on this floor = either an H-shaped pair of parallel corridors, or an
+            // L / T / + shaped walkway junction — same specialised renderers used in Architect Mode's
+            // own preview, so what the admin designed is exactly what the real user sees here.
+            const corridorShapeTagUser = (corridors[0] && corridors[0].shape) || 'cross';
+            if (corridors.length >= 2 && corridorShapeTagUser === 'H') {
+                container.innerHTML = addRoomToolbar + renderHShapeHTML(rooms, 'Walkway', renderRoomsBlock);
+                return;
+            }
             if (corridors.length >= 2) {
-                container.innerHTML = addRoomToolbar + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock);
+                container.innerHTML = addRoomToolbar + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock, corridorShapeTagUser);
                 return;
             }
             if ((effectivePos === 'center' || effectivePos === 'middle') && corridors.length > 0) {
@@ -4652,25 +5046,64 @@
         // walkway. If a floor only has ONE corridor (the normal case), this is skipped entirely and
         // the original single-strip layout is used, unchanged.
         // ==========================================
-        function renderCrossShapeHTML(rooms, corridorLabel, renderRoomsBlockFn) {
+        function renderCrossShapeHTML(rooms, corridorLabel, renderRoomsBlockFn, shape) {
             const groups = { NW: [], NE: [], SW: [], SE: [] };
             rooms.forEach(r => { const q = groups[r.quadrant] ? r.quadrant : 'NW'; groups[q].push(r); });
             const corridorArmStyle = 'background: #cbd5e1; border: 3px dashed #64748b; border-radius: 6px; min-height: 60px; min-width: 60px;';
+            const hiddenArmStyle = 'visibility: hidden;';
+            // "L" bends once — only 2 adjacent arms (right + bottom) are real corridor, top + left are
+            // hidden. "T" has 3 arms — only the left arm is hidden, forming a T rotated 90°. "cross"
+            // (default) shows all 4 arms.
+            const topArmStyle = (shape === 'L' || shape === 'T') && shape === 'L' ? hiddenArmStyle : corridorArmStyle;
+            const leftArmStyle = (shape === 'L' || shape === 'T') ? hiddenArmStyle : corridorArmStyle;
+            const rightArmStyle = corridorArmStyle;
+            const bottomArmStyle = shape === 'L' ? corridorArmStyle : (shape === 'T' ? corridorArmStyle : corridorArmStyle);
             return `<div style="display:grid; grid-template-columns: 1fr 60px 1fr; grid-template-rows: auto 60px auto; gap: 14px; padding: 16px; width:100%; align-items:stretch;">
                 <div style="grid-column:1; grid-row:1;">${renderRoomsBlockFn(groups.NW)}</div>
-                <div style="grid-column:2; grid-row:1; ${corridorArmStyle}"></div>
+                <div style="grid-column:2; grid-row:1; ${topArmStyle}"></div>
                 <div style="grid-column:3; grid-row:1;">${renderRoomsBlockFn(groups.NE)}</div>
-                <div style="grid-column:1; grid-row:2; ${corridorArmStyle}"></div>
+                <div style="grid-column:1; grid-row:2; ${leftArmStyle}"></div>
                 <div style="grid-column:2; grid-row:2; ${corridorArmStyle} display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#1e293b; text-align:center;">${corridorLabel}</div>
-                <div style="grid-column:3; grid-row:2; ${corridorArmStyle}"></div>
+                <div style="grid-column:3; grid-row:2; ${rightArmStyle}"></div>
                 <div style="grid-column:1; grid-row:3;">${renderRoomsBlockFn(groups.SW)}</div>
-                <div style="grid-column:2; grid-row:3; ${corridorArmStyle}"></div>
+                <div style="grid-column:2; grid-row:3; ${bottomArmStyle}"></div>
                 <div style="grid-column:3; grid-row:3;">${renderRoomsBlockFn(groups.SE)}</div>
+            </div>`;
+        }
+        // H-SHAPE: two SEPARATE parallel straight corridors (not crossing) — top room-row, corridor 1,
+        // middle room-row, corridor 2, bottom room-row. A short vertical connector links the two
+        // corridors in the middle, completing the "H" look. Rooms are grouped by row + side (left/right
+        // of the connector) rather than by NW/NE/SW/SE quadrant, since this isn't a single junction.
+        function renderHShapeHTML(rooms, corridorLabel, renderRoomsBlockFn) {
+            const rowGroups = { top: { left: [], right: [] }, middle: { left: [], right: [] }, bottom: { left: [], right: [] } };
+            rooms.forEach(r => {
+                const row = ['top', 'middle', 'bottom'].includes(r.row) ? r.row : 'top';
+                const side = r.side === 'right' ? 'right' : 'left';
+                rowGroups[row][side].push(r);
+            });
+            const corridorArmStyle = 'background: #cbd5e1; border: 3px dashed #64748b; border-radius: 6px; min-height: 44px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#1e293b;';
+            const connectorStyle = 'background: #cbd5e1; border-left: 3px dashed #64748b; border-right: 3px dashed #64748b; min-height: 100%;';
+            const rowHtml = (row) => `<div style="display:grid; grid-template-columns: 1fr 40px 1fr; gap: 10px;"><div>${renderRoomsBlockFn(rowGroups[row].left)}</div><div></div><div>${renderRoomsBlockFn(rowGroups[row].right)}</div></div>`;
+            return `<div style="padding: 16px; width:100%;">
+                ${rowHtml('top')}
+                <div style="height:8px;"></div>
+                <div class="rounded shadow-sm" style="${corridorArmStyle}">🚶 ${corridorLabel} 1</div>
+                <div style="height:8px;"></div>
+                ${rowHtml('middle')}
+                <div style="height:8px;"></div>
+                <div class="rounded shadow-sm" style="${corridorArmStyle}">🚶 ${corridorLabel} 2</div>
+                <div style="height:8px;"></div>
+                ${rowHtml('bottom')}
             </div>`;
         }
         function qeSetQuadrant(blockId, quadrant) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
             block.quadrant = quadrant;
+            qeRefreshAll();
+        }
+        function qeSetRowSide(blockId, field, value) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
+            block[field] = value; // field is 'row' or 'side'
             qeRefreshAll();
         }
 
@@ -4699,10 +5132,14 @@
             }
 
             let finalHtml;
-            // TWO corridors on the same floor = an L / T / + shaped walkway junction, not a single
-            // straight strip — route to the cross-shape renderer instead of the normal split-in-half logic.
-            if (corridors.length >= 2) {
-                finalHtml = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid);
+            const corridorShapeTag = (corridors[0] && corridors[0].shape) || 'cross';
+            // TWO corridors on the same floor = either an H-shaped pair of separate parallel corridors,
+            // or an L / T / + shaped walkway junction — route to the matching specialised renderer
+            // instead of the normal split-in-half logic.
+            if (corridors.length >= 2 && corridorShapeTag === 'H') {
+                finalHtml = toolbarHtml + renderHShapeHTML(rooms, 'Walkway', renderRoomsGrid);
+            } else if (corridors.length >= 2) {
+                finalHtml = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid, corridorShapeTag);
             } else {
                 let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
                 // corridor "center" = split left/right; "middle" = split top/bottom (rooms both sides, horizontal corridor)
@@ -4745,8 +5182,12 @@
                     return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};">${delBtn}<span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`;
                 }).join('');
                 const quadrantPicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:6px; justify-content:center;">${['NW','NE','SW','SE'].map(q => `<span onclick="event.stopPropagation(); qeSetQuadrant('${block.id}','${q}');" style="font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px; cursor:pointer; ${((block.quadrant || 'NW') === q) ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${q}</span>`).join('')}</div>` : '';
+                // Only relevant for H-shape floors (two separate parallel corridors) — lets the admin
+                // manually place a room into the top/middle/bottom row and left/right side, mirroring
+                // the NW/NE/SW/SE picker above but for this different layout topology.
+                const rowSidePicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:4px; justify-content:center; flex-wrap:wrap;">${['top','middle','bottom'].map(r => `<span onclick="event.stopPropagation(); qeSetRowSide('${block.id}','row','${r}');" style="font-size:8px; font-weight:900; padding:2px 5px; border-radius:6px; cursor:pointer; ${((block.row || 'top') === r) ? 'background:#059669;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${r}</span>`).join('')}${['left','right'].map(s => `<span onclick="event.stopPropagation(); qeSetRowSide('${block.id}','side','${s}');" style="font-size:8px; font-weight:900; padding:2px 5px; border-radius:6px; cursor:pointer; ${((block.side || 'left') === s) ? 'background:#059669;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${s}</span>`).join('')}</div>` : '';
                 const headerHtml = blueprintEditMode
-                    ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div>${quadrantPicker}</div>`
+                    ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div>${quadrantPicker}${rowSidePicker}</div>`
                     : `<div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div>`;
                 const addBedBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 88px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>` : '';
                 const addBathBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 88px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>` : '';
