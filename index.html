@@ -93,6 +93,7 @@
         .btn-dark:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.5); }
         .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .btn-success:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.4); }
+        .layout-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
         .layout-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .layout-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
         .layout-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #cbd5e1, #94a3b8); border-radius: 10px; }
@@ -845,6 +846,16 @@
                 <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Monthly Rent (₹)</label><input type="number" id="fhRent" placeholder="e.g. 15000" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
                 <div><label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Security Deposit (₹)</label><input type="number" id="fhDeposit" placeholder="e.g. 30000" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
             </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Minimum Stay / Rent Duration</label>
+                <select id="fhRentDuration" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                    <option value="15 Days">15 Days</option>
+                    <option value="1 Month" selected>1 Month</option>
+                    <option value="3 Months">3 Months</option>
+                    <option value="6 Months">6 Months</option>
+                    <option value="1 Year">1 Year</option>
+                </select>
+            </div>
 
             <div>
                 <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Amenities</label>
@@ -877,6 +888,25 @@
                     <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot3"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(3, this)">📷</label>
                     <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot4"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(4, this)">📷</label>
                     <label class="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhPhotoSlot5"><input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(5, this)">📷</label>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Location Map (optional)</label>
+                    <label class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fhMapSlot">
+                        <input type="file" accept="image/*" class="hidden" onchange="saveFlatMapLocally(this)">
+                        <span id="fhMapSlotIcon">🗺️</span>
+                        <span class="text-[9px] font-bold text-slate-400 mt-1" id="fhMapSlotLabel">Upload map / location screenshot</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">360° View (optional)</label>
+                    <label class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl" id="fh360Slot">
+                        <input type="file" accept="image/*" class="hidden" onchange="saveFlat360Locally(this)">
+                        <span id="fh360SlotIcon">🎥</span>
+                        <span class="text-[9px] font-bold text-slate-400 mt-1" id="fh360SlotLabel">Upload 360° panorama photo</span>
+                    </label>
                 </div>
             </div>
 
@@ -1212,6 +1242,7 @@
                 <span id="fhViewDeposit" class="text-xs font-bold text-slate-400 ml-2">· Deposit ₹0</span>
             </div>
             <div id="fhViewAmenities" class="flex flex-wrap gap-2 mb-6"></div>
+            <div id="fhViewExtraBtns" class="hidden"></div>
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Details</p>
                 <div id="fhViewDetailsGrid" class="grid grid-cols-2 gap-y-2 text-xs font-bold text-slate-700"></div>
@@ -1932,6 +1963,30 @@
         let fhSelectedAmenities = [];
         let fhBookingMode = 'instant';
         let fhPhotoFiles = [null, null, null, null, null, null];
+        let fhMapFile = null, fhMapPreviewUrl = '', fhMapExistingUrl = '';
+        let fh360File = null, fh360PreviewUrl = '', fh360ExistingUrl = '';
+        async function saveFlatMapLocally(inputEl) {
+            let file = inputEl.files[0]; if (!file) return;
+            const icon = document.getElementById('fhMapSlotIcon'); const label = document.getElementById('fhMapSlotLabel');
+            icon.innerText = '⏳'; label.innerText = 'Uploading...';
+            file = await compressImage(file, 1600, 0.85);
+            fhMapFile = file;
+            fhMapPreviewUrl = URL.createObjectURL(file);
+            const slot = document.getElementById('fhMapSlot');
+            slot.style.backgroundImage = `url(${fhMapPreviewUrl})`; slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
+            icon.innerText = '✅'; label.innerText = 'Map added — tap to change';
+        }
+        async function saveFlat360Locally(inputEl) {
+            let file = inputEl.files[0]; if (!file) return;
+            const icon = document.getElementById('fh360SlotIcon'); const label = document.getElementById('fh360SlotLabel');
+            icon.innerText = '⏳'; label.innerText = 'Uploading...';
+            file = await compressImage(file, 4000, 0.85); // higher res — panoramas need the detail
+            fh360File = file;
+            fh360PreviewUrl = URL.createObjectURL(file);
+            const slot = document.getElementById('fh360Slot');
+            slot.style.backgroundImage = `url(${fh360PreviewUrl})`; slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
+            icon.innerText = '✅'; label.innerText = '360° photo added — tap to change';
+        }
         let fhPhotoPreviewUrls = ['', '', '', '', '', ''];
 
         function toggleFhAmenity(el, name) {
@@ -1963,6 +2018,11 @@
             editingFlatHouseDocId = null;
             document.getElementById('fhSaveBtn').innerText = 'SAVE & PUBLISH →';
             ['fhName','fhArea','fhFloor','fhRent','fhDeposit'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            const durSel = document.getElementById('fhRentDuration'); if (durSel) durSel.value = '1 Month';
+            fhMapFile = null; fhMapPreviewUrl = ''; fhMapExistingUrl = '';
+            fh360File = null; fh360PreviewUrl = ''; fh360ExistingUrl = '';
+            const mapSlot = document.getElementById('fhMapSlot'); if (mapSlot) { mapSlot.style.backgroundImage = ''; document.getElementById('fhMapSlotIcon').innerText = '🗺️'; document.getElementById('fhMapSlotLabel').innerText = 'Upload map / location screenshot'; }
+            const slot360 = document.getElementById('fh360Slot'); if (slot360) { slot360.style.backgroundImage = ''; document.getElementById('fh360SlotIcon').innerText = '🎥'; document.getElementById('fh360SlotLabel').innerText = 'Upload 360° panorama photo'; }
             document.querySelectorAll('.fh-amenity-chip').forEach(c => c.classList.remove('chip-primary'));
             setFlatBookingMode('instant');
             for (let i = 0; i < 6; i++) { const slot = document.getElementById('fhPhotoSlot' + i); if (slot) { slot.style.backgroundImage = ''; slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="saveFlatPhotoLocally(${i}, this)">📷`; } }
@@ -1983,6 +2043,12 @@
                     if (fhPhotoFiles[i]) { const path = `business_rooms/${hostelSlug}/${Date.now()}_flat_photo_${i}`; photoUrls.push(await uploadFileToStorage(fhPhotoFiles[i], path)); }
                     else if (fhPhotoPreviewUrls[i] && fhPhotoPreviewUrls[i].startsWith('http')) { photoUrls.push(fhPhotoPreviewUrls[i]); } // preserve an existing (already-uploaded) photo when editing and this slot wasn't touched
                 }
+                // Map screenshot — upload if a new one was picked, else keep whatever was already saved (edit mode)
+                let mapPhotoUrl = fhMapExistingUrl || '';
+                if (fhMapFile) { mapPhotoUrl = await uploadFileToStorage(fhMapFile, `main_maps/${hostelSlug}/${Date.now()}_flat_map`); }
+                // 360° panorama photo — same pattern
+                let panorama360Url = fh360ExistingUrl || '';
+                if (fh360File) { panorama360Url = await uploadFileToStorage(fh360File, `panorama360/${hostelSlug}/${Date.now()}_flat_360`); }
                 const flatDetails = {
                     bhk: document.getElementById('fhBhk').value,
                     bathrooms: Number(document.getElementById('fhBathrooms').value) || 1,
@@ -1991,10 +2057,13 @@
                     floor: document.getElementById('fhFloor').value || '',
                     tenantPreference: document.getElementById('fhTenantPref').value,
                     monthlyRent: rent,
+                    rentDuration: document.getElementById('fhRentDuration').value || '1 Month',
                     securityDeposit: Number(document.getElementById('fhDeposit').value) || 0,
                     amenities: fhSelectedAmenities,
                     bookingMode: fhBookingMode, // 'instant' or 'visit'
                     photos: photoUrls,
+                    mapPhotoUrl: mapPhotoUrl,
+                    panorama360Url: panorama360Url,
                     status: 'available' // becomes 'booked' once someone completes an instant booking
                 };
                 const docData = {
@@ -2052,10 +2121,13 @@
             document.getElementById('fhTenantPref').value = fd.tenantPreference || 'Anyone';
             document.getElementById('fhRent').value = fd.monthlyRent || '';
             document.getElementById('fhDeposit').value = fd.securityDeposit || '';
+            document.getElementById('fhRentDuration').value = fd.rentDuration || '1 Month';
             fhSelectedAmenities = [...(fd.amenities || [])];
             document.querySelectorAll('.fh-amenity-chip').forEach(chip => { if (fhSelectedAmenities.some(a => chip.innerText.includes(a))) chip.classList.add('chip-primary'); });
             setFlatBookingMode(fd.bookingMode || 'instant');
             (fd.photos || []).forEach((url, i) => { if (i < 6 && url) { const slot = document.getElementById('fhPhotoSlot' + i); if (slot) { slot.style.backgroundImage = `url(${url})`; slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center'; slot.innerHTML = ''; fhPhotoPreviewUrls[i] = url; } } });
+            if (fd.mapPhotoUrl) { fhMapExistingUrl = fd.mapPhotoUrl; const mapSlot = document.getElementById('fhMapSlot'); mapSlot.style.backgroundImage = `url(${fd.mapPhotoUrl})`; mapSlot.style.backgroundSize = 'cover'; mapSlot.style.backgroundPosition = 'center'; document.getElementById('fhMapSlotIcon').innerText = '✅'; document.getElementById('fhMapSlotLabel').innerText = 'Map added — tap to change'; }
+            if (fd.panorama360Url) { fh360ExistingUrl = fd.panorama360Url; const slot360 = document.getElementById('fh360Slot'); slot360.style.backgroundImage = `url(${fd.panorama360Url})`; slot360.style.backgroundSize = 'cover'; slot360.style.backgroundPosition = 'center'; document.getElementById('fh360SlotIcon').innerText = '✅'; document.getElementById('fh360SlotLabel').innerText = '360° photo added — tap to change'; }
             document.getElementById('fhSaveBtn').innerText = '💾 SAVE CHANGES';
             goTo('screenFlatHouseDetails');
         }
@@ -3636,7 +3708,17 @@
                 <div>🛏️ ${fd.bhk || '—'}</div><div>🚿 ${fd.bathrooms || 1} Bathroom(s)</div>
                 <div>🛋️ ${fd.furnishing || '—'}</div><div>🏢 Floor ${fd.floor || '—'}</div>
                 <div>👪 ${fd.tenantPreference || 'Anyone'}</div><div>📐 ${fd.areaSqft ? fd.areaSqft + ' sq.ft' : '—'}</div>
+                <div>📅 Min. Stay: ${fd.rentDuration || '1 Month'}</div>
             `;
+
+            const extraBtnsBox = document.getElementById('fhViewExtraBtns');
+            if (extraBtnsBox) {
+                let extraBtns = '';
+                if (fd.mapPhotoUrl) extraBtns += `<button type="button" onclick="window.open('${fd.mapPhotoUrl}','_blank')" class="flex-1 py-3 bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition">🗺️ View Map</button>`;
+                if (fd.panorama360Url) extraBtns += `<button type="button" onclick="preview360Panorama('${fd.panorama360Url}')" class="flex-1 py-3 bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100 transition">🎥 360° View</button>`;
+                extraBtnsBox.innerHTML = extraBtns;
+                extraBtnsBox.className = extraBtns ? 'flex gap-2 mb-6' : 'hidden';
+            }
 
             const isBooked = fd.status === 'booked';
             const actionBtn = document.getElementById('fhViewActionBtn');
@@ -5221,5 +5303,12 @@
         }
     </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"75124c326cb447fe934cde04713ae013","r":1}' crossorigin="anonymous"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(() => {});
+        });
+      }
+    </script>
 </body>
 </html>
