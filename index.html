@@ -46,6 +46,10 @@
             --slate-50: #f8fafc;
         }
         * { -webkit-tap-highlight-color: transparent; }
+        html {
+            overscroll-behavior-y: none; /* stops Android/TWA pull-to-refresh from firing on fast scroll — must be on <html>, not just <body> */
+            height: 100%;
+        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             overscroll-behavior-y: none;
@@ -93,7 +97,7 @@
         .btn-dark:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.5); }
         .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         .btn-success:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.4); }
-        .layout-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        .layout-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overscroll-behavior-y: contain; }
         .layout-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .layout-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
         .layout-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #cbd5e1, #94a3b8); border-radius: 10px; }
