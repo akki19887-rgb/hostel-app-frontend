@@ -1374,7 +1374,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Passport Size Photo</label>
-                    <input type="file" id="grfPassportPhoto" accept="image/*" capture="user" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
+                    <input type="file" id="grfPassportPhoto" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
                     <p class="text-[9px] text-slate-400 font-semibold mt-1">Tap to open camera directly, or choose from gallery</p>
                 </div>
             </div>
@@ -1398,7 +1398,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Upload Aadhar Card Photo</label>
-                    <input type="file" id="grfAadharPhoto" accept="image/*" capture="environment" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar(this)">
+                    <input type="file" id="grfAadharPhoto" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar(this)">
                     <p class="text-[9px] text-slate-400 font-semibold mt-1" id="grfAadharAutoFillStatus"></p>
                 </div>
             </div>
@@ -1437,11 +1437,9 @@
                     </div>
                 </div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact Number</label><input type="tel" id="grfEmergencyContact" maxlength="10" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-                <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Parent's Email <span class="text-slate-400 normal-case">(optional — for check-in updates)</span></label><input type="email" id="grfParentEmail" placeholder="parent@example.com" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Permanent Address</label><textarea id="grfAddress" rows="2" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></textarea></div>
                 <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-5">Health & Emergency</h5>
-                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Any Medical Condition / Allergy</label><input type="text" id="grfMedicalCondition" placeholder="Write 'None' if not applicable" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-                <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative)</label><input type="text" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative)</label><input type="text" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
             </div>
 
             <div class="grf-step hidden" data-step="2">
@@ -3950,12 +3948,10 @@
                 fatherName: document.getElementById('grfFatherName').value.trim(),
                 motherName: document.getElementById('grfMotherName').value.trim(),
                 emergencyContact: document.getElementById('grfEmergencyContact').value.trim(),
-                parentEmail: document.getElementById('grfParentEmail').value.trim(),
                 address: document.getElementById('grfAddress').value.trim(),
                 roomType: document.getElementById('grfRoomType').value,
                 joiningDate: document.getElementById('grfJoiningDate').value,
                 shiftingCharge: document.getElementById('grfShiftingCharge').value.trim() || 'Not needed',
-                medicalCondition: document.getElementById('grfMedicalCondition').value.trim() || 'None',
                 relativeContact: document.getElementById('grfRelativeContact').value.trim(),
                 signature: document.getElementById('grfSignature').value.trim(),
                 hostelName: document.getElementById('grfHostelNameHeading').innerText,
@@ -3973,6 +3969,19 @@
                     reader.onerror = reject;
                     reader.readAsDataURL(file);
                 });
+                // Read a data URL's natural pixel dimensions so we can fit it into the PDF box
+                // preserving aspect ratio instead of stretching it (stretching to a mismatched
+                // box is what made embedded photos look blurry/distorted).
+                const getImageNaturalSize = (dataUrl) => new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve({ w: img.naturalWidth || 1, h: img.naturalHeight || 1 });
+                    img.onerror = () => resolve({ w: 1, h: 1 });
+                    img.src = dataUrl;
+                });
+                const fitBox = (naturalW, naturalH, maxW, maxH) => {
+                    const scale = Math.min(maxW / naturalW, maxH / naturalH);
+                    return { w: naturalW * scale, h: naturalH * scale };
+                };
                 const passportInput = document.getElementById('grfPassportPhoto');
                 const aadharInputEl = document.getElementById('grfAadharPhoto');
                 let passportPhotoDataUrl = null, aadharPhotoDataUrl = null;
@@ -3988,7 +3997,7 @@
                 doc.setFontSize(11); doc.text(formData.hostelName, 14, y); y += 10;
                 doc.setDrawColor(200); doc.line(14, y-4, 196, y-4);
                 const getImgFormat = (dataUrl) => { if (!dataUrl) return 'JPEG'; const m = dataUrl.match(/^data:image\/(\w+);/); if (!m) return 'JPEG'; const t = m[1].toUpperCase(); return (t === 'JPG' || t === 'JPEG') ? 'JPEG' : (t === 'PNG' ? 'PNG' : 'JPEG'); };
-                if (passportPhotoDataUrl) { try { doc.addImage(passportPhotoDataUrl, getImgFormat(passportPhotoDataUrl), 160, 16, 32, 38); doc.setDrawColor(180); doc.rect(160, 16, 32, 38); } catch(e) { console.warn('Could not embed passport photo', e); } }
+                if (passportPhotoDataUrl) { try { const sz = await getImageNaturalSize(passportPhotoDataUrl); const fit = fitBox(sz.w, sz.h, 32, 38); const px = 160 + (32 - fit.w) / 2, py = 16 + (38 - fit.h) / 2; doc.addImage(passportPhotoDataUrl, getImgFormat(passportPhotoDataUrl), px, py, fit.w, fit.h); doc.setDrawColor(180); doc.rect(160, 16, 32, 38); } catch(e) { console.warn('Could not embed passport photo', e); } }
                 line('Full Name:', formData.fullName);
                 line('Date of Birth:', formData.dob);
                 line('Gender:', formData.gender);
@@ -4007,7 +4016,6 @@
                 line('Date of Joining:', formData.joiningDate);
                 line('Shifting Help Needed:', formData.shiftingCharge);
                 y += 2; doc.setFont(undefined,'bold'); doc.text('Health & Emergency', 14, y); y += 8; doc.setFont(undefined,'normal');
-                line('Medical Condition/Allergy:', formData.medicalCondition);
                 line('Emergency Contact (Relative):', formData.relativeContact);
 
                 // Aadhar photo always gets its own clean page — previously it was squeezed onto
@@ -4017,9 +4025,13 @@
                     try {
                         doc.addPage(); y = 20;
                         doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('Attached: Aadhar Card Photo', 14, y); y += 8;
-                        doc.addImage(aadharPhotoDataUrl, getImgFormat(aadharPhotoDataUrl), 14, y, 130, 80);
-                        doc.setDrawColor(180); doc.rect(14, y, 130, 80);
-                        y += 90;
+                        const sz = await getImageNaturalSize(aadharPhotoDataUrl);
+                        const boxW = 170, boxH = 105; // max box — actual image fitted inside this, aspect ratio preserved
+                        const fit = fitBox(sz.w, sz.h, boxW, boxH);
+                        const fx = 14 + (boxW - fit.w) / 2, fy = y + (boxH - fit.h) / 2;
+                        doc.addImage(aadharPhotoDataUrl, getImgFormat(aadharPhotoDataUrl), fx, fy, fit.w, fit.h);
+                        doc.setDrawColor(180); doc.rect(14, y, boxW, boxH);
+                        y += boxH + 10;
                     } catch(e) { console.warn('Could not embed aadhar photo', e); }
                 } else {
                     y += 6;
@@ -4075,15 +4087,6 @@
                                 body: JSON.stringify({ guestName: formData.fullName, hostelName: formData.hostelName, pdfUrl })
                             });
                         } catch (emailErr) { console.warn('Email notification failed (continuing):', emailErr); }
-                        // Best-effort: email the parent too, if they gave an email address.
-                        if (formData.parentEmail) {
-                            try {
-                                await fetch(`${BACKEND_URL}/notify-parent`, {
-                                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ parentEmail: formData.parentEmail, guestName: formData.fullName, hostelName: formData.hostelName })
-                                });
-                            } catch (parentEmailErr) { console.warn('Parent email failed (continuing):', parentEmailErr); }
-                        }
                     } catch (dbErr) { console.warn('Could not save registration to Firestore (continuing):', dbErr); }
                 }
 
@@ -4439,6 +4442,7 @@
                 const isOccupied = status && status !== 'available';
                 const isSelected = currentSelectedBedId === bed.id;
                 const tipText = ('₹' + price + (isOccupied ? ' · Booked' : ' · Available')).replace(/'/g, "\\'");
+                const bedLabel = (bed.label || bed.name || 'Bed').replace(/'/g, "\\'");
                 if (editHere) {
                     // While editing, the toggle reflects bed.status on admin2DBlocks (what qeToggleBedStatus
                     // actually mutates) — not the live published status, which only updates after this syncs.
@@ -4446,13 +4450,22 @@
                     const editCardCls = editIsOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl flex items-center justify-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl flex items-center justify-center';
                     return `<div class="${editCardCls}" style="width:54px; height:54px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">✕</span><span onclick="event.stopPropagation(); qeToggleBedStatus('__ROOMID__','${bed.id}');" title="Tap to mark ${editIsOcc ? 'Available' : 'Occupied'}" style="position:absolute; top:-6px; left:-6px; background:${editIsOcc ? '#ef4444' : '#10b981'}; color:white; border-radius:9999px; width:18px; height:18px; font-size:9px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">${editIsOcc ? '●' : '○'}</span><span class="text-2xl">🛏️</span></div>`;
                 }
-                let cls = 'border-2 rounded-xl flex items-center justify-center transition ';
-                if (isOccupied) cls += 'bg-slate-100 border-slate-200 opacity-50 cursor-not-allowed';
-                else if (isSelected) cls += 'bg-indigo-500 border-indigo-600 shadow-lg scale-105 cursor-pointer';
-                else cls += 'bg-slate-50 border-slate-200 hover:border-indigo-400 hover:shadow-md cursor-pointer';
+                // BookMyShow-style bed card: bigger tappable card, price shown INSIDE, clear
+                // Available / Selected / Booked states (matches the seat-selection mockup).
+                let cls = 'rounded-xl flex flex-col items-center justify-center gap-0.5 transition select-none ';
+                let innerLabel;
+                if (isOccupied) {
+                    cls += 'bg-slate-100 border-2 border-slate-100 text-slate-400 cursor-not-allowed';
+                    innerLabel = `<span class="text-[9px] font-black">${bedLabel}</span><span class="text-[8px] font-bold">Booked</span>`;
+                } else if (isSelected) {
+                    cls += 'btn-gradient text-white shadow-lg scale-105 cursor-pointer';
+                    innerLabel = `<span class="text-[9px] font-black">${bedLabel}</span><span class="text-[8px] font-bold opacity-90">₹${price}</span>`;
+                } else {
+                    cls += 'bg-white border-2 border-slate-200 text-slate-700 hover:border-indigo-400 hover:shadow-md cursor-pointer';
+                    innerLabel = `<span class="text-[9px] font-black">${bedLabel}</span><span class="text-[8px] font-bold text-slate-400">₹${price}</span>`;
+                }
                 const clickAttr = isOccupied ? '' : ` onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); showBedDetailsInPanel('${bed.id}'); renderUserSimpleBedGrid();"`;
-                const priceLabelCls = isSelected ? 'text-[8px] font-black text-indigo-600' : (isOccupied ? 'text-[8px] font-black text-slate-300' : 'text-[8px] font-black text-slate-500');
-                return `<div style="display:flex; flex-direction:column; align-items:center; gap:2px;"><div${clickAttr} class="${cls}" style="width:54px; height:54px;"><span class="text-2xl">🛏️</span></div><span class="${priceLabelCls}">₹${price}</span></div>`;
+                return `<div${clickAttr} class="${cls}" style="width:64px; height:58px; aspect-ratio:auto;" title="${tipText}">${innerLabel}</div>`;
             }
             // Rooms stack vertically, one per row, in their original order — this keeps Room 1/2/3
             // in a clean single-file line every time, instead of a wrapping grid that could reorder
