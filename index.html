@@ -4490,7 +4490,10 @@
                         <div onclick="qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="width:54px; height:54px; color:#6366f1; font-weight:900; font-size:9px;">➕</div>
                         <div onclick="qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="width:54px; height:54px; color:#3b82f6; font-weight:900; font-size:9px;">🚿+</div>
                         <div onclick="qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="width:54px; height:54px; color:#d97706; font-weight:900; font-size:9px;">📚+</div>` : '';
-                    html += `<div class="blueprint-room" style="width:100%; padding: 10px;">${header}<div style="display:flex; flex-wrap:wrap; gap: 8px; justify-content:center;">${bedsHtml}${iconsHtml}${addBtns}</div></div>`;
+                    const doorSideU = block.side === 'right' ? 'left' : 'right';
+                    const doorStyleMapU = { right: 'right:-2px; top:50%; transform:translateY(-50%) translateX(50%);', left: 'left:-2px; top:50%; transform:translateY(-50%) translateX(-50%);' };
+                    const doorNotchU = block.side ? `<span style="position:absolute; ${doorStyleMapU[doorSideU]} background:#fff; border:2px solid #6366f1; border-radius:999px; width:16px; height:16px; display:flex; align-items:center; justify-content:center; font-size:8px; z-index:2;" title="Door faces corridor">🚪</span>` : '';
+                    html += `<div class="blueprint-room" style="width:100%; padding: 10px; position:relative;">${doorNotchU}${header}<div style="display:flex; flex-wrap:wrap; gap: 8px; justify-content:center;">${bedsHtml}${iconsHtml}${addBtns}</div></div>`;
                 });
                 return html + `</div>`;
             }
@@ -4502,7 +4505,8 @@
             // own preview, so what the admin designed is exactly what the real user sees here.
             const corridorShapeTagUser = (corridors[0] && corridors[0].shape) || 'cross';
             if (corridors.length >= 2 && corridorShapeTagUser === 'H') {
-                container.innerHTML = addRoomToolbar + renderHShapeHTML(rooms, 'Walkway', renderRoomsBlock);
+                const rotationUser = (corridors[0] && corridors[0].rotation) || 0;
+                container.innerHTML = addRoomToolbar + renderHShapeHTML(rooms, 'Walkway', renderRoomsBlock, rotationUser);
                 return;
             }
             if (corridors.length >= 2) {
@@ -5175,27 +5179,52 @@
         // middle room-row, corridor 2, bottom room-row. A short vertical connector links the two
         // corridors in the middle, completing the "H" look. Rooms are grouped by row + side (left/right
         // of the connector) rather than by NW/NE/SW/SE quadrant, since this isn't a single junction.
-        function renderHShapeHTML(rooms, corridorLabel, renderRoomsBlockFn) {
+        function renderHShapeHTML(rooms, corridorLabel, renderRoomsBlockFn, rotation) {
             const rowGroups = { top: { left: [], right: [] }, middle: { left: [], right: [] }, bottom: { left: [], right: [] } };
             rooms.forEach(r => {
                 const row = ['top', 'middle', 'bottom'].includes(r.row) ? r.row : 'top';
                 const side = r.side === 'right' ? 'right' : 'left';
                 rowGroups[row][side].push(r);
             });
-            const corridorArmStyle = 'background: #cbd5e1; border: 3px dashed #64748b; border-radius: 6px; min-height: 44px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#1e293b;';
+            const corridorArmStyle = 'background: #cbd5e1; border: 3px dashed #64748b; border-radius: 6px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:900; color:#1e293b;';
+            if (rotation === 90) {
+                // Rotated 90°: corridors run vertically (left/right side-strips), rooms stack in a
+                // column between them, and the connector between the two corridors is horizontal.
+                const colHtml = (row) => `<div style="display:flex; flex-direction:column; gap:8px;">${renderRoomsBlockFn(rowGroups[row].left.concat(rowGroups[row].right))}</div>`;
+                return `<div style="display:grid; grid-template-columns: 44px 1fr 44px; grid-template-rows: 1fr 40px 1fr; gap:10px; padding:16px; width:100%; min-height:320px;">
+                    <div style="grid-row:1/4; ${corridorArmStyle} writing-mode:vertical-rl;" class="rounded shadow-sm">🚶 ${corridorLabel} 1</div>
+                    <div style="grid-column:2; grid-row:1;">${colHtml('top')}</div>
+                    <div style="grid-column:2; grid-row:2; ${corridorArmStyle}" class="rounded shadow-sm">🚶 Connector</div>
+                    <div style="grid-column:2; grid-row:3;">${colHtml('bottom').length ? colHtml('bottom') : colHtml('middle')}</div>
+                    <div style="grid-row:1/4; ${corridorArmStyle} writing-mode:vertical-rl;" class="rounded shadow-sm">🚶 ${corridorLabel} 2</div>
+                </div>`;
+            }
             const connectorStyle = 'background: #cbd5e1; border-left: 3px dashed #64748b; border-right: 3px dashed #64748b; min-height: 100%;';
             const rowHtml = (row) => `<div style="display:grid; grid-template-columns: 1fr 40px 1fr; gap: 10px;"><div>${renderRoomsBlockFn(rowGroups[row].left)}</div><div></div><div>${renderRoomsBlockFn(rowGroups[row].right)}</div></div>`;
             return `<div style="padding: 16px; width:100%;">
                 ${rowHtml('top')}
                 <div style="height:8px;"></div>
-                <div class="rounded shadow-sm" style="${corridorArmStyle}">🚶 ${corridorLabel} 1</div>
+                <div style="display:grid; grid-template-columns: 1fr 40px 1fr; gap:10px; align-items:stretch;">
+                    <div class="rounded shadow-sm" style="${corridorArmStyle} min-height:44px;">🚶 ${corridorLabel} 1</div>
+                    <div class="rounded" style="${connectorStyle}"></div>
+                    <div class="rounded shadow-sm" style="${corridorArmStyle} min-height:44px;">🚶 ${corridorLabel} 1</div>
+                </div>
                 <div style="height:8px;"></div>
                 ${rowHtml('middle')}
                 <div style="height:8px;"></div>
-                <div class="rounded shadow-sm" style="${corridorArmStyle}">🚶 ${corridorLabel} 2</div>
+                <div style="display:grid; grid-template-columns: 1fr 40px 1fr; gap:10px; align-items:stretch;">
+                    <div class="rounded shadow-sm" style="${corridorArmStyle} min-height:44px;">🚶 ${corridorLabel} 2</div>
+                    <div class="rounded" style="${connectorStyle}"></div>
+                    <div class="rounded shadow-sm" style="${corridorArmStyle} min-height:44px;">🚶 ${corridorLabel} 2</div>
+                </div>
                 <div style="height:8px;"></div>
                 ${rowHtml('bottom')}
             </div>`;
+        }
+        function qeSetCorridorRotation(deg) {
+            const filteredCorridors = admin2DBlocks.filter(b => b.type === 'corridor' && (b.floor || 'Ground Floor') === currentSelectedFloor);
+            filteredCorridors.forEach(c => { c.rotation = deg; });
+            qeRefreshAll();
         }
         function qeSetQuadrant(blockId, quadrant) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
@@ -5238,7 +5267,12 @@
             // or an L / T / + shaped walkway junction — route to the matching specialised renderer
             // instead of the normal split-in-half logic.
             if (corridors.length >= 2 && corridorShapeTag === 'H') {
-                finalHtml = toolbarHtml + renderHShapeHTML(rooms, 'Walkway', renderRoomsGrid);
+                const rotationTag = (corridors[0] && corridors[0].rotation) || 0;
+                const rotateToggle = blueprintEditMode ? `<div style="padding:0 16px 10px; display:flex; gap:6px;">
+                    <span onclick="event.stopPropagation(); qeSetCorridorRotation(0);" style="font-size:9px; font-weight:900; padding:5px 10px; border-radius:999px; cursor:pointer; ${rotationTag === 0 ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">↔️ 0°</span>
+                    <span onclick="event.stopPropagation(); qeSetCorridorRotation(90);" style="font-size:9px; font-weight:900; padding:5px 10px; border-radius:999px; cursor:pointer; ${rotationTag === 90 ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">↕️ 90°</span>
+                </div>` : '';
+                finalHtml = toolbarHtml + rotateToggle + renderHShapeHTML(rooms, 'Walkway', renderRoomsGrid, rotationTag);
             } else if (corridors.length >= 2) {
                 finalHtml = toolbarHtml + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsGrid, corridorShapeTag);
             } else {
@@ -5283,6 +5317,12 @@
                     return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};">${delBtn}<span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`;
                 }).join('');
                 const quadrantPicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:6px; justify-content:center;">${['NW','NE','SW','SE'].map(q => `<span onclick="event.stopPropagation(); qeSetQuadrant('${block.id}','${q}');" style="font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px; cursor:pointer; ${((block.quadrant || 'NW') === q) ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${q}</span>`).join('')}</div>` : '';
+                // Door indicator: a small 🚪 notch on whichever edge of the room card faces the
+                // corridor (based on the same left/right `side` field used for H-shape placement).
+                // Purely visual — helps admins/guests see at a glance which wall the room opens into.
+                const doorSide = block.side === 'right' ? 'left' : 'right'; // room on the LEFT of the corridor opens its door on its RIGHT edge, and vice versa
+                const doorStyleMap = { right: 'right:-2px; top:50%; transform:translateY(-50%) translateX(50%);', left: 'left:-2px; top:50%; transform:translateY(-50%) translateX(-50%);' };
+                const doorNotchHtml = block.side ? `<span style="position:absolute; ${doorStyleMap[doorSide]} background:#fff; border:2px solid #6366f1; border-radius:999px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:10px; z-index:2;" title="Door faces corridor">🚪</span>` : '';
                 // Only relevant for H-shape floors (two separate parallel corridors) — lets the admin
                 // manually place a room into the top/middle/bottom row and left/right side, mirroring
                 // the NW/NE/SW/SE picker above but for this different layout topology.
@@ -5295,7 +5335,7 @@
                 const addTableBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 88px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
                 const isArchSelected = block.id === architectSelectedRoomId;
                 const roomCardStyle = isArchSelected ? 'width:100%; padding: 14px; box-shadow: 0 0 0 3px #6366f1; cursor:pointer;' : 'width:100%; padding: 14px; cursor:pointer;';
-                roomsHtml += `<div class="blueprint-room" style="${roomCardStyle}" onclick="selectArchitectRoom('${block.id}')">${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
+                roomsHtml += `<div class="blueprint-room" style="${roomCardStyle} position:relative;" onclick="selectArchitectRoom('${block.id}')">${doorNotchHtml}${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
