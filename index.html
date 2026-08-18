@@ -1409,8 +1409,12 @@
                     <input type="text" id="grfAadharNumber" maxlength="12" placeholder="XXXX XXXX XXXX" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Upload Aadhar Card Photo</label>
-                    <input type="file" id="grfAadharPhoto" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar(this)">
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Front <span class="text-slate-400 normal-case">(photo, name, DOB side)</span></label>
+                    <input type="file" id="grfAadharPhotoFront" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar()">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Back <span class="text-slate-400 normal-case">(address side — optional)</span></label>
+                    <input type="file" id="grfAadharPhotoBack" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar()">
                     <p class="text-[9px] text-slate-400 font-semibold mt-1" id="grfAadharAutoFillStatus"></p>
                 </div>
             </div>
@@ -3897,15 +3901,21 @@
         }
 
         function closeGuestRegistrationForm() { goTo(grfReturnScreen); }
-        // Reads the uploaded Aadhar photo via the backend's Gemini-powered OCR endpoint and auto-fills
+        // Reads the uploaded Aadhar photo(s) via the backend's Gemini-powered OCR endpoint and auto-fills
         // Name, DOB, Gender, Aadhar Number, Address, and Father's/Guardian's Name — saves the guest
         // from typing all of this by hand. Never blocks the form: if it fails, they just type manually.
-        async function grfAutoFillFromAadhar(inputElement) {
-            const file = inputElement.files[0]; if (!file) return;
+        // Sends both front and back if both are uploaded — many people have the small PVC-style card
+        // where the address is only printed on the back, so front-only often leaves Address empty.
+        async function grfAutoFillFromAadhar() {
+            const frontFile = document.getElementById('grfAadharPhotoFront').files[0];
+            const backFile = document.getElementById('grfAadharPhotoBack').files[0];
+            if (!frontFile && !backFile) return;
             const statusEl = document.getElementById('grfAadharAutoFillStatus');
             statusEl.innerText = '⏳ Reading Aadhar card...'; statusEl.className = 'text-[9px] text-indigo-500 font-black mt-1';
             try {
-                const formData = new FormData(); formData.append('aadhar_photo', file);
+                const formData = new FormData();
+                if (frontFile) formData.append('aadhar_photo', frontFile); // front — kept as the primary field name the backend already expects
+                if (backFile) formData.append('aadhar_photo_back', backFile);
                 const response = await fetch(`${BACKEND_URL}/extract-aadhar`, { method: 'POST', body: formData });
                 if (!response.ok) throw new Error('Server error');
                 const data = await response.json();
@@ -4078,10 +4088,12 @@
                     return { w: naturalW * scale, h: naturalH * scale };
                 };
                 const passportInput = document.getElementById('grfPassportPhoto');
-                const aadharInputEl = document.getElementById('grfAadharPhoto');
-                let passportPhotoDataUrl = null, aadharPhotoDataUrl = null;
+                const aadharInputEl = document.getElementById('grfAadharPhotoFront');
+                const aadharBackInputEl = document.getElementById('grfAadharPhotoBack');
+                let passportPhotoDataUrl = null, aadharPhotoDataUrl = null, aadharBackPhotoDataUrl = null;
                 if (passportInput.files && passportInput.files[0]) { try { passportPhotoDataUrl = await readFileAsDataUrl(passportInput.files[0]); } catch(e) { console.warn('Could not read passport photo', e); } }
                 if (aadharInputEl.files && aadharInputEl.files[0]) { try { aadharPhotoDataUrl = await readFileAsDataUrl(aadharInputEl.files[0]); } catch(e) { console.warn('Could not read aadhar photo', e); } }
+                if (aadharBackInputEl.files && aadharBackInputEl.files[0]) { try { aadharBackPhotoDataUrl = await readFileAsDataUrl(aadharBackInputEl.files[0]); } catch(e) { console.warn('Could not read aadhar back photo', e); } }
 
                 // 1) Build the PDF (same layout as the physical Hostel Registration Form)
                 const { jsPDF } = window.jspdf;
@@ -4113,13 +4125,13 @@
                 y += 2; doc.setFont(undefined,'bold'); doc.text('Health & Emergency', 14, y); y += 8; doc.setFont(undefined,'normal');
                 line('Emergency Contact (Relative):', formData.relativeContact);
 
-                // Aadhar photo always gets its own clean page — previously it was squeezed onto
+                // Aadhar photo(s) always get their own clean page — previously it was squeezed onto
                 // whatever space was left after the declaration/signature, which sometimes pushed
                 // it off the bottom of the page (or made it print too small to read).
                 if (aadharPhotoDataUrl) {
                     try {
                         doc.addPage(); y = 20;
-                        doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('Attached: Aadhar Card Photo', 14, y); y += 8;
+                        doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('Attached: Aadhar Card — Front', 14, y); y += 8;
                         const sz = await getImageNaturalSize(aadharPhotoDataUrl);
                         const boxW = 170, boxH = 105; // max box — actual image fitted inside this, aspect ratio preserved
                         const fit = fitBox(sz.w, sz.h, boxW, boxH);
@@ -4130,6 +4142,19 @@
                     } catch(e) { console.warn('Could not embed aadhar photo', e); }
                 } else {
                     y += 6;
+                }
+                if (aadharBackPhotoDataUrl) {
+                    try {
+                        doc.addPage(); y = 20;
+                        doc.setFont(undefined,'bold'); doc.setFontSize(12); doc.text('Attached: Aadhar Card — Back', 14, y); y += 8;
+                        const sz = await getImageNaturalSize(aadharBackPhotoDataUrl);
+                        const boxW = 170, boxH = 105;
+                        const fit = fitBox(sz.w, sz.h, boxW, boxH);
+                        const fx = 14 + (boxW - fit.w) / 2, fy = y + (boxH - fit.h) / 2;
+                        doc.addImage(aadharBackPhotoDataUrl, getImgFormat(aadharBackPhotoDataUrl), fx, fy, fit.w, fit.h);
+                        doc.setDrawColor(180); doc.rect(14, y, boxW, boxH);
+                        y += boxH + 10;
+                    } catch(e) { console.warn('Could not embed aadhar back photo', e); }
                 }
 
                 // Declaration, date and signature print LAST — after all details and the Aadhar photo.
@@ -4670,7 +4695,37 @@
                 <p class="text-[10px] font-bold text-red-600 mt-2 hidden" id="bookingQtyError"></p>
             </div>`;
             pricingHtml += `<div class="mt-2 text-center w-full bg-green-50 border border-green-100 py-2 rounded-lg"><span class="text-[9px] text-green-700 font-black uppercase tracking-widest block">Total Payable</span><span class="text-lg text-green-700 font-black" id="bookingTotalDisplay">₹0</span></div>`;
-            if (securityDep > 0) { pricingHtml += `<div class="mt-2 text-center w-full bg-orange-50 border border-orange-100 py-1.5 rounded-lg"><span class="text-[10px] text-orange-600 font-bold tracking-wide">Security Deposit Required: ₹${securityDep}</span></div>`; }
+            // Security deposit only applies to the Monthly plan — hidden/shown dynamically in
+            // recalcBookingTotal() as the guest switches between Daily/Weekly/Monthly.
+            pricingHtml += `<div class="mt-2 text-center w-full bg-orange-50 border border-orange-100 py-1.5 rounded-lg hidden" id="securityDepositBox"><span class="text-[10px] text-orange-600 font-bold tracking-wide">Security Deposit Required: ₹${securityDep}</span></div>`;
+
+            // Mess/Food charges — shown as its own detail box (not just a chip) whenever the owner
+            // has mess available, listing whichever price tiers they filled in.
+            let messHtml = '';
+            const messRulesForDisplay = window.currentPropertyData?.rules;
+            if (messRulesForDisplay && messRulesForDisplay.mess && messRulesForDisplay.mess !== 'Not Available') {
+                const mp = messRulesForDisplay.messPrices || {};
+                let rows = '';
+                if (mp.daily > 0) rows += `<span class="chip chip-outline">Daily ₹${mp.daily}</span>`;
+                if (mp.weekly > 0) rows += `<span class="chip chip-outline">Weekly ₹${mp.weekly}</span>`;
+                if (mp.monthly > 0) rows += `<span class="chip chip-outline">Monthly ₹${mp.monthly}</span>`;
+                if (mp.meal > 0) rows += `<span class="chip chip-outline">Per Meal ₹${mp.meal}</span>`;
+                messHtml = `<div class="mt-3 w-full bg-amber-50 border-2 border-amber-100 rounded-xl p-3">
+                    <p class="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2">🍲 Mess & Food Charges (${messRulesForDisplay.mess})</p>
+                    <div class="flex flex-wrap gap-1.5">${rows || '<span class="text-[10px] text-amber-600 font-semibold">Included — no extra charge</span>'}</div>
+                </div>`;
+            }
+
+            // Visitor rules — always shown so the guest knows before booking whether visitors/night
+            // stays are allowed and what it costs, rather than finding out after moving in.
+            let visitorHtml = '';
+            if (messRulesForDisplay && messRulesForDisplay.visitor) {
+                const vAllowed = messRulesForDisplay.visitor !== 'Not Allowed';
+                visitorHtml = `<div class="mt-3 w-full ${vAllowed ? 'bg-sky-50 border-sky-100' : 'bg-slate-50 border-slate-200'} border-2 rounded-xl p-3">
+                    <p class="text-[9px] font-black ${vAllowed ? 'text-sky-700' : 'text-slate-500'} uppercase tracking-widest mb-1">🧑‍🤝‍🧑 Visitor Rules</p>
+                    <p class="text-[11px] font-bold ${vAllowed ? 'text-sky-800' : 'text-slate-500'}">${messRulesForDisplay.visitor}${vAllowed && messRulesForDisplay.visitorPrice > 0 ? ` · ₹${messRulesForDisplay.visitorPrice}/night` : ''}</p>
+                </div>`;
+            }
 
             let facilitiesHtml = '';
             const propRules = window.currentPropertyData ? window.currentPropertyData.rules : null;
@@ -4690,7 +4745,7 @@
             if (parentRoom.photos && parentRoom.photos.some(p => p !== '')) { const validPhotos = parentRoom.photos.filter(p => p !== ''); photosHtml = validPhotos.map(p => `<div class="w-full h-48 mb-4 relative rounded-2xl overflow-hidden shadow-md"><img src="${p}" loading="lazy" decoding="async" class="w-full h-full object-cover"></div>`).join(''); }
             else { photosHtml = `<div class="w-full h-40 bg-slate-100 rounded-2xl flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 mb-4"><span class="text-3xl mb-2">📷</span><span class="text-xs font-bold uppercase tracking-widest">No Gallery Images</span></div>`; }
 
-            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${facilitiesHtml}${parentRoom.panorama360Url ? `<button type="button" onclick="preview360Panorama('${parentRoom.panorama360Url.replace(/'/g, "\\'")}')" class="mt-3 w-full flex items-center justify-center gap-2 bg-purple-50 border-2 border-purple-200 text-purple-700 font-black py-3 rounded-xl hover:bg-purple-100 transition text-sm">🎥 Explore in 360° View</button>` : ''}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
+            panel.innerHTML = `<div class="w-full text-left animate-fade-in"><div class="mb-4 pb-4 border-b border-slate-200"><h4 class="display-font text-2xl md:text-3xl font-black text-slate-900">${parentRoom.name}</h4><p class="text-[10px] text-slate-500 font-black mt-2 bg-slate-100 border border-slate-200 w-max px-2 py-1 rounded uppercase tracking-widest">SLOT: ${bedId}</p>${pricingHtml}${messHtml}${visitorHtml}${facilitiesHtml}${parentRoom.panorama360Url ? `<button type="button" onclick="preview360Panorama('${parentRoom.panorama360Url.replace(/'/g, "\\'")}')" class="mt-3 w-full flex items-center justify-center gap-2 bg-purple-50 border-2 border-purple-200 text-purple-700 font-black py-3 rounded-xl hover:bg-purple-100 transition text-sm">🎥 Explore in 360° View</button>` : ''}</div><h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 bg-indigo-50 inline-block px-3 py-1 rounded-full border border-indigo-100">Step 1: Select a Booking Plan Above</h5><h5 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Room Gallery</h5><div class="w-full mb-6">${photosHtml}</div></div>`;
             panel.classList.remove('justify-center', 'items-center', 'text-center');
 
             if (allowedStays.monthly && mPrice > 0) selectBookingPlan('monthly', mPrice, minMonths);
@@ -4747,6 +4802,11 @@
             const qty = Math.max(1, parseInt(input.value) || 1);
             const total = currentBookingPlan.rate * qty;
             if (totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
+
+            // Security deposit is a one-time, Monthly-only charge — show it only when Monthly is
+            // the currently selected plan, hide it for Daily/Weekly bookings.
+            const depositBox = document.getElementById('securityDepositBox');
+            if (depositBox) depositBox.classList.toggle('hidden', currentBookingPlan.type !== 'monthly');
 
             const belowMin = qty < currentBookingPlan.min;
             if (errorEl) {
