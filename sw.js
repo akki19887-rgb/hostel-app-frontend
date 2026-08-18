@@ -17,8 +17,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first for everything (Firestore/Storage/API calls need to always be live).
-  // Falls back to cache only if the network is unavailable.
+  // Only intercept same-origin GET requests (the app's own pages/assets).
+  // Cross-origin calls (backend API — Aadhar extraction, registration PDFs,
+  // OTP, etc.) and any non-GET request (POST/PUT/DELETE) must pass straight
+  // through untouched — intercepting them and returning an unresolved/undefined
+  // Response is what was breaking Aadhar photo uploads with a
+  // "Failed to fetch" / false CORS error.
+  if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) {
+    return;
+  }
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
