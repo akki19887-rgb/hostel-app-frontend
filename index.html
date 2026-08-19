@@ -776,6 +776,89 @@
         <div id="businessExistingProperties" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
     </div>
 
+    <!-- PAYOUTS & EARNINGS — per-property bank details (for manual transfer by admin) + a live
+         ledger showing Total Collected (from paid bookings), Total Paid Out (logged by admin), and
+         Pending Balance. Cancelled cheque / QR code are uploaded here by the owner; admin verifies
+         them manually (Firebase Console → businesses/{id}.payoutDetails.status) and logs each
+         transfer in the 'payouts' collection — designed so this can later be swapped for automatic
+         Razorpay Route payouts without changing the ledger math. -->
+    <div id="screenPayoutsEarnings" class="hidden premium-card p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
+            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
+            <div>
+                <h2 class="display-font text-2xl font-black text-slate-900 tracking-tight">💰 Payouts & Earnings</h2>
+                <p class="text-xs font-semibold text-slate-500 mt-0.5">Bank details for manual transfer + your live earnings ledger</p>
+            </div>
+        </div>
+
+        <!-- Earnings summary -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+            <div class="bg-emerald-50 border-2 border-emerald-100 rounded-2xl p-4 text-center">
+                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Collected</p>
+                <p id="pyTotalCollected" class="text-2xl font-black text-emerald-700">₹0</p>
+            </div>
+            <div class="bg-red-50 border-2 border-red-100 rounded-2xl p-4 text-center">
+                <p id="pyCommissionLabel" class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Platform Commission (15%)</p>
+                <p id="pyCommissionAmount" class="text-2xl font-black text-red-600">− ₹0</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 text-center">
+                <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Net Payable to You</p>
+                <p id="pyNetPayable" class="text-2xl font-black text-indigo-700">₹0</p>
+            </div>
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-center">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Already Paid to You</p>
+                <p id="pyTotalPaidOut" class="text-2xl font-black text-slate-700">₹0</p>
+            </div>
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-center">
+                <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Pending Balance</p>
+                <p id="pyPendingBalance" class="text-2xl font-black text-amber-700">₹0</p>
+            </div>
+        </div>
+        <p class="text-[10px] text-slate-400 font-semibold text-center -mt-5 mb-8">Payouts are currently transferred manually by HostelOM to your bank account below, on a regular cycle.</p>
+
+        <!-- Payout history -->
+        <h3 class="text-sm font-black text-slate-800 mb-2 uppercase tracking-widest">Payout History</h3>
+        <div id="pyPayoutHistory" class="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-8 divide-y divide-slate-100">
+            <p class="text-xs text-slate-400 font-semibold text-center py-6">No payouts recorded yet.</p>
+        </div>
+
+        <!-- Bank / payout details form -->
+        <h3 class="text-sm font-black text-slate-800 mb-1 uppercase tracking-widest">Your Payout Details</h3>
+        <div id="pyStatusBadge" class="hidden mb-4"></div>
+        <div class="space-y-4">
+            <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Account Holder Name</label><input type="text" id="pyAccountHolder" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="As per bank passbook"></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Account Number</label><input type="text" inputmode="numeric" id="pyAccountNumber" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Confirm Account Number</label><input type="text" inputmode="numeric" id="pyAccountNumberConfirm" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">IFSC Code</label><input type="text" id="pyIfsc" style="text-transform:uppercase" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="e.g. SBIN0001234"></div>
+                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">UPI ID (optional)</label><input type="text" id="pyUpiId" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="yourname@upi"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">Cancelled Cheque Photo</label>
+                    <label id="pyChequeSlot" class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl">
+                        <input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('cheque', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">UPI QR Code (optional)</label>
+                    <label id="pyQrSlot" class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl">
+                        <input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('qr', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>
+                    </label>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-slate-400 font-semibold pt-1">After you save, HostelOM will manually verify your cancelled cheque/QR before your payouts begin. This usually takes 1–2 business days.</p>
+            <p id="pyFormError" class="hidden text-xs font-bold text-red-500 bg-red-50 border border-red-100 rounded-xl p-3"></p>
+            <button type="button" id="pySaveBtn" onclick="savePayoutDetails()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider mt-2">💾 Save Payout Details</button>
+        </div>
+    </div>
+
     <div id="screenPropertyTypeSelection" class="hidden premium-card p-10 rounded-[2rem] max-w-lg w-full screen-panel mx-auto">
         <div class="text-center mb-8">
             <div class="w-16 h-16 mx-auto rounded-2xl btn-gradient flex items-center justify-center text-white text-3xl shadow-xl mb-4">🏢</div>
@@ -2829,6 +2912,7 @@
                                 orderId: response.razorpay_order_id || null,
                                 amount: pending.amount,
                                 currency: 'INR',
+                                propertyId: pending.propertyId || null,
                                 hostelName: pending.hostelName,
                                 guestName: pending.guestName,
                                 guestPhone: pending.guestPhone,
@@ -2837,6 +2921,37 @@
                                 createdAt: new Date().toISOString()
                             });
                         } catch (fsErr) { console.warn('Firestore booking save failed:', fsErr); }
+
+                        // AUTO-OCCUPY: a real paid booking must flip the bed(s) to 'occupied' on the
+                        // business's live listing — otherwise the same bed keeps showing as available
+                        // to the next guest even though it's now paid for. Also marks the reservation
+                        // lock 'confirmed' so it's never treated as stale/expired and reclaimed.
+                        try {
+                            const propId = pending.propertyId;
+                            const bedIds = ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id);
+                            if (propId && propId !== 'unknown' && bedIds.length > 0 && typeof db !== 'undefined') {
+                                await runTransaction(db, async (transaction) => {
+                                    const bizRef = window.doc(window.db, 'businesses', propId);
+                                    const bizSnap = await transaction.get(bizRef);
+                                    if (!bizSnap.exists()) return;
+                                    const bizData = bizSnap.data();
+                                    const updatedRooms = (bizData.roomsAndBeds || []).map(room => ({
+                                        ...room,
+                                        beds: (room.beds || []).map(b => bedIds.includes(b.id) ? { ...b, status: 'occupied', occupiedBookingId: verifyResult.bookingId } : b)
+                                    }));
+                                    transaction.update(bizRef, { roomsAndBeds: updatedRooms });
+                                    if (pending.lockId) {
+                                        const lockRef = window.doc(window.db, 'bedLocks', pending.lockId);
+                                        transaction.set(lockRef, { confirmed: true, bookingId: verifyResult.bookingId, confirmedAt: new Date().toISOString() }, { merge: true });
+                                    }
+                                });
+                            }
+                        } catch (occErr) {
+                            // Booking itself already succeeded and is saved — don't block the success
+                            // screen over this; just log it so it can be fixed manually from Architect
+                            // Mode (Mark Occupied button) if it ever happens.
+                            console.warn('Auto-occupy after booking failed (bed may need manual "Mark Occupied"):', occErr);
+                        }
 
                         document.getElementById('successBookingId').innerText = verifyResult.bookingId;
                         document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
@@ -3226,10 +3341,10 @@
                             const fd = data.flatDetails || {};
                             statusText = data.status === 'pending_approval' ? '⏳ Pending' : (data.flatDetails && data.flatDetails.status === 'booked' ? '🔴 Booked' : '✅ Active');
                             statusChip = data.status === 'pending_approval' ? 'chip chip-warning' : (data.flatDetails && data.flatDetails.status === 'booked' ? 'chip' : 'chip chip-success');
-                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> </div>`;
+                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                             return;
                         }
-                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> </div>`;
+                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                     });
                     window._myPropertyIds = myIds; // used to scope this business's notification feed too
                     listenBizNotifications(); // re-filter now that we know which properties are "mine"
@@ -3243,6 +3358,161 @@
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || []; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor'; wakeUpAIBackend();
             floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
             document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
+        }
+
+        // ==========================================
+        // PAYOUTS & EARNINGS
+        // ==========================================
+        let currentPayoutsDocId = null;
+        // Platform commission — HostelOM keeps this % of every booking for app management/running
+        // costs; subscription fees (billed separately) are the actual profit line. Default is 15%,
+        // but any single business can be given a different rate by adding a `commissionPercent`
+        // field (e.g. 20) directly on its businesses/{id} document — the ledger below always uses
+        // that override if present, otherwise falls back to this default.
+        const DEFAULT_COMMISSION_PERCENT = 15;
+        let pyPendingChequeFile = null;
+        let pyPendingQrFile = null;
+
+        window.openPayoutsScreen = async function(docId) {
+            currentPayoutsDocId = docId;
+            pyPendingChequeFile = null; pyPendingQrFile = null;
+            document.getElementById('pyFormError').classList.add('hidden');
+            document.getElementById('pySaveBtn').disabled = false; document.getElementById('pySaveBtn').innerText = '💾 Save Payout Details';
+
+            // Load existing payout details (if any) into the form
+            const bizSnap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
+            let busData = null; bizSnap.forEach(d => { if (d.id === docId) busData = d.data(); });
+            const pd = (busData && busData.payoutDetails) || {};
+            document.getElementById('pyAccountHolder').value = pd.accountHolderName || '';
+            document.getElementById('pyAccountNumber').value = pd.accountNumber || '';
+            document.getElementById('pyAccountNumberConfirm').value = pd.accountNumber || '';
+            document.getElementById('pyIfsc').value = pd.ifsc || '';
+            document.getElementById('pyUpiId').value = pd.upiId || '';
+            renderPayoutImageSlot('cheque', pd.chequePhotoUrl || null);
+            renderPayoutImageSlot('qr', pd.qrCodeUrl || null);
+
+            const statusEl = document.getElementById('pyStatusBadge');
+            if (pd.status) {
+                statusEl.classList.remove('hidden');
+                const map = {
+                    pending_verification: ['⏳ Pending Verification', 'bg-amber-50 border-amber-200 text-amber-700'],
+                    verified: ['✅ Verified — payouts active', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
+                    rejected: ['❌ Rejected — please re-check and re-submit', 'bg-red-50 border-red-200 text-red-700']
+                };
+                const [label, cls] = map[pd.status] || map.pending_verification;
+                statusEl.innerHTML = `<span class="chip ${cls} border-2 font-black">${label}</span>`;
+            } else {
+                statusEl.classList.add('hidden');
+            }
+
+            goTo('screenPayoutsEarnings');
+            renderPayoutHistoryAndEarnings(docId);
+        };
+
+        function renderPayoutImageSlot(kind, url) {
+            const slot = document.getElementById(kind === 'cheque' ? 'pyChequeSlot' : 'pyQrSlot');
+            if (url) {
+                slot.style.backgroundImage = `url('${url}')`;
+                slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
+                slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('${kind}', this)">`;
+            } else {
+                slot.style.backgroundImage = '';
+                slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('${kind}', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>`;
+            }
+        }
+
+        async function savePayoutImageLocally(kind, inputEl) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            if (kind === 'cheque') pyPendingChequeFile = file; else pyPendingQrFile = file;
+            renderPayoutImageSlot(kind, URL.createObjectURL(file)); // instant local preview; uploaded on Save
+        }
+
+        async function savePayoutDetails() {
+            const errBox = document.getElementById('pyFormError');
+            errBox.classList.add('hidden');
+            const accountHolderName = document.getElementById('pyAccountHolder').value.trim();
+            const accountNumber = document.getElementById('pyAccountNumber').value.trim();
+            const accountNumberConfirm = document.getElementById('pyAccountNumberConfirm').value.trim();
+            const ifsc = document.getElementById('pyIfsc').value.trim().toUpperCase();
+            const upiId = document.getElementById('pyUpiId').value.trim();
+
+            if (!accountHolderName) { errBox.innerText = 'Please enter the account holder name.'; errBox.classList.remove('hidden'); return; }
+            if (!/^\d{9,18}$/.test(accountNumber)) { errBox.innerText = 'Please enter a valid account number (digits only).'; errBox.classList.remove('hidden'); return; }
+            if (accountNumber !== accountNumberConfirm) { errBox.innerText = 'Account number and confirmation do not match.'; errBox.classList.remove('hidden'); return; }
+            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { errBox.innerText = 'Please enter a valid 11-character IFSC code (e.g. SBIN0001234).'; errBox.classList.remove('hidden'); return; }
+
+            const btn = document.getElementById('pySaveBtn');
+            btn.disabled = true; btn.innerText = '⏳ Saving...';
+            try {
+                const bizSnap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
+                let existing = {}; bizSnap.forEach(d => { if (d.id === currentPayoutsDocId) existing = d.data().payoutDetails || {}; });
+
+                let chequePhotoUrl = existing.chequePhotoUrl || null;
+                let qrCodeUrl = existing.qrCodeUrl || null;
+                if (pyPendingChequeFile) { btn.innerText = '⏳ Uploading cheque...'; chequePhotoUrl = await uploadFileToStorage(pyPendingChequeFile, `payoutDocs/${currentPayoutsDocId}/cheque_${Date.now()}.jpg`); }
+                if (pyPendingQrFile) { btn.innerText = '⏳ Uploading QR...'; qrCodeUrl = await uploadFileToStorage(pyPendingQrFile, `payoutDocs/${currentPayoutsDocId}/qr_${Date.now()}.jpg`); }
+
+                await window.updateDoc(window.doc(window.db, "businesses", currentPayoutsDocId), {
+                    payoutDetails: {
+                        accountHolderName, accountNumber, ifsc, upiId,
+                        chequePhotoUrl, qrCodeUrl,
+                        status: 'pending_verification', // admin flips this to 'verified' after manually checking the cheque/QR
+                        submittedAt: new Date().toISOString()
+                    }
+                });
+                btn.innerText = '✅ Saved!';
+                setTimeout(() => openPayoutsScreen(currentPayoutsDocId), 700); // reload to show fresh status badge
+            } catch (err) {
+                console.error('Save payout details failed', err);
+                errBox.innerText = 'Could not save right now. Please try again.'; errBox.classList.remove('hidden');
+                btn.disabled = false; btn.innerText = '💾 Save Payout Details';
+            }
+        }
+
+        async function renderPayoutHistoryAndEarnings(docId) {
+            const historyBox = document.getElementById('pyPayoutHistory');
+            try {
+                // Commission rate — per-business override (businesses/{id}.commissionPercent) if set,
+                // otherwise the platform default.
+                let commissionPercent = DEFAULT_COMMISSION_PERCENT;
+                const bizSnapForRate = await window.getDocs(window.query(window.collection(window.db, "businesses")));
+                bizSnapForRate.forEach(d => { if (d.id === docId) { const v = d.data().commissionPercent; if (typeof v === 'number' && v >= 0) commissionPercent = v; } });
+                document.getElementById('pyCommissionLabel').innerText = `Platform Commission (${commissionPercent}%)`;
+
+                // Total Collected — sum of successfully paid bookings for this property
+                const bookingsSnap = await window.getDocs(window.query(window.collection(window.db, 'bookings'), window.where('propertyId', '==', docId)));
+                let totalCollected = 0;
+                bookingsSnap.forEach(d => { const b = d.data(); if (b.status === 'paid_verified' || b.status === 'paid_unverified_test') totalCollected += Number(b.amount) || 0; });
+
+                const commissionAmount = Math.round(totalCollected * commissionPercent / 100);
+                const netPayable = totalCollected - commissionAmount;
+
+                // Total Paid Out — sum of manual payout entries admin has logged for this property
+                const payoutsSnap = await window.getDocs(window.query(window.collection(window.db, 'payouts'), window.where('businessId', '==', docId)));
+                let totalPaidOut = 0; let historyRows = [];
+                payoutsSnap.forEach(d => {
+                    const p = d.data();
+                    totalPaidOut += Number(p.amount) || 0;
+                    historyRows.push(p);
+                });
+                historyRows.sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0));
+
+                document.getElementById('pyTotalCollected').innerText = '₹' + totalCollected.toLocaleString('en-IN');
+                document.getElementById('pyCommissionAmount').innerText = '− ₹' + commissionAmount.toLocaleString('en-IN');
+                document.getElementById('pyNetPayable').innerText = '₹' + netPayable.toLocaleString('en-IN');
+                document.getElementById('pyTotalPaidOut').innerText = '₹' + totalPaidOut.toLocaleString('en-IN');
+                document.getElementById('pyPendingBalance').innerText = '₹' + Math.max(0, netPayable - totalPaidOut).toLocaleString('en-IN');
+
+                if (historyRows.length === 0) {
+                    historyBox.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-6">No payouts recorded yet.</p>`;
+                } else {
+                    historyBox.innerHTML = historyRows.map(p => `<div class="flex items-center justify-between px-4 py-3"><div><p class="text-sm font-black text-slate-800">₹${(Number(p.amount)||0).toLocaleString('en-IN')}</p><p class="text-[10px] font-bold text-slate-400">${p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : '—'} ${p.method ? '· ' + p.method : ''}</p></div>${p.note ? `<p class="text-[10px] text-slate-500 font-semibold text-right max-w-[50%]">${p.note}</p>` : ''}</div>`).join('');
+                }
+            } catch (err) {
+                console.warn('Could not load earnings', err);
+                historyBox.innerHTML = `<p class="text-xs text-red-400 font-semibold text-center py-6">Could not load earnings right now.</p>`;
+            }
         }
 
         async function submitToAdmin() {
@@ -4246,7 +4516,12 @@
                     guestPhone: formData.emergencyContact || '',
                     guestEmail: formData.email || '',
                     bookingContext: grfBookingContext || {},
-                    formSnapshot: formData
+                    formSnapshot: formData,
+                    // Needed AFTER payment succeeds so the handler can (a) flip this exact bed to
+                    // 'occupied' on the business's live listing, and (b) mark the reservation lock
+                    // as confirmed so it's never treated as "stale" and reclaimed by someone else.
+                    propertyId: propIdForLock,
+                    lockId: lockId
                 };
                 goTo('screenPaymentStep');
             } catch (err) {
@@ -4568,7 +4843,9 @@
                     // actually mutates) — not the live published status, which only updates after this syncs.
                     const editIsOcc = bed.status === 'occupied';
                     const editCardCls = editIsOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl flex items-center justify-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl flex items-center justify-center';
-                    return `<div class="${editCardCls}" style="width:54px; height:54px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">✕</span><span onclick="event.stopPropagation(); qeToggleBedStatus('__ROOMID__','${bed.id}');" title="Tap to mark ${editIsOcc ? 'Available' : 'Occupied'}" style="position:absolute; top:-6px; left:-6px; background:${editIsOcc ? '#ef4444' : '#10b981'}; color:white; border-radius:9999px; width:18px; height:18px; font-size:9px; line-height:18px; text-align:center; cursor:pointer; font-weight:900; z-index:2;">${editIsOcc ? '●' : '○'}</span><span class="text-2xl">🛏️</span></div>`;
+                    // Same easy-mode fix as the Data Editor: bigger, further-apart buttons so a
+                    // fingertip on mobile can't hit delete by mistake while trying to toggle status.
+                    return `<div class="${editCardCls}" style="width:60px; height:60px; position:relative; cursor:pointer;" data-room-id="__ROOMID__" onclick="showAdminCanvasTooltip('${tipText}', event.clientX, event.clientY); setTimeout(hideAdminCanvasTooltip,1400); qeEditBedPrice('__ROOMID__','${bed.id}')"><span onclick="event.stopPropagation(); qeDeleteBed('__ROOMID__','${bed.id}');" title="Delete this bed" style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; border-radius:9999px; width:24px; height:24px; font-size:12px; line-height:24px; text-align:center; cursor:pointer; font-weight:900; z-index:2; box-shadow:0 2px 6px rgba(0,0,0,0.25);">✕</span><span onclick="event.stopPropagation(); qeToggleBedStatus('__ROOMID__','${bed.id}');" title="Tap to mark ${editIsOcc ? 'Available' : 'Occupied'}" style="position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); background:${editIsOcc ? '#10b981' : '#ef4444'}; color:white; border-radius:9999px; width:24px; height:24px; font-size:11px; line-height:24px; text-align:center; cursor:pointer; font-weight:900; z-index:2; box-shadow:0 2px 6px rgba(0,0,0,0.25);">${editIsOcc ? '●' : '○'}</span><span class="text-2xl">🛏️</span></div>`;
                 }
                 // BookMyShow-style bed card: bigger tappable card, price shown INSIDE, clear
                 // Available / Selected / Booked states (matches the seat-selection mockup).
@@ -5347,7 +5624,11 @@
         }
         function qeDeleteBed(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
-            if (!confirm('Remove this bed?')) return;
+            const bed = block.beds.find(b => b.id === bedId);
+            const priceLabel = bed ? ` (₹${bed.priceMonthly || bed.price || 0}/month)` : '';
+            // Extra-clear confirm text so a fast tap can't be mistaken for confirming a status
+            // change — this permanently removes the bed, unlike "Mark Occupied/Available".
+            if (!confirm(`Permanently DELETE this bed${priceLabel}?\n\nThis cannot be undone. If you just want to mark it as booked/occupied, use the "MARK OCCUPIED" button instead — do not use this ✕ button for that.`)) return;
             block.beds = block.beds.filter(b => b.id !== bedId);
             qeRefreshAll();
         }
@@ -5518,11 +5799,14 @@
                 const iconsSafe = Array.isArray(block.icons) ? block.icons : [];
                 let bedsHtml = bedsSafe.map(b => {
                     const isOcc = b.status === 'occupied';
-                    const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteBed('${block.id}','${b.id}');" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
-                    const statusBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeToggleBedStatus('${block.id}','${b.id}');" title="Tap to mark ${isOcc ? 'Available' : 'Occupied'}" style="position:absolute; top:-6px; left:-6px; background:${isOcc ? '#ef4444' : '#10b981'}; color:white; border-radius:9999px; width:18px; height:18px; font-size:9px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">${isOcc ? '●' : '○'}</span>` : '';
+                    // EASY-MODE: status toggle is now a big full-width button INSIDE the card
+                    // (hard to miss, hard to mis-tap). Delete is now bigger + further from it,
+                    // and still asks "Remove this bed?" before doing anything.
+                    const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteBed('${block.id}','${b.id}');" title="Delete this bed" style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; border-radius:9999px; width:26px; height:26px; font-size:13px; line-height:26px; text-align:center; cursor:pointer; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,0.25);">✕</span>` : '';
                     const clickAttr = blueprintEditMode ? ` onclick="event.stopPropagation(); qeEditBedPrice('${block.id}','${b.id}');" style="cursor:pointer;"` : '';
                     const bedCardCls = isOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl p-3 text-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center';
-                    return `<div class="${bedCardCls}" style="min-width: 88px; position:relative;"${clickAttr}>${delBtn}${statusBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span>${isOcc ? '<span class="block text-[8px] font-black text-red-500 uppercase">Occupied</span>' : ''}</div>`;
+                    const statusToggleBar = blueprintEditMode ? `<button type="button" onclick="event.stopPropagation(); qeToggleBedStatus('${block.id}','${b.id}');" style="margin-top:8px; width:100%; border:none; border-radius:9999px; padding:7px 4px; font-size:10px; font-weight:900; letter-spacing:0.02em; cursor:pointer; color:white; background:${isOcc ? '#10b981' : '#ef4444'};">${isOcc ? '🟢 MARK AVAILABLE' : '🔴 MARK OCCUPIED'}</button>` : '';
+                    return `<div class="${bedCardCls}" style="min-width: 108px; position:relative;"${clickAttr}>${delBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span>${isOcc ? '<span class="block text-[8px] font-black text-red-500 uppercase">Occupied</span>' : ''}${statusToggleBar}</div>`;
                 }).join('');
                 let iconsHtml = iconsSafe.map((icon, idx) => {
                     const emoji = icon.type === 'bath' ? '🚿' : (icon.type === 'table' ? '📚' : '📦');
