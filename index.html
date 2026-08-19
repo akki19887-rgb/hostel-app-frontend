@@ -601,9 +601,8 @@
             <div>
                 <h3 class="display-font text-xl font-black text-slate-800">Map View</h3>
             </div>
-            <button type="button" onclick="toggleUserMap()" class="px-4 py-2 bg-white/80 text-indigo-600 font-black text-xs rounded-xl border border-indigo-100 hover:bg-white transition shadow-sm tracking-wide">📍 TOGGLE MAP</button>
         </div>
-        <div id="userMapWrapper" class="w-full mb-6 hidden">
+        <div id="userMapWrapper" class="w-full mb-6">
             <div class="location-search-container">
                 <div class="search-input-wrapper">
                     <span class="search-icon">🔍</span>
@@ -743,6 +742,9 @@
             <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">←</button>
             <h2 class="display-font text-3xl font-black text-slate-900 tracking-tight">Booking Management</h2>
         </div>
+        <h3 class="text-sm font-black text-amber-600 uppercase tracking-widest mb-3">⏳ Pending UPI Payments — Needs Your Confirmation</h3>
+        <div id="adminPendingUpiContainer" class="space-y-4 mb-10"></div>
+        <h3 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-3">All Registrations</h3>
         <div id="adminBookingsContainer" class="space-y-4"></div>
     </div>
 
@@ -1577,10 +1579,11 @@
     <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
-            <h2 class="display-font text-2xl font-black text-slate-900">Complete Payment</h2>
+            <h2 class="display-font text-2xl font-black text-slate-900">Book Now — Pay Advance</h2>
         </div>
         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6 text-center">
             <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1" id="payHostelName">Hostel</p>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pay Now (Advance)</p>
             <p class="display-font text-4xl font-black text-slate-900" id="payAmount">₹0</p>
             <p class="text-xs text-slate-500 font-semibold mt-1">Registration form saved & sent successfully</p>
         </div>
@@ -1589,18 +1592,92 @@
         <div id="payOrderSummary" class="bg-white border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
             <div class="flex justify-between"><span>Bed(s)</span><span id="paySumBeds" class="font-black text-slate-800">—</span></div>
             <div class="flex justify-between"><span>Plan</span><span id="paySumPlan" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Payable</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
+            <div class="flex justify-between border-t border-slate-100 pt-2 mt-2"><span class="text-slate-500">Total Stay Cost</span><span id="paySumStayTotal" class="font-black text-slate-800">₹0</span></div>
+            <div class="flex justify-between"><span class="text-indigo-600 font-black">Pay Now (Advance, <span id="paySumAdvancePct">20</span>%)</span><span id="paySumTotal" class="font-black text-indigo-600">₹0</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Pay at Hostel (remaining)</span><span id="paySumHostelBalance" class="font-black text-slate-800">₹0</span></div>
         </div>
+        <p class="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3 -mt-3 mb-6 font-semibold">💡 You pay only the advance now to confirm your bed. The remaining amount is paid directly to the hostel when you check in.</p>
 
         <a href="#" id="btnNotifyParentWhatsapp" target="_blank" class="hidden w-full mb-4 flex items-center justify-center gap-2 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-black py-3 rounded-xl hover:bg-emerald-100 transition text-sm">💬 Notify Parent via WhatsApp</a>
 
-        <button type="button" id="btnPayNow" onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Pay Now →</button>
+        <!-- CANCELLATION / ADVANCE POLICY — must be accepted before paying -->
+        <div class="bg-red-50 border-2 border-red-100 rounded-2xl p-4 mb-4">
+            <label class="flex items-start gap-2.5 cursor-pointer">
+                <input type="checkbox" id="payAcceptPolicy" onchange="updatePayButtonsEnabled()" class="mt-0.5 w-4 h-4 accent-red-500 shrink-0">
+                <span class="text-[11px] font-bold text-red-700 leading-snug">I understand the <button type="button" onclick="openCancellationPolicyModal()" class="underline font-black">Cancellation Policy</button> — the advance I pay now is <b>non-refundable</b> if I cancel or don't check in.</span>
+            </label>
+        </div>
+
+        <!-- RAZORPAY PATH — shown only when PAYMENT_MODE === 'razorpay' -->
+        <div id="payRazorpaySection" class="hidden">
+            <button type="button" id="btnPayNow" disabled onclick="startRazorpayCheckout()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider disabled:opacity-40 disabled:cursor-not-allowed">Pay Now →</button>
+            <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Secured by Razorpay · UPI · Cards · Netbanking · Wallets</p>
+        </div>
+
+        <!-- UPI-MANUAL PATH — shown while Razorpay isn't live yet. Guest pays via their own UPI
+             app to PLATFORM_UPI_ID, then submits the transaction reference for admin to manually
+             verify and confirm (see Admin Console → Booking Management). -->
+        <div id="payUpiSection" class="hidden">
+            <div class="bg-indigo-50 border-2 border-indigo-100 rounded-2xl p-4 mb-4 text-center">
+                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Pay via UPI to</p>
+                <p id="payUpiIdDisplay" class="text-lg font-black text-indigo-700 mb-2">—</p>
+                <button type="button" onclick="copyUpiId()" class="text-[10px] font-black text-indigo-600 bg-white px-3 py-1.5 rounded-lg border border-indigo-200">📋 Copy UPI ID</button>
+                <a href="#" id="btnOpenUpiApp" class="block w-full mt-3 py-3 bg-indigo-600 text-white font-black rounded-xl text-sm">📲 Pay ₹<span id="payUpiAmountLabel">0</span> in UPI App</a>
+                <p class="text-[9px] text-indigo-400 font-semibold mt-2">Opens Google Pay / PhonePe / any UPI app with the amount pre-filled</p>
+            </div>
+            <div class="mb-4">
+                <label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">UPI Transaction Ref / UTR Number</label>
+                <input type="text" id="payUtrInput" placeholder="12-digit number from your UPI app" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                <p class="text-[9px] text-slate-400 font-semibold mt-1">Find this in your UPI app's transaction history / payment success screen.</p>
+            </div>
+            <div class="mb-4">
+                <label id="payUtrScreenshotSlot" class="block p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest">📷 Upload Payment Screenshot (optional, speeds up verification)<input type="file" accept="image/*" class="hidden" onchange="handleUtrScreenshotSelect(this)"></label>
+            </div>
+            <button type="button" id="btnSubmitUpiPayment" disabled onclick="submitUpiPaymentForVerification()" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider disabled:opacity-40 disabled:cursor-not-allowed">I've Paid — Submit for Verification</button>
+            <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Your booking is confirmed once we verify the payment — usually within a few hours.</p>
+        </div>
+
         <button type="button" onclick="goTo('screenUserDashboard')" class="w-full mt-3 text-xs font-bold text-slate-500 hover:text-slate-700 py-2 transition">Cancel Payment</button>
         <p id="payErrorMsg" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
-        <p class="text-[10px] text-slate-400 font-semibold text-center mt-4">🔒 Secured by Razorpay · UPI · Cards · Netbanking · Wallets</p>
+    </div>
+
+    <!-- CANCELLATION POLICY MODAL -->
+    <div id="modalCancellationPolicy" class="zoom-modal hidden" onclick="if(event.target===this) this.classList.add('hidden')">
+        <div class="bg-white p-8 rounded-[2rem] max-w-lg w-full relative max-h-[85vh] overflow-y-auto layout-scroll">
+            <button onclick="document.getElementById('modalCancellationPolicy').classList.add('hidden')" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
+            <h3 class="display-font text-xl font-black text-slate-900 mb-1">📋 Booking & Cancellation Policy</h3>
+            <div class="text-xs text-slate-600 font-semibold space-y-3 mt-4 leading-relaxed">
+                <p><b>1. Advance Payment:</b> You pay <span id="policyAdvancePctLabel">20</span>% of the total stay cost now through HostelOM. This is HostelOM's booking fee and reserves your bed.</p>
+                <p><b>2. Balance at Hostel:</b> The remaining amount is paid directly to the hostel/owner at check-in — HostelOM is not involved in that payment.</p>
+                <p class="bg-red-50 border border-red-100 rounded-xl p-3"><b>3. Non-Refundable:</b> The advance you pay now is <b>always non-refundable</b> — whether you cancel the booking or simply don't check in on your chosen date. There are no partial refunds. This is the same for every plan:</p>
+                <ul class="bg-red-50 border border-red-100 rounded-xl p-3 -mt-2 list-none space-y-1">
+                    <li>📅 <b>Daily Plan</b> — advance non-refundable</li>
+                    <li>🗓️ <b>Weekly Plan</b> — advance non-refundable</li>
+                    <li>📆 <b>Monthly Plan</b> — advance non-refundable</li>
+                </ul>
+                <p><b>4. No-show:</b> If you don't check in without cancelling, your booking is automatically cancelled and the bed released to other guests — the advance stays forfeited.</p>
+                <p><b>5. If the hostel can't accommodate you</b> for a reason that isn't your fault, HostelOM will refund your advance in full.</p>
+            </div>
+        </div>
     </div>
 
     <!-- BOOKING CONFIRMATION -->
+    <!-- UPI PAYMENT SUBMITTED — shown instead of the full success screen when PAYMENT_MODE is
+         'upi_manual', since the payment hasn't been verified yet (bed is NOT occupied yet either;
+         that only happens once admin confirms). -->
+    <div id="screenPaymentPendingVerification" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel text-center">
+        <div class="w-20 h-20 mx-auto rounded-full bg-amber-100 flex items-center justify-center text-5xl mb-4">⏳</div>
+        <h2 class="display-font text-3xl font-black text-slate-900 mb-2">Payment Submitted!</h2>
+        <p class="text-sm text-slate-500 font-semibold mb-6">We're verifying your UPI payment. Your booking will be confirmed within a few hours — you'll get a notification once it's done.</p>
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
+            <div class="flex justify-between"><span>Booking Ref</span><span id="ppvBookingId" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Advance Paid</span><span id="ppvAmount" class="font-black text-slate-800">—</span></div>
+            <div class="flex justify-between"><span>Pay at Hostel</span><span id="ppvHostelBalance" class="font-black text-amber-600">—</span></div>
+            <div class="flex justify-between"><span>UTR / Ref No.</span><span id="ppvUtr" class="font-black text-slate-800">—</span></div>
+        </div>
+        <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">Done</button>
+    </div>
+
     <div id="screenBookingSuccess" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel text-center">
         <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-5xl mb-4">✅</div>
         <h2 class="display-font text-3xl font-black text-slate-900 mb-2">Booking Confirmed!</h2>
@@ -1608,7 +1685,8 @@
         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 text-left text-xs font-semibold text-slate-600 space-y-2">
             <div class="flex justify-between"><span>Booking ID</span><span id="successBookingId" class="font-black text-slate-800">—</span></div>
             <div class="flex justify-between"><span>Payment ID</span><span id="successPaymentId" class="font-black text-slate-800">—</span></div>
-            <div class="flex justify-between"><span>Amount Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
+            <div class="flex justify-between"><span>Advance Paid</span><span id="successAmount" class="font-black text-emerald-600">₹0</span></div>
+            <div class="flex justify-between"><span>Pay at Hostel</span><span id="successHostelBalance" class="font-black text-amber-600">₹0</span></div>
         </div>
         <button type="button" onclick="downloadBookingCalendarFile()" class="w-full mt-3 py-3.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-black rounded-2xl border-2 border-slate-200 transition tracking-wide flex items-center justify-center gap-2">📅 Add to Calendar</button>
         <button type="button" onclick="goTo('screenUserDashboard')" class="btn-gradient w-full py-4 mt-3 text-white font-black rounded-2xl shadow-xl tracking-wider">Back to Home</button>
@@ -2335,13 +2413,86 @@
                 // unnecessary work most users never looked at.
             }
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
-            if(screenId === 'screenAdminBookings') loadAdminBookings();
+            if(screenId === 'screenAdminBookings') { loadAdminBookings(); loadPendingUpiPayments(); }
             if(screenId === 'screenGoogleMap') {
                 if (googleMap) {
                     setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150);
                 } else {
                     loadScriptOnce(MAPS_CDN).then(() => { initMap(); }).catch(() => { console.warn('Google Maps failed to load'); });
                 }
+            }
+        }
+
+        // Loads bookings still waiting on manual UPI confirmation (PAYMENT_MODE = 'upi_manual')
+        // and gives the admin a one-tap way to confirm them — which then flips the bed to
+        // 'occupied' and finalizes the booking, exactly like a successful Razorpay payment would.
+        async function loadPendingUpiPayments() {
+            const container = document.getElementById('adminPendingUpiContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400"><div class="loader mb-3"></div><p class="font-bold text-xs">Loading pending payments...</p></div>`;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'), where('status', '==', 'pending_payment_confirmation')));
+                if (snap.empty) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-6">No pending UPI payments right now.</p>`;
+                    return;
+                }
+                const rows = [];
+                snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+                rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                container.innerHTML = rows.map(b => {
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
+                    const screenshotHtml = b.screenshotUrl ? `<a href="${b.screenshotUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📷 View Screenshot</a>` : `<span class="text-[10px] text-slate-400 font-semibold">No screenshot</span>`;
+                    return `<div class="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
+                        <div class="flex justify-between items-start gap-4 flex-wrap">
+                            <div>
+                                <h4 class="font-black text-lg text-slate-800">${b.guestName || 'Guest'} — ₹${b.amount}</h4>
+                                <p class="text-xs font-bold text-slate-500 mt-0.5">${b.hostelName || ''} · Bed ${bedLabel} · 📱 ${b.guestPhone || '—'}</p>
+                                <p class="text-xs font-bold text-slate-700 mt-1">UTR: <span class="font-mono">${b.utrRef || '—'}</span></p>
+                                <div class="mt-1">${screenshotHtml}</div>
+                            </div>
+                            <div class="flex gap-2 shrink-0">
+                                <button type="button" onclick="rejectUpiPayment('${b.id}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white transition">✕ Reject</button>
+                                <button type="button" onclick="confirmUpiPayment('${b.id}')" class="px-5 py-2.5 bg-emerald-500 text-white font-black rounded-xl text-xs hover:bg-emerald-600 transition">✅ Confirm Payment</button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load pending UPI payments', err);
+                container.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs">Could not load pending payments. Please try again.</div>`;
+            }
+        }
+
+        async function confirmUpiPayment(bookingDocId) {
+            if (!confirm('Have you checked your UPI/bank app and confirmed this exact amount was received? This will mark the bed as occupied and finalize the booking.')) return;
+            try {
+                const bSnap = await getDocs(query(collection(db, 'bookings')));
+                let bData = null; bSnap.forEach(d => { if (d.id === bookingDocId) bData = d.data(); });
+                if (!bData) { alert('Booking not found.'); return; }
+
+                await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'paid_verified', confirmedAt: new Date().toISOString() });
+
+                const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
+                await markBedsOccupiedForBooking(bData.propertyId, bedIds, bData.bookingId, bData.lockId);
+
+                alert('✅ Payment confirmed — bed marked occupied and booking finalized.');
+                loadPendingUpiPayments();
+            } catch (err) {
+                console.error('Confirm UPI payment failed', err);
+                alert('Could not confirm this payment right now: ' + err.message);
+            }
+        }
+
+        async function rejectUpiPayment(bookingDocId) {
+            const reason = prompt('Reason for rejecting (e.g. "Amount not received", "UTR invalid") — shown only internally:');
+            if (reason === null) return;
+            try {
+                await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'rejected', rejectionReason: reason || 'Not specified', rejectedAt: new Date().toISOString() });
+                loadPendingUpiPayments();
+            } catch (err) {
+                console.error('Reject UPI payment failed', err);
+                alert('Could not reject this payment right now: ' + err.message);
             }
         }
 
@@ -2817,6 +2968,46 @@
         }
 
         // ==== REAL PAYMENT FLOW (Razorpay) ====
+        // ==========================================
+        // PAYMENT MODE SWITCH — Razorpay isn't registered/live yet, so payments are collected
+        // directly via UPI for now. Guest pays to PLATFORM_UPI_ID outside the app (their own UPI
+        // app), then submits the transaction reference here for manual admin confirmation (see
+        // "Booking Management" in the Admin Console). Once Razorpay is fully set up and tested,
+        // flip PAYMENT_MODE back to 'razorpay' — nothing else needs to change; the commission/
+        // earnings ledger already works off the 'bookings' collection regardless of how the money
+        // came in.
+        const PAYMENT_MODE = 'upi_manual'; // 'upi_manual' | 'razorpay'
+        const PLATFORM_UPI_ID = 'yourupi@bank';   // ⚠️ REPLACE with your real UPI ID before going live
+        const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
+        // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
+        // amount is HostelOM's booking fee/commission (100% of it, always non-refundable — see
+        // the Cancellation Policy). The remaining (100 - ADVANCE_PERCENT)% is paid by the guest
+        // DIRECTLY to the hostel at check-in — HostelOM never touches that portion, so there is
+        // nothing to pay out to the owner afterwards.
+        const ADVANCE_PERCENT = 20;
+
+        // Shared by BOTH payment paths (Razorpay success handler AND admin's manual UPI
+        // confirmation) — flips the paid bed(s) to 'occupied' on the live listing and marks the
+        // reservation lock confirmed, so it's identical regardless of how the payment came in.
+        async function markBedsOccupiedForBooking(propertyId, bedIds, bookingId, lockId) {
+            if (!propertyId || propertyId === 'unknown' || !bedIds || bedIds.length === 0 || typeof db === 'undefined') return;
+            await runTransaction(db, async (transaction) => {
+                const bizRef = window.doc(window.db, 'businesses', propertyId);
+                const bizSnap = await transaction.get(bizRef);
+                if (!bizSnap.exists()) return;
+                const bizData = bizSnap.data();
+                const updatedRooms = (bizData.roomsAndBeds || []).map(room => ({
+                    ...room,
+                    beds: (room.beds || []).map(b => bedIds.includes(b.id) ? { ...b, status: 'occupied', occupiedBookingId: bookingId } : b)
+                }));
+                transaction.update(bizRef, { roomsAndBeds: updatedRooms });
+                if (lockId) {
+                    const lockRef = window.doc(window.db, 'bedLocks', lockId);
+                    transaction.set(lockRef, { confirmed: true, bookingId: bookingId, confirmedAt: new Date().toISOString() }, { merge: true });
+                }
+            });
+        }
+
         // Two modes:
         //  A) BACKEND MODE (recommended, secure): server creates a Razorpay order and returns
         //     { orderId, keyId }. Signature is verified server-side after payment.
@@ -2851,7 +3042,120 @@
             return await res.json();
         }
 
-        async function startRazorpayCheckout() {
+        function openCancellationPolicyModal() {
+            document.getElementById('policyAdvancePctLabel').innerText = ADVANCE_PERCENT;
+            document.getElementById('modalCancellationPolicy').classList.remove('hidden');
+        }
+
+        // Both payment buttons (Razorpay + UPI) stay disabled until the guest ticks the
+        // Cancellation Policy checkbox — this IS the "accept T&C" gate for booking.
+        function updatePayButtonsEnabled() {
+            const accepted = document.getElementById('payAcceptPolicy').checked;
+            const razorpayBtn = document.getElementById('btnPayNow');
+            const upiBtn = document.getElementById('btnSubmitUpiPayment');
+            if (razorpayBtn) razorpayBtn.disabled = !accepted;
+            if (upiBtn) upiBtn.disabled = !accepted;
+        }
+
+        // Toggles the payment screen between the Razorpay button and the UPI-manual flow, and
+        // fills in the UPI ID / amount / deep-link for the UPI path.
+        function setupPaymentScreenForMode(advanceAmount, hostelName) {
+            document.getElementById('payAcceptPolicy').checked = false;
+            updatePayButtonsEnabled();
+            const razorpaySection = document.getElementById('payRazorpaySection');
+            const upiSection = document.getElementById('payUpiSection');
+            if (PAYMENT_MODE === 'razorpay') {
+                razorpaySection.classList.remove('hidden');
+                upiSection.classList.add('hidden');
+            } else {
+                razorpaySection.classList.add('hidden');
+                upiSection.classList.remove('hidden');
+                document.getElementById('payUpiIdDisplay').innerText = PLATFORM_UPI_ID;
+                document.getElementById('payUpiAmountLabel').innerText = advanceAmount;
+                const note = encodeURIComponent(`HostelOM booking advance - ${hostelName || ''}`);
+                document.getElementById('btnOpenUpiApp').href = `upi://pay?pa=${encodeURIComponent(PLATFORM_UPI_ID)}&pn=${encodeURIComponent(PLATFORM_UPI_PAYEE_NAME)}&am=${advanceAmount}&cu=INR&tn=${note}`;
+                document.getElementById('payUtrInput').value = '';
+                pyUpiScreenshotFile = null;
+                document.getElementById('payUtrScreenshotSlot').innerHTML = `📷 Upload Payment Screenshot (optional, speeds up verification)<input type="file" accept="image/*" class="hidden" onchange="handleUtrScreenshotSelect(this)">`;
+            }
+        }
+
+        function copyUpiId() {
+            navigator.clipboard.writeText(PLATFORM_UPI_ID).then(() => showAdminCanvasTooltip('UPI ID copied!', window.innerWidth / 2, 100)).catch(() => {});
+        }
+
+        let pyUpiScreenshotFile = null;
+        function handleUtrScreenshotSelect(inputEl) {
+            const file = inputEl.files[0];
+            if (!file) return;
+            pyUpiScreenshotFile = file;
+            document.getElementById('payUtrScreenshotSlot').innerHTML = `✅ Screenshot selected: ${file.name}`;
+        }
+
+        async function submitUpiPaymentForVerification() {
+            showPayError('');
+            const pending = window._pendingPayment;
+            if (!pending || !pending.amount || pending.amount <= 0) { showPayError('No pending payment found. Please restart the booking.'); return; }
+            const utr = document.getElementById('payUtrInput').value.trim();
+            if (!/^\d{6,20}$/.test(utr)) { showPayError('Please enter a valid UPI transaction reference / UTR number.'); return; }
+
+            const btn = document.getElementById('btnSubmitUpiPayment');
+            const originalText = btn.innerText;
+            btn.disabled = true; btn.innerText = '⏳ Submitting...';
+            try {
+                let screenshotUrl = '';
+                if (pyUpiScreenshotFile) {
+                    btn.innerText = '⏳ Uploading screenshot...';
+                    screenshotUrl = await uploadFileToStorage(pyUpiScreenshotFile, `upiPaymentProofs/${Date.now()}_${pyUpiScreenshotFile.name}`);
+                }
+                const bookingId = 'BK-' + Date.now().toString(36).toUpperCase();
+                await window.addDoc(window.collection(window.db, 'bookings'), {
+                    bookingId,
+                    amount: pending.amount, // the advance actually charged — this IS the platform's commission in full
+                    totalStayAmount: pending.totalStayAmount || pending.amount,
+                    hostelBalanceDue: pending.hostelBalance || 0, // guest pays this directly to the hostel at check-in
+                    currency: 'INR',
+                    propertyId: pending.propertyId || null,
+                    hostelName: pending.hostelName,
+                    guestName: pending.guestName,
+                    guestPhone: pending.guestPhone,
+                    bookingContext: pending.bookingContext,
+                    paymentMethod: 'upi_manual',
+                    utrRef: utr,
+                    screenshotUrl,
+                    lockId: pending.lockId || null,
+                    // NOT paid_verified yet — an admin must manually check their UPI/bank app and
+                    // confirm before this becomes a real, occupied booking. Keeps the same "fake
+                    // booking without real money" hole from opening back up via this path.
+                    status: 'pending_payment_confirmation',
+                    createdAt: new Date().toISOString()
+                });
+                try {
+                    await window.addDoc(window.collection(window.db, 'notifications'), {
+                        propertyId: pending.propertyId || null,
+                        type: 'upi_payment_pending',
+                        role: 'admin',
+                        message: `💳 UPI payment submitted by ${pending.guestName || 'a guest'} for ₹${pending.amount} (${pending.hostelName || ''}) — needs verification.`,
+                        read: false,
+                        createdAt: new Date().toISOString()
+                    });
+                } catch (e) {}
+
+                document.getElementById('ppvBookingId').innerText = bookingId;
+                document.getElementById('ppvAmount').innerText = '₹' + pending.amount;
+                document.getElementById('ppvHostelBalance').innerText = '₹' + (pending.hostelBalance || 0);
+                document.getElementById('ppvUtr').innerText = utr;
+                window._pendingPayment = null;
+                goTo('screenPaymentPendingVerification');
+            } catch (err) {
+                console.error('UPI payment submission failed', err);
+                showPayError('Could not submit right now. Please try again.');
+            } finally {
+                btn.disabled = false; btn.innerText = originalText;
+            }
+        }
+
+
             showPayError('');
             const pending = window._pendingPayment;
             if (!pending || !pending.amount || pending.amount <= 0) {
@@ -2871,18 +3175,23 @@
             const originalText = btn ? btn.innerText : '';
             if (btn) { btn.disabled = true; btn.innerText = '⏳ Opening secure checkout...'; }
 
+            // NOTE: the old "if backend order creation fails, silently fall back to a public test
+            // key" behaviour has been removed on purpose — it used to let a booking get marked
+            // paid_verified/paid_unverified_test in Firestore WITHOUT any real money changing
+            // hands, because signature verification only runs in backend mode. If the backend
+            // can't create a real order, we now stop and show an error instead of faking success.
             let orderInfo = null;
-            let usingBackend = true;
             try {
                 orderInfo = await createRazorpayOrder(pending.amount);
             } catch (err) {
-                console.warn('Backend order creation unavailable, falling back to test key.', err);
-                usingBackend = false;
-                orderInfo = { keyId: RAZORPAY_TEST_KEY, orderId: null };
+                console.error('Backend order creation failed — refusing to fall back to test mode.', err);
+                showPayError('Online payment is temporarily unavailable. Please use the UPI payment option instead, or try again shortly.');
+                if (btn) { btn.disabled = false; btn.innerText = originalText || 'Pay Now →'; }
+                return;
             }
 
             const options = {
-                key: orderInfo.keyId || RAZORPAY_TEST_KEY,
+                key: orderInfo.keyId,
                 amount: Math.round(pending.amount * 100),
                 currency: 'INR',
                 name: 'HostelOM',
@@ -2894,68 +3203,30 @@
                 theme: { color: '#6366f1' },
                 handler: async function (response) {
                     try {
-                        let verifyResult = { ok: true, bookingId: 'BK-' + Date.now().toString(36).toUpperCase() };
-                        if (usingBackend) {
-                            verifyResult = await verifyRazorpayPayment({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                bookingContext: pending.bookingContext,
-                                guest: pending.formSnapshot
-                            });
-                            if (!verifyResult.ok) throw new Error(verifyResult.message || 'Signature verification failed');
-                        }
-                        try {
-                            await window.addDoc(window.collection(window.db, 'bookings'), {
-                                bookingId: verifyResult.bookingId,
-                                paymentId: response.razorpay_payment_id,
-                                orderId: response.razorpay_order_id || null,
-                                amount: pending.amount,
-                                currency: 'INR',
-                                propertyId: pending.propertyId || null,
-                                hostelName: pending.hostelName,
-                                guestName: pending.guestName,
-                                guestPhone: pending.guestPhone,
-                                bookingContext: pending.bookingContext,
-                                status: usingBackend ? 'paid_verified' : 'paid_unverified_test',
-                                createdAt: new Date().toISOString()
-                            });
-                        } catch (fsErr) { console.warn('Firestore booking save failed:', fsErr); }
-
-                        // AUTO-OCCUPY: a real paid booking must flip the bed(s) to 'occupied' on the
-                        // business's live listing — otherwise the same bed keeps showing as available
-                        // to the next guest even though it's now paid for. Also marks the reservation
-                        // lock 'confirmed' so it's never treated as stale/expired and reclaimed.
-                        try {
-                            const propId = pending.propertyId;
-                            const bedIds = ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id);
-                            if (propId && propId !== 'unknown' && bedIds.length > 0 && typeof db !== 'undefined') {
-                                await runTransaction(db, async (transaction) => {
-                                    const bizRef = window.doc(window.db, 'businesses', propId);
-                                    const bizSnap = await transaction.get(bizRef);
-                                    if (!bizSnap.exists()) return;
-                                    const bizData = bizSnap.data();
-                                    const updatedRooms = (bizData.roomsAndBeds || []).map(room => ({
-                                        ...room,
-                                        beds: (room.beds || []).map(b => bedIds.includes(b.id) ? { ...b, status: 'occupied', occupiedBookingId: verifyResult.bookingId } : b)
-                                    }));
-                                    transaction.update(bizRef, { roomsAndBeds: updatedRooms });
-                                    if (pending.lockId) {
-                                        const lockRef = window.doc(window.db, 'bedLocks', pending.lockId);
-                                        transaction.set(lockRef, { confirmed: true, bookingId: verifyResult.bookingId, confirmedAt: new Date().toISOString() }, { merge: true });
-                                    }
-                                });
-                            }
-                        } catch (occErr) {
-                            // Booking itself already succeeded and is saved — don't block the success
-                            // screen over this; just log it so it can be fixed manually from Architect
-                            // Mode (Mark Occupied button) if it ever happens.
-                            console.warn('Auto-occupy after booking failed (bed may need manual "Mark Occupied"):', occErr);
-                        }
+                        // Server does EVERYTHING now: verifies the signature, re-fetches the actual
+                        // captured amount from Razorpay's own API (never trusts what the browser
+                        // says was paid), writes the booking record, and flips the bed(s) to
+                        // 'occupied' — all server-side, so nothing here can be faked from DevTools.
+                        const verifyResult = await verifyRazorpayPayment({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            propertyId: pending.propertyId || null,
+                            lockId: pending.lockId || null,
+                            hostelName: pending.hostelName,
+                            guestName: pending.guestName,
+                            guestPhone: pending.guestPhone,
+                            totalStayAmount: pending.totalStayAmount || pending.amount,
+                            hostelBalanceDue: pending.hostelBalance || 0,
+                            bookingContext: pending.bookingContext,
+                            guest: pending.formSnapshot
+                        });
+                        if (!verifyResult.ok) throw new Error(verifyResult.error || 'Signature verification failed');
 
                         document.getElementById('successBookingId').innerText = verifyResult.bookingId;
                         document.getElementById('successPaymentId').innerText = response.razorpay_payment_id;
-                        document.getElementById('successAmount').innerText = '₹' + pending.amount;
+                        document.getElementById('successAmount').innerText = '₹' + (verifyResult.amount != null ? verifyResult.amount : pending.amount);
+                        document.getElementById('successHostelBalance').innerText = '₹' + (pending.hostelBalance || 0);
                         // Kept separately (not cleared) so the "Add to Calendar" button on the success screen still has what it needs.
                         window._lastBookingCalendarInfo = {
                             hostelName: pending.hostelName,
@@ -4006,6 +4277,7 @@
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
+                    initUserMap(); // map is now shown by default on the dashboard, no toggle needed — refresh markers whenever the property list updates
                 });
             } catch(e) {
                 console.error('refreshUserDash failed:', e);
@@ -4490,12 +4762,19 @@
 
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
                 const totalPrice = (grfBookingContext && grfBookingContext.totalPrice) ? grfBookingContext.totalPrice : 0;
+                // PAY-AT-HOSTEL MODEL: guest only pays ADVANCE_PERCENT% now; the rest is paid
+                // directly to the hostel at check-in (see Cancellation Policy modal).
+                const advanceAmount = Math.round(totalPrice * ADVANCE_PERCENT / 100);
+                const hostelBalance = totalPrice - advanceAmount;
                 const beds = (grfBookingContext && grfBookingContext.beds) ? grfBookingContext.beds : [];
                 const planLabel = (grfBookingContext && grfBookingContext.planLabel) ? grfBookingContext.planLabel : (formData.roomType || 'Booking');
-                document.getElementById('payAmount').innerText = '₹' + totalPrice;
+                document.getElementById('payAmount').innerText = '₹' + advanceAmount;
                 document.getElementById('payHostelName').innerText = formData.hostelName;
                 document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
                 document.getElementById('paySumPlan').innerText = planLabel;
+                document.getElementById('paySumStayTotal').innerText = '₹' + totalPrice;
+                document.getElementById('paySumAdvancePct').innerText = ADVANCE_PERCENT;
+                document.getElementById('paySumHostelBalance').innerText = '₹' + hostelBalance;
                 // "Notify Parent via WhatsApp" — pre-fills a message to the Emergency Contact number
                 // (the guest just taps Send, no automatic/paid WhatsApp API involved).
                 const notifyBtn = document.getElementById('btnNotifyParentWhatsapp');
@@ -4507,10 +4786,12 @@
                 } else {
                     notifyBtn.classList.add('hidden');
                 }
-                document.getElementById('paySumTotal').innerText = '₹' + totalPrice;
+                document.getElementById('paySumTotal').innerText = '₹' + advanceAmount;
                 // Cache the payment context so the Razorpay handler can read it
                 window._pendingPayment = {
-                    amount: totalPrice,
+                    amount: advanceAmount,       // what's actually charged now (the advance)
+                    totalStayAmount: totalPrice, // full stay cost, for records
+                    hostelBalance: hostelBalance, // what the guest still owes the hostel directly
                     hostelName: formData.hostelName,
                     guestName: formData.fullName,
                     guestPhone: formData.emergencyContact || '',
@@ -4523,6 +4804,7 @@
                     propertyId: propIdForLock,
                     lockId: lockId
                 };
+                setupPaymentScreenForMode(advanceAmount, formData.hostelName);
                 goTo('screenPaymentStep');
             } catch (err) {
                 console.error('Registration form error:', err);
