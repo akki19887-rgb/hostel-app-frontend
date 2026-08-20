@@ -3860,9 +3860,21 @@
             globalDynamicRooms.push(newRoom); admin2DBlocks.push({ type: 'room', id: newRoomId, name: newRoom.name, beds: newBedArr, amenities: newRoom.amenities, has_door: newRoom.has_door, floor: defaultFloor });
             refreshRoomsLabel(); renderBusinessConfig(); renderAttractive2DPlan();
         }
-        function addBusinessCorridor(orientation) { const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor'); const pos = orientation === 'vertical' ? 'center' : (orientation === 'middle' ? 'middle' : 'top'); admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor }); renderAttractive2DPlan(); }
+        function addBusinessCorridor(orientation) {
+            // BUG FIX: when currentSelectedFloor was empty (e.g. AI scan never set it), the corridor
+            // got pushed with a real floor name (from floorMaps/'Ground Floor') but the screen kept
+            // filtering by the still-empty currentSelectedFloor — so the corridor silently never
+            // rendered, even though it WAS added. Now we also update currentSelectedFloor itself so
+            // the two always stay in sync (same class of fix as the earlier Data Editor sync bug).
+            const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
+            if (!currentSelectedFloor) currentSelectedFloor = defaultFloor;
+            const pos = orientation === 'vertical' ? 'center' : (orientation === 'middle' ? 'middle' : 'top');
+            admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor });
+            renderAttractive2DPlan();
+        }
         function addBusinessHCorridor() {
             const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
+            if (!currentSelectedFloor) currentSelectedFloor = defaultFloor; // same fix as addBusinessCorridor above
             admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now() + '-1', name: 'Corridor Walkway', position: 'center', shape: 'H', floor: defaultFloor });
             admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now() + '-2', name: 'Corridor Walkway', position: 'middle', shape: 'H', floor: defaultFloor });
             renderAttractive2DPlan();
@@ -5288,16 +5300,31 @@
                 const pdfBlob = doc.output('blob');
                 const pdfFile = new File([pdfBlob], `Hostel-Registration-${formData.fullName.replace(/\s+/g,'_')}.pdf`, { type: 'application/pdf' });
 
-                // 2) Save a copy for us (Firestore) + upload Aadhar photo if provided
-                let aadharPhotoUrl = '';
-                const aadharInput = document.getElementById('grfAadharPhoto');
-                if (aadharInput.files && aadharInput.files[0] && typeof storage !== 'undefined') {
+                // 2) Save a copy for us (Firestore) + upload Aadhar photo(s) if provided
+                // BUG FIX: this used 'grfAadharPhoto' — an ID that no longer exists since the field
+                // was split into separate Front/Back uploads. document.getElementById() returned
+                // null, and the very next line's `.files` access on that null crashed the whole
+                // form-generation step ("Cannot read properties of null"). Now uses the correct
+                // Front/Back IDs and uploads whichever ones the guest actually provided.
+                let aadharPhotoUrl = '';       // front (kept as the primary URL for backwards compatibility)
+                let aadharPhotoBackUrl = '';   // back
+                const aadharFrontInputForUpload = document.getElementById('grfAadharPhotoFront');
+                const aadharBackInputForUpload = document.getElementById('grfAadharPhotoBack');
+                if (aadharFrontInputForUpload && aadharFrontInputForUpload.files && aadharFrontInputForUpload.files[0] && typeof storage !== 'undefined') {
                     try {
                         const hostelSlugForGuest = slugify(formData.hostelName);
-                        const photoRef = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_${aadharInput.files[0].name}`);
-                        await uploadBytes(photoRef, aadharInput.files[0]);
+                        const photoRef = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_front_${aadharFrontInputForUpload.files[0].name}`);
+                        await uploadBytes(photoRef, aadharFrontInputForUpload.files[0]);
                         aadharPhotoUrl = await getDownloadURL(photoRef);
-                    } catch (upErr) { console.warn('Aadhar photo upload failed (continuing without it):', upErr); }
+                    } catch (upErr) { console.warn('Aadhar front photo upload failed (continuing without it):', upErr); }
+                }
+                if (aadharBackInputForUpload && aadharBackInputForUpload.files && aadharBackInputForUpload.files[0] && typeof storage !== 'undefined') {
+                    try {
+                        const hostelSlugForGuest = slugify(formData.hostelName);
+                        const photoRefBack = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_back_${aadharBackInputForUpload.files[0].name}`);
+                        await uploadBytes(photoRefBack, aadharBackInputForUpload.files[0]);
+                        aadharPhotoBackUrl = await getDownloadURL(photoRefBack);
+                    } catch (upErr) { console.warn('Aadhar back photo upload failed (continuing without it):', upErr); }
                 }
                 if (typeof db !== 'undefined') {
                     try {
@@ -5308,6 +5335,7 @@
                         await addDoc(collection(db, 'guestRegistrations'), {
                             ...formData,
                             aadharPhotoUrl,
+                            aadharPhotoBackUrl,
                             pdfUrl,
                             propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
                             bookingContext: grfBookingContext
@@ -5389,7 +5417,11 @@
             } catch (err) {
                 console.error('Registration form error:', err);
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                errBox.innerText = 'Something went wrong generating the form. Please try again.';
+                // FIX: this used to always show the same generic text no matter what actually broke
+                // (PDF library failed to load, photo too large, Firestore write failed, etc.) — now
+                // shows the real error message too, so it can actually be diagnosed from a screenshot
+                // instead of guessing.
+                errBox.innerText = `Something went wrong generating the form: ${err && err.message ? err.message : 'Unknown error'}. Please try again.`;
                 errBox.classList.remove('hidden');
             }
         }
@@ -5838,20 +5870,32 @@
             // recalcBookingTotal() as the guest switches between Daily/Weekly/Monthly.
             pricingHtml += `<div class="mt-2 text-center w-full bg-orange-50 border border-orange-100 py-1.5 rounded-lg hidden" id="securityDepositBox"><span class="text-[10px] text-orange-600 font-bold tracking-wide">Security Deposit Required: ₹${securityDep}</span></div>`;
 
-            // Mess/Food charges — shown as its own detail box (not just a chip) whenever the owner
-            // has mess available, listing whichever price tiers they filled in.
+            // Mess/Food charges — now selectable (not just informational). Guest picks ONE period
+            // (Daily/Weekly/Monthly/Per Meal); the chosen amount gets added into the total payable,
+            // exactly like the security deposit was already handled. Veg/Non-veg is only offered as
+            // a choice when the owner marked "Veg & Non-Veg" (both available) — price doesn't
+            // change by diet type since there's only one price per period in the data model, but the
+            // guest's preference is saved with the booking so the owner knows what to prepare.
             let messHtml = '';
+            window.currentMessSelection = { period: null, amount: 0, dietType: null };
             const messRulesForDisplay = window.currentPropertyData?.rules;
             if (messRulesForDisplay && messRulesForDisplay.mess && messRulesForDisplay.mess !== 'Not Available') {
                 const mp = messRulesForDisplay.messPrices || {};
                 let rows = '';
-                if (mp.daily > 0) rows += `<span class="chip chip-outline">Daily ₹${mp.daily}</span>`;
-                if (mp.weekly > 0) rows += `<span class="chip chip-outline">Weekly ₹${mp.weekly}</span>`;
-                if (mp.monthly > 0) rows += `<span class="chip chip-outline">Monthly ₹${mp.monthly}</span>`;
-                if (mp.meal > 0) rows += `<span class="chip chip-outline">Per Meal ₹${mp.meal}</span>`;
+                if (mp.daily > 0) rows += `<button type="button" onclick="selectMessOption('daily', ${mp.daily})" id="messOpt-daily" class="chip chip-outline hover:bg-amber-500 hover:text-white transition cursor-pointer">Daily ₹${mp.daily}</button>`;
+                if (mp.weekly > 0) rows += `<button type="button" onclick="selectMessOption('weekly', ${mp.weekly})" id="messOpt-weekly" class="chip chip-outline hover:bg-amber-500 hover:text-white transition cursor-pointer">Weekly ₹${mp.weekly}</button>`;
+                if (mp.monthly > 0) rows += `<button type="button" onclick="selectMessOption('monthly', ${mp.monthly})" id="messOpt-monthly" class="chip chip-outline hover:bg-amber-500 hover:text-white transition cursor-pointer">Monthly ₹${mp.monthly}</button>`;
+                if (mp.meal > 0) rows += `<button type="button" onclick="selectMessOption('meal', ${mp.meal})" id="messOpt-meal" class="chip chip-outline hover:bg-amber-500 hover:text-white transition cursor-pointer">Per Meal ₹${mp.meal}</button>`;
+                const dietHtml = messRulesForDisplay.mess === 'Veg & Non-Veg' ? `
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" onclick="selectMessDiet('veg')" id="messDiet-veg" class="chip chip-outline hover:bg-emerald-500 hover:text-white transition cursor-pointer">🥦 Veg</button>
+                        <button type="button" onclick="selectMessDiet('nonveg')" id="messDiet-nonveg" class="chip chip-outline hover:bg-red-500 hover:text-white transition cursor-pointer">🍗 Non-Veg</button>
+                    </div>` : '';
                 messHtml = `<div class="mt-3 w-full bg-amber-50 border-2 border-amber-100 rounded-xl p-3">
-                    <p class="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2">🍲 Mess & Food Charges (${messRulesForDisplay.mess})</p>
+                    <p class="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-2">🍲 Mess & Food Charges (${messRulesForDisplay.mess}) — tap to add</p>
                     <div class="flex flex-wrap gap-1.5">${rows || '<span class="text-[10px] text-amber-600 font-semibold">Included — no extra charge</span>'}</div>
+                    ${dietHtml}
+                    <p class="text-[9px] text-amber-600 font-semibold mt-2">Tap a price to add it to your total. Tap again to remove it.</p>
                 </div>`;
             }
 
@@ -5931,6 +5975,29 @@
             recalcBookingTotal();
         }
 
+        // Toggle-select a mess price tier — tapping the same one again deselects it (removes the
+        // charge). Only one period can be active at a time (Daily/Weekly/Monthly/Per Meal).
+        window.selectMessOption = function(period, amount) {
+            document.querySelectorAll('[id^="messOpt-"]').forEach(el => el.classList.remove('bg-amber-500', 'text-white'));
+            if (window.currentMessSelection.period === period) {
+                window.currentMessSelection.period = null;
+                window.currentMessSelection.amount = 0;
+            } else {
+                window.currentMessSelection.period = period;
+                window.currentMessSelection.amount = amount;
+                const btn = document.getElementById(`messOpt-${period}`);
+                if (btn) btn.classList.add('bg-amber-500', 'text-white');
+            }
+            recalcBookingTotal();
+        }
+
+        window.selectMessDiet = function(diet) {
+            document.querySelectorAll('[id^="messDiet-"]').forEach(el => el.classList.remove('bg-emerald-500', 'bg-red-500', 'text-white'));
+            window.currentMessSelection.dietType = diet;
+            const btn = document.getElementById(`messDiet-${diet}`);
+            if (btn) btn.classList.add(diet === 'veg' ? 'bg-emerald-500' : 'bg-red-500', 'text-white');
+        }
+
         // Recomputes the total (rate × quantity), blocks below-minimum quantities with an inline
         // error, and keeps `selected2DBeds` / the Book button in sync with whatever is currently valid.
         window.recalcBookingTotal = function() {
@@ -5939,7 +6006,10 @@
             const totalEl = document.getElementById('bookingTotalDisplay');
             if (!input) return;
             const qty = Math.max(1, parseInt(input.value) || 1);
-            const total = currentBookingPlan.rate * qty;
+            const roomTotal = currentBookingPlan.rate * qty;
+            // Mess/food charge (if the guest selected one) gets added on top of the room total.
+            const messAmount = (window.currentMessSelection && window.currentMessSelection.amount) || 0;
+            const total = roomTotal + messAmount;
             if (totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
 
             // Security deposit is a one-time, Monthly-only charge — show it only when Monthly is
@@ -5961,7 +6031,7 @@
             if (belowMin) {
                 selected2DBeds = []; // invalid quantity — treat as nothing selected so Book stays disabled
             } else {
-                selected2DBeds = [{ id: currentSelectedBedId, price: total, plan: currentBookingPlan.type, qty }];
+                selected2DBeds = [{ id: currentSelectedBedId, price: total, plan: currentBookingPlan.type, qty, messSelection: window.currentMessSelection ? { ...window.currentMessSelection } : null }];
             }
             updateSmart2DBtn();
         }
