@@ -5814,7 +5814,34 @@
         function architectDeleteSelectedRoom() { const id = architectRequireSelectedRoom(); if (id) { qeDeleteRoom(id); architectSelectedRoomId = null; } }
 
         function qeRefreshAll() {
+            // BUG FIX: "Quick Edit" (✏️) inside the 2D blueprint — qeAddRoom/qeAddBed/qeDeleteRoom
+            // etc. — used to write ONLY to admin2DBlocks. The Data Editor list and the "X Rooms
+            // Found" counter both read from a *different* array, globalDynamicRooms, which qe*
+            // never touched. Net effect: a room added via Quick Edit showed up fine in the 2D
+            // blueprint, but was invisible in Data Editor and didn't count towards "Rooms Found" —
+            // exactly the bug reported. Fix: rebuild globalDynamicRooms from admin2DBlocks's room
+            // blocks every time anything changes here, merging in the few fields Data Editor owns
+            // (photos, the "X-Seater" type label) from whatever was there before. This keeps both
+            // views showing the exact same rooms, no matter which side you edit from.
+            const roomBlocks = admin2DBlocks.filter(b => b.type === 'room');
+            globalDynamicRooms = roomBlocks.map(block => {
+                const existing = globalDynamicRooms.find(r => r.id === block.id) || {};
+                const beds = block.beds || [];
+                return {
+                    id: block.id,
+                    name: block.name,
+                    floor: block.floor || 'Ground Floor',
+                    type: existing.type || `${beds.length}-Seater`,
+                    price: (beds[0] && (beds[0].priceMonthly || beds[0].price)) || existing.price || 5000,
+                    beds: beds,
+                    photos: existing.photos || ['', '', ''],
+                    amenities: block.amenities || existing.amenities || [],
+                    has_door: block.has_door !== undefined ? block.has_door : (existing.has_door !== false)
+                };
+            });
             if (document.getElementById('blueprintGrid') || document.getElementById('architectBlueprintGrid')) renderAttractive2DPlan();
+            if (typeof refreshRoomsLabel === 'function' && document.getElementById('detectedRoomsLabel')) refreshRoomsLabel();
+            if (typeof renderBusinessConfig === 'function' && document.getElementById('dynamicBusinessRoomsContainer')) renderBusinessConfig();
             const testGrid = document.getElementById('userSimpleBedGrid');
             if (testGrid && !testGrid.classList.contains('hidden')) renderUserSimpleBedGrid();
         }
