@@ -592,6 +592,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" onclick="goTo('screenMyBookings')" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">📋 My Bookings</button>
                 <button type="button" onclick="document.getElementById('modalRating').classList.remove('hidden')" class="px-4 py-2 bg-yellow-50 text-yellow-600 border border-yellow-200 font-bold text-xs rounded-xl hover:bg-yellow-100 transition shadow-sm">⭐ Rate Us</button>
                 <button type="button" onclick="logout()" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
@@ -625,6 +626,16 @@
                     <span class="search-icon text-sm">🔍</span>
                     <input type="text" id="discoverSearchInput" oninput="applyDiscoverFilters()" placeholder="Search..." class="location-search-input py-2 text-sm">
                 </div>
+                <div class="flex flex-col">
+                    <label class="text-[9px] font-black text-red-500 uppercase tracking-widest mb-0.5">⚠️ Gender</label>
+                    <select onchange="setDiscoverFilter('gender', this.value)" class="p-2 border-2 border-red-200 rounded-xl font-bold text-slate-700 text-xs bg-white">
+                        <option value="all">All</option>
+                        <option value="Boys">Boys Only</option>
+                        <option value="Girls">Girls Only</option>
+                        <option value="Co-ed">Co-ed</option>
+                    </select>
+                </div>
+                <button type="button" id="btnNearMe" onclick="enableNearMeSort()" class="self-end px-4 py-2 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 font-black text-xs rounded-xl hover:bg-indigo-600 hover:text-white transition">📍 Show hostels near me</button>
             </div>
         </div>
 
@@ -744,6 +755,8 @@
         </div>
         <h3 class="text-sm font-black text-amber-600 uppercase tracking-widest mb-3">⏳ Pending UPI Payments — Needs Your Confirmation</h3>
         <div id="adminPendingUpiContainer" class="space-y-4 mb-10"></div>
+        <h3 class="text-sm font-black text-emerald-600 uppercase tracking-widest mb-3">✅ Confirmed Bookings — Check-in / No-show</h3>
+        <div id="adminConfirmedBookingsContainer" class="space-y-4 mb-10"></div>
         <h3 class="text-sm font-black text-slate-500 uppercase tracking-widest mb-3">All Registrations</h3>
         <div id="adminBookingsContainer" class="space-y-4"></div>
     </div>
@@ -776,6 +789,58 @@
         <h3 class="display-font text-2xl font-black text-slate-800 mt-10 mb-2">Your Listings</h3>
         <p class="text-xs text-slate-500 font-semibold mb-6">Manage active & pending properties</p>
         <div id="businessExistingProperties" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+
+    <!-- MY BOOKINGS (guest's own view) — before this, a guest had no way to see their own past or
+         upcoming bookings anywhere in the app after paying. -->
+    <div id="screenMyBookings" class="hidden premium-card p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
+            <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
+            <div>
+                <h2 class="display-font text-2xl font-black text-slate-900 tracking-tight">📋 My Bookings</h2>
+                <p class="text-xs font-semibold text-slate-500 mt-0.5">Track your bookings and payment status</p>
+            </div>
+        </div>
+        <div id="myBookingsContainer" class="space-y-4"></div>
+        <div class="mt-8 pt-6 border-t border-slate-200/60 text-center">
+            <p class="text-xs font-bold text-slate-500 mb-2">Need help with a booking?</p>
+            <a href="#" id="myBookingsSupportLink" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-black rounded-xl hover:bg-emerald-500 hover:text-white transition text-sm">💬 Contact Support on WhatsApp</a>
+        </div>
+    </div>
+
+    <!-- PROPERTY BOOKINGS — the business owner's own view of who's booked their beds, so they
+         finally know who's arriving and when, without needing Admin access. Same Check-in/No-show
+         actions as the Admin Console, scoped to just this one property. -->
+    <div id="screenPropertyBookings" class="hidden premium-card p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
+            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
+            <div>
+                <h2 class="display-font text-2xl font-black text-slate-900 tracking-tight">📋 Bookings for This Property</h2>
+                <p class="text-xs font-semibold text-slate-500 mt-0.5">See who's arriving, check them in, or release a bed on no-show</p>
+            </div>
+        </div>
+        <div id="propertyBookingsContainer" class="space-y-4"></div>
+    </div>
+
+    <!-- BOOKING CHAT — simple, non-real-time text messenger between a guest and the property
+         owner, scoped to one confirmed booking. Neither side ever sees the other's phone number —
+         everything stays inside the app. Not live-updating; tap "🔄 Refresh" to check for new
+         messages, keeping this deliberately simple per the agreed scope. -->
+    <div id="screenBookingChat" class="hidden premium-card p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] flex flex-col">
+        <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-200/60 shrink-0">
+            <button type="button" id="btnChatBack" onclick="goTo('screenMyBookings')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
+            <div class="flex-1">
+                <h2 class="display-font text-xl font-black text-slate-900 tracking-tight" id="chatHeaderTitle">Chat</h2>
+                <p class="text-xs font-semibold text-slate-500 mt-0.5" id="chatHeaderSubtitle">Booking chat</p>
+            </div>
+            <button type="button" onclick="loadBookingMessages()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-xs shrink-0">🔄 Refresh</button>
+        </div>
+        <div id="chatMessagesContainer" class="flex-1 overflow-y-auto space-y-3 mb-4 px-1"></div>
+        <div class="flex gap-2 shrink-0 pt-3 border-t border-slate-200/60">
+            <input type="text" id="chatMessageInput" placeholder="Type a message..." class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-semibold text-slate-800" onkeydown="if(event.key==='Enter') sendBookingMessage();">
+            <button type="button" onclick="sendBookingMessage()" class="btn-gradient px-5 py-3 text-white font-black rounded-xl shadow-md">Send</button>
+        </div>
+        <p id="chatError" class="hidden text-xs font-bold text-red-500 bg-red-50 border border-red-100 rounded-xl p-2 mt-2"></p>
     </div>
 
     <!-- PAYOUTS & EARNINGS — per-property bank details (for manual transfer by admin) + a live
@@ -1053,6 +1118,17 @@
                             <input type="number" id="formMinStayMonths" min="1" value="1" placeholder="e.g. 1, 2, 3, 5..." class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white transition">
                         </div>
                         <p class="text-[9px] text-slate-400 font-semibold mt-1 col-span-3">Har plan type ke liye alag minimum set kar sakte ho — jo plan enable nahi hai uska field ignore ho jaata hai. Guest booking ke time isse kam quantity nahi daal payega.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-red-500 mb-1 uppercase tracking-widest">⚠️ Gender Policy (Safety — Required)</label>
+                        <select id="formGenderType" class="w-full p-3 border-2 border-red-200 rounded-xl font-bold text-slate-800 bg-white">
+                            <option value="Boys">Boys Only</option>
+                            <option value="Girls">Girls Only</option>
+                            <option value="Co-ed">Co-ed (Both)</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1770,9 +1846,10 @@
             stayTypes: { daily: false, weekly: false, monthly: true },
             securityDeposit: 5000, minStayMonths: 1, minStayDays: 1, minStayWeeks: 1, acType: 'AC & Non-AC Both', bathType: 'Attached', parking: 'Bike Only',
             laundry: 'Not Available', laundryCharge: 0, wifi: true, studyTable: true, noRestriction: false,
-            mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0
+            mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0,
+            genderType: 'Co-ed' // 'Boys' | 'Girls' | 'Co-ed' — used for the safety filter on Discover
         };
-        let discoverFilters = { type: 'all', stay: 'all', search: '', features: [] };
+        let discoverFilters = { type: 'all', stay: 'all', search: '', features: [], gender: 'all' };
         let accountMode = 'user';
         let currentMethod = '';
         let fullFormattedMobile = '';
@@ -2413,7 +2490,8 @@
                 // unnecessary work most users never looked at.
             }
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
-            if(screenId === 'screenAdminBookings') { loadAdminBookings(); loadPendingUpiPayments(); }
+            if(screenId === 'screenAdminBookings') { loadAdminBookings(); loadPendingUpiPayments(); loadConfirmedBookings(); }
+            if(screenId === 'screenMyBookings') loadMyBookings();
             if(screenId === 'screenGoogleMap') {
                 if (googleMap) {
                     setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150);
@@ -2439,17 +2517,24 @@
                 const rows = [];
                 snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
                 rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                // Flag any UTR that appears on more than one pending submission — a strong signal
+                // the same payment/screenshot is being reused across multiple bookings.
+                const utrCounts = {};
+                rows.forEach(b => { if (b.utrRef) utrCounts[b.utrRef] = (utrCounts[b.utrRef] || 0) + 1; });
                 container.innerHTML = rows.map(b => {
                     const beds = (b.bookingContext && b.bookingContext.beds) || [];
                     const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
                     const screenshotHtml = b.screenshotUrl ? `<a href="${b.screenshotUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📷 View Screenshot</a>` : `<span class="text-[10px] text-slate-400 font-semibold">No screenshot</span>`;
-                    return `<div class="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm">
+                    const isDupe = b.utrRef && utrCounts[b.utrRef] > 1;
+                    const dupeWarning = isDupe ? `<p class="text-[10px] font-black text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mt-1 inline-block">⚠️ Same UTR used on ${utrCounts[b.utrRef]} pending bookings — verify carefully</p>` : '';
+                    return `<div class="bg-white p-5 rounded-2xl border-2 ${isDupe ? 'border-red-300' : 'border-amber-200'} shadow-sm">
                         <div class="flex justify-between items-start gap-4 flex-wrap">
                             <div>
                                 <h4 class="font-black text-lg text-slate-800">${b.guestName || 'Guest'} — ₹${b.amount}</h4>
                                 <p class="text-xs font-bold text-slate-500 mt-0.5">${b.hostelName || ''} · Bed ${bedLabel} · 📱 ${b.guestPhone || '—'}</p>
                                 <p class="text-xs font-bold text-slate-700 mt-1">UTR: <span class="font-mono">${b.utrRef || '—'}</span></p>
                                 <div class="mt-1">${screenshotHtml}</div>
+                                ${dupeWarning}
                             </div>
                             <div class="flex gap-2 shrink-0">
                                 <button type="button" onclick="rejectUpiPayment('${b.id}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white transition">✕ Reject</button>
@@ -2465,11 +2550,50 @@
         }
 
         async function confirmUpiPayment(bookingDocId) {
-            if (!confirm('Have you checked your UPI/bank app and confirmed this exact amount was received? This will mark the bed as occupied and finalize the booking.')) return;
             try {
                 const bSnap = await getDocs(query(collection(db, 'bookings')));
-                let bData = null; bSnap.forEach(d => { if (d.id === bookingDocId) bData = d.data(); });
+                let bData = null;
+                let allBookings = [];
+                bSnap.forEach(d => { allBookings.push({ id: d.id, ...d.data() }); if (d.id === bookingDocId) bData = d.data(); });
                 if (!bData) { alert('Booking not found.'); return; }
+
+                // DUPLICATE UTR CHECK: someone could submit the same real UTR/payment-screenshot
+                // against several different bookings, hoping each gets confirmed off the same real
+                // payment. Block that here — if this exact UTR is already attached to a DIFFERENT
+                // booking that's already paid_verified, refuse and make the admin investigate.
+                if (bData.utrRef) {
+                    const clash = allBookings.find(b => b.id !== bookingDocId && b.utrRef === bData.utrRef && b.status === 'paid_verified');
+                    if (clash) {
+                        alert(`⚠️ Blocked: this UTR (${bData.utrRef}) is already used on a different confirmed booking (${clash.bookingId || clash.id}). This looks like the same payment screenshot/UTR being reused — do not confirm without checking your bank statement directly.`);
+                        return;
+                    }
+                }
+
+                // AMOUNT INTEGRITY CHECK: the advance shown to the guest was calculated in their
+                // own browser (from the room price at the time they booked) — someone could tamper
+                // with that in DevTools to generate a fake low-amount QR/UTR. Recompute the expected
+                // advance here from the property's CURRENT live bed price and flag any mismatch
+                // before the admin trusts the stored amount.
+                if (bData.propertyId && bData.bookingContext && bData.bookingContext.beds && bData.bookingContext.beds.length) {
+                    try {
+                        const bizSnap = await getDocs(query(collection(db, 'businesses')));
+                        let bizData = null; bizSnap.forEach(d => { if (d.id === bData.propertyId) bizData = d.data(); });
+                        if (bizData) {
+                            const bedIdsForCheck = bData.bookingContext.beds.map(bd => bd.id);
+                            let liveTotal = 0;
+                            (bizData.roomsAndBeds || []).forEach(room => (room.beds || []).forEach(bed => {
+                                if (bedIdsForCheck.includes(bed.id)) liveTotal += Number(bed.priceMonthly || bed.price || 0);
+                            }));
+                            const expectedAdvance = Math.round(liveTotal * (typeof ADVANCE_PERCENT !== 'undefined' ? ADVANCE_PERCENT : 20) / 100);
+                            if (liveTotal > 0 && Math.abs(expectedAdvance - Number(bData.amount)) > 1) {
+                                const proceed = confirm(`⚠️ Amount mismatch!\n\nThis booking's stored advance is ₹${bData.amount}, but based on the bed's current price (₹${liveTotal} total), the expected advance is ₹${expectedAdvance}.\n\nThis could mean the amount was tampered with. Continue anyway only if you've personally verified the real amount received in your bank/UPI app.\n\nPress OK to continue, Cancel to stop.`);
+                                if (!proceed) return;
+                            }
+                        }
+                    } catch (checkErr) { console.warn('Amount integrity check failed (continuing):', checkErr); }
+                }
+
+                if (!confirm('Have you checked your UPI/bank app and confirmed this exact amount was received? This will mark the bed as occupied and finalize the booking.')) return;
 
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'paid_verified', confirmedAt: new Date().toISOString() });
 
@@ -2493,6 +2617,251 @@
             } catch (err) {
                 console.error('Reject UPI payment failed', err);
                 alert('Could not reject this payment right now: ' + err.message);
+            }
+        }
+
+        // ==========================================
+        // MY BOOKINGS (guest's own view)
+        // ==========================================
+        async function loadMyBookings() {
+            const container = document.getElementById('myBookingsContainer');
+            if (!container) return;
+            const supportLink = document.getElementById('myBookingsSupportLink');
+            if (supportLink) supportLink.href = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi, I need help with my HostelOM booking.')}`;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            if (!uid) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">🔒</span><p class="font-bold text-sm">Please sign in to see your bookings.</p></div>`;
+                return;
+            }
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="loader mb-4"></div><p class="font-bold text-sm">Loading your bookings...</p></div>`;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'), where('guestUid', '==', uid)));
+                const rows = [];
+                snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+                if (rows.length === 0) {
+                    container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">📭</span><p class="font-bold text-sm">No bookings yet.</p><p class="text-xs mt-1">Once you book a bed, it'll show up here.</p></div>`;
+                    return;
+                }
+                rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                const statusMap = {
+                    pending_payment_confirmation: ['⏳ Verifying your payment', 'bg-amber-50 border-amber-200 text-amber-700'],
+                    paid_verified: ['✅ Confirmed', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
+                    checked_in: ['🏠 Checked In', 'bg-indigo-50 border-indigo-200 text-indigo-700'],
+                    no_show: ['🚫 Marked as No-show', 'bg-slate-100 border-slate-300 text-slate-500'],
+                    rejected: ['❌ Payment Not Verified', 'bg-red-50 border-red-200 text-red-600'],
+                    cancellation_requested: ['🚫 Cancellation Requested', 'bg-orange-50 border-orange-200 text-orange-600'],
+                };
+                container.innerHTML = rows.map(b => {
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
+                    const [label, cls] = statusMap[b.status] || ['—', 'bg-slate-50 border-slate-200 text-slate-500'];
+                    // Cancel is only offered while the booking is still pending or freshly paid —
+                    // once checked in / already a no-show / already cancelled, there's nothing to cancel.
+                    const canCancel = b.status === 'pending_payment_confirmation' || b.status === 'paid_verified';
+                    const cancelBtn = canCancel ? `<button type="button" onclick="requestBookingCancellation('${b.id}')" class="mt-2 text-[10px] font-black text-red-500 underline">Cancel this booking</button>` : '';
+                    // Chat only opens once payment is actually confirmed (paid_verified or later) —
+                    // matches the agreed scope: no messaging before a real booking exists.
+                    const canChat = b.status === 'paid_verified' || b.status === 'checked_in';
+                    const chatBtn = canChat ? `<button type="button" onclick="openBookingChat('${b.id}', 'guest')" class="mt-2 ml-3 text-[10px] font-black text-indigo-600 underline">💬 Message Host</button>` : '';
+                    return `<div class="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm">
+                        <div class="flex justify-between items-start gap-4 flex-wrap">
+                            <div>
+                                <h4 class="font-black text-lg text-slate-800">${b.hostelName || 'Booking'}</h4>
+                                <p class="text-xs font-bold text-slate-500 mt-0.5">Bed ${bedLabel} · Booking ID: ${b.bookingId || '—'}</p>
+                                <span class="chip border-2 font-black text-[10px] mt-2 inline-block ${cls}">${label}</span>
+                                <div>${cancelBtn}${chatBtn}</div>
+                            </div>
+                            <div class="text-right text-xs font-bold text-slate-600 space-y-0.5">
+                                <p>Paid: <span class="text-emerald-600">₹${b.amount}</span></p>
+                                ${b.hostelBalanceDue ? `<p>Pay at hostel: <span class="text-amber-600">₹${b.hostelBalanceDue}</span></p>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load my bookings', err);
+                container.innerHTML = `<div class="text-center py-16 text-red-500 font-bold text-sm">Could not load your bookings. Please try again.</div>`;
+            }
+        }
+
+        async function requestBookingCancellation(bookingDocId) {
+            const ok = confirm('Cancel this booking?\n\nPer our policy, your advance payment is non-refundable — cancelling will NOT refund it. This just releases your claim on the bed and notifies the hostel.\n\nContinue?');
+            if (!ok) return;
+            try {
+                await updateDoc(doc(db, 'bookings', bookingDocId), {
+                    status: 'cancellation_requested',
+                    cancellationRequestedAt: new Date().toISOString()
+                });
+                try {
+                    await addDoc(collection(db, 'notifications'), {
+                        type: 'cancellation_requested', role: 'admin',
+                        message: `🚫 A guest requested cancellation for booking ${bookingDocId}.`,
+                        read: false, createdAt: new Date().toISOString()
+                    });
+                } catch (e) {}
+                alert('Cancellation requested. The advance stays non-refundable per policy, but your bed claim has been released.');
+                loadMyBookings();
+            } catch (err) {
+                console.error('Cancellation request failed', err);
+                alert('Could not cancel right now: ' + err.message);
+            }
+        }
+
+        // ==========================================
+        // BOOKING CHAT — simple (non-real-time) in-app messenger, scoped to one confirmed booking.
+        // Messages live in a subcollection: bookings/{bookingId}/messages/{messageId}. Neither the
+        // guest nor the owner ever sees the other's phone number through this.
+        // ==========================================
+        let currentChatBookingId = null;
+        let currentChatRole = null; // 'guest' | 'owner'
+
+        async function openBookingChat(bookingDocId, role) {
+            currentChatBookingId = bookingDocId;
+            currentChatRole = role;
+            const backScreen = role === 'guest' ? 'screenMyBookings' : 'screenPropertyBookings';
+            document.getElementById('btnChatBack').setAttribute('onclick', `goTo('${backScreen}')`);
+            document.getElementById('chatError').classList.add('hidden');
+            document.getElementById('chatMessageInput').value = '';
+            document.getElementById('chatHeaderTitle').innerText = 'Chat';
+            document.getElementById('chatHeaderSubtitle').innerText = 'Loading...';
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings')));
+                let bData = null; snap.forEach(d => { if (d.id === bookingDocId) bData = d.data(); });
+                document.getElementById('chatHeaderTitle').innerText = role === 'guest' ? (bData?.hostelName || 'Chat') : (bData?.guestName || 'Guest');
+                document.getElementById('chatHeaderSubtitle').innerText = `Booking ${bData?.bookingId || bookingDocId}`;
+            } catch (e) { document.getElementById('chatHeaderSubtitle').innerText = `Booking ${bookingDocId}`; }
+            goTo('screenBookingChat');
+            loadBookingMessages();
+        }
+
+        async function loadBookingMessages() {
+            if (!currentChatBookingId) return;
+            const container = document.getElementById('chatMessagesContainer');
+            container.innerHTML = `<div class="flex justify-center py-8"><div class="loader"></div></div>`;
+            try {
+                const snap = await getDocs(collection(db, 'bookings', currentChatBookingId, 'messages'));
+                const rows = [];
+                snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+                rows.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+                if (rows.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-8">No messages yet — say hello!</p>`;
+                    return;
+                }
+                container.innerHTML = rows.map(m => {
+                    const isMine = m.senderRole === currentChatRole;
+                    const safeText = (m.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return `<div class="flex ${isMine ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[75%] px-4 py-2.5 rounded-2xl ${isMine ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}">
+                            <p class="text-sm font-semibold">${safeText}</p>
+                            <p class="text-[9px] mt-1 opacity-70">${m.createdAt ? new Date(m.createdAt).toLocaleString('en-IN') : ''}</p>
+                        </div>
+                    </div>`;
+                }).join('');
+                container.scrollTop = container.scrollHeight;
+            } catch (err) {
+                console.error('Failed to load messages', err);
+                container.innerHTML = `<p class="text-xs text-red-500 font-semibold text-center py-8">Could not load messages. Please try again.</p>`;
+            }
+        }
+
+        async function sendBookingMessage() {
+            const input = document.getElementById('chatMessageInput');
+            const text = input.value.trim();
+            if (!text || !currentChatBookingId) return;
+            const errBox = document.getElementById('chatError');
+            errBox.classList.add('hidden');
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            if (!uid) { errBox.innerText = 'Please sign in to send messages.'; errBox.classList.remove('hidden'); return; }
+            try {
+                await addDoc(collection(db, 'bookings', currentChatBookingId, 'messages'), {
+                    senderRole: currentChatRole,
+                    senderUid: uid,
+                    text,
+                    createdAt: new Date().toISOString()
+                });
+                input.value = '';
+                loadBookingMessages();
+            } catch (err) {
+                console.error('Send message failed', err);
+                errBox.innerText = 'Could not send: ' + err.message;
+                errBox.classList.remove('hidden');
+            }
+        }
+
+
+
+
+        function renderBookingCard(b, refreshFnName, hidePhone) {
+            const beds = (b.bookingContext && b.bookingContext.beds) || [];
+            const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
+            const statusMap = {
+                paid_verified: ['🟢 Paid — Awaiting Check-in', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
+                checked_in: ['✅ Checked In', 'bg-indigo-50 border-indigo-200 text-indigo-700'],
+                no_show: ['🚫 No-show — Bed Released', 'bg-slate-100 border-slate-300 text-slate-500'],
+                cancellation_requested: ['⚠️ Guest Requested Cancellation', 'bg-orange-50 border-orange-200 text-orange-600'],
+            };
+            const [label, cls] = statusMap[b.status] || ['—', 'bg-slate-50 border-slate-200 text-slate-500'];
+            let actionButtons = '';
+            const chatBtnOwner = hidePhone && (b.status === 'paid_verified' || b.status === 'checked_in') ? `<button type="button" onclick="openBookingChat('${b.id}', 'owner')" class="px-4 py-2.5 bg-slate-50 border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-800 hover:text-white transition">💬 Message Guest</button>` : '';
+            if (b.status === 'paid_verified') {
+                actionButtons = `
+                <div class="flex gap-2 shrink-0 flex-wrap justify-end">
+                    ${chatBtnOwner}
+                    ${hidePhone ? `<button type="button" onclick="requestContactWithGuest('${b.id}')" class="px-4 py-2.5 bg-indigo-50 border-2 border-indigo-100 text-indigo-600 font-bold rounded-xl text-xs hover:bg-indigo-500 hover:text-white transition">📞 Request Contact</button>` : ''}
+                    <button type="button" onclick="markBookingNoShow('${b.id}', () => ${refreshFnName}())" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white transition">🚫 No-show</button>
+                    <button type="button" onclick="markBookingCheckedIn('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-indigo-500 text-white font-black rounded-xl text-xs hover:bg-indigo-600 transition">✅ Check-in</button>
+                </div>`;
+            } else if (b.status === 'cancellation_requested') {
+                // Guest already flipped the booking's own status — admin still needs to release the
+                // actual bed (guest's Firestore permissions deliberately don't allow touching that).
+                actionButtons = `
+                <div class="flex gap-2 shrink-0">
+                    <button type="button" onclick="markBookingNoShow('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-orange-500 text-white font-black rounded-xl text-xs hover:bg-orange-600 transition">🔓 Release Bed</button>
+                </div>`;
+            } else if (b.status === 'checked_in' && hidePhone) {
+                actionButtons = `
+                <div class="flex gap-2 shrink-0">
+                    ${chatBtnOwner}
+                    <button type="button" onclick="requestContactWithGuest('${b.id}')" class="px-4 py-2.5 bg-indigo-50 border-2 border-indigo-100 text-indigo-600 font-bold rounded-xl text-xs hover:bg-indigo-500 hover:text-white transition">📞 Request Contact</button>
+                </div>`;
+            }
+            // Owners never see the guest's raw phone number directly (privacy) — they can only
+            // send a "Request Contact" which notifies admin, who relays it manually. Admin's own
+            // view (hidePhone not set) still shows the number directly, since admin already
+            // handles payment verification and needs to reach guests quickly.
+            const phoneLine = hidePhone ? '' : ` · 📱 ${b.guestPhone || '—'}`;
+            return `<div class="bg-white p-5 rounded-2xl border-2 ${b.status === 'paid_verified' ? 'border-emerald-100' : b.status === 'cancellation_requested' ? 'border-orange-200' : 'border-slate-100'} shadow-sm">
+                <div class="flex justify-between items-start gap-4 flex-wrap">
+                    <div>
+                        <h4 class="font-black text-lg text-slate-800">${b.guestName || 'Guest'} — ₹${b.amount}</h4>
+                        <p class="text-xs font-bold text-slate-500 mt-0.5">${b.hostelName || ''} · Bed ${bedLabel}${phoneLine}</p>
+                        <span class="chip border-2 font-black text-[10px] mt-2 inline-block ${cls}">${label}</span>
+                    </div>
+                    ${actionButtons}
+                </div>
+            </div>`;
+        }
+
+        async function loadConfirmedBookings() {
+            const container = document.getElementById('adminConfirmedBookingsContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400"><div class="loader mb-3"></div><p class="font-bold text-xs">Loading confirmed bookings...</p></div>`;
+            try {
+                const snap = await getDocs(collection(db, 'bookings'));
+                const rows = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (['paid_verified', 'checked_in', 'no_show', 'cancellation_requested'].includes(data.status)) rows.push({ id: d.id, ...data });
+                });
+                if (rows.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-6">No confirmed bookings yet.</p>`;
+                    return;
+                }
+                rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                container.innerHTML = rows.map(b => renderBookingCard(b, 'loadConfirmedBookings')).join('');
+            } catch (err) {
+                console.error('Failed to load confirmed bookings', err);
+                container.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs">Could not load confirmed bookings.</div>`;
             }
         }
 
@@ -2685,9 +3054,11 @@
                 } catch(e) {}
                 _otpSessionId = null;
                 // Save this user to Firestore so the admin dashboard can see who has signed in via
-                // mobile OTP, and ask for their location (best-effort — a "no" doesn't block login).
+                // mobile OTP. Location is NOT silently captured here anymore — asking for a user's
+                // precise GPS on every login without ever telling them why was flagged as an
+                // unnecessary privacy over-collection; there's no feature in the app that actually
+                // needs it at login time.
                 await saveMobileUserToFirestore(user);
-                requestUserLocationAndSave(user.uid);
                 notifyAdminOfNewLogin(user.phoneNumber || fullFormattedMobile);
                 goTo('screenProfileCompletion');
             } catch (err) {
@@ -2978,6 +3349,7 @@
         // came in.
         const PAYMENT_MODE = 'upi_manual'; // 'upi_manual' | 'razorpay'
         const PLATFORM_UPI_ID = 'yourupi@bank';   // ⚠️ REPLACE with your real UPI ID before going live
+        const SUPPORT_WHATSAPP_NUMBER = '919999999999'; // ⚠️ REPLACE with your real support number (with country code, no + or spaces)
         const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
         // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
         // amount is HostelOM's booking fee/commission (100% of it, always non-refundable — see
@@ -3006,6 +3378,58 @@
                     transaction.set(lockRef, { confirmed: true, bookingId: bookingId, confirmedAt: new Date().toISOString() }, { merge: true });
                 }
             });
+        }
+
+        // NO-SHOW HANDLING — reverses markBedsOccupiedForBooking. Without this, a bed that was
+        // booked but never checked into stays "occupied" forever, since nothing ever frees it back
+        // up (this was flagged as a real gap — within a month every bed would look permanently
+        // full). The advance the guest paid stays non-refundable per policy; only the BED goes
+        // back to being bookable by someone else.
+        async function releaseBedsForBooking(propertyId, bedIds, lockId) {
+            if (!propertyId || propertyId === 'unknown' || !bedIds || bedIds.length === 0 || typeof db === 'undefined') return;
+            await runTransaction(db, async (transaction) => {
+                const bizRef = window.doc(window.db, 'businesses', propertyId);
+                const bizSnap = await transaction.get(bizRef);
+                if (!bizSnap.exists()) return;
+                const bizData = bizSnap.data();
+                const updatedRooms = (bizData.roomsAndBeds || []).map(room => ({
+                    ...room,
+                    beds: (room.beds || []).map(b => bedIds.includes(b.id) ? { ...b, status: 'available', occupiedBookingId: null } : b)
+                }));
+                transaction.update(bizRef, { roomsAndBeds: updatedRooms });
+                if (lockId) {
+                    const lockRef = window.doc(window.db, 'bedLocks', lockId);
+                    transaction.delete(lockRef); // admin-only per Firestore rules — cleans up the reservation entirely
+                }
+            });
+        }
+
+        // Shared by the Admin Bookings screen AND the business owner's own Bookings screen.
+        async function markBookingCheckedIn(bookingDocId, onDone) {
+            if (!confirm('Mark this guest as checked in?')) return;
+            try {
+                await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'checked_in', checkedInAt: new Date().toISOString() });
+                if (onDone) onDone();
+            } catch (err) {
+                console.error('Check-in update failed', err);
+                alert('Could not update right now: ' + err.message);
+            }
+        }
+
+        async function markBookingNoShow(bookingDocId, onDone) {
+            if (!confirm("Mark as No-Show? This releases the bed for other guests. Per policy, the advance the guest paid stays non-refundable — only the bed is freed up.")) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings')));
+                let bData = null; snap.forEach(d => { if (d.id === bookingDocId) bData = d.data(); });
+                if (!bData) { alert('Booking not found.'); return; }
+                const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
+                await releaseBedsForBooking(bData.propertyId, bedIds, bData.lockId);
+                await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'no_show', noShowAt: new Date().toISOString() });
+                if (onDone) onDone();
+            } catch (err) {
+                console.error('No-show update failed', err);
+                alert('Could not update right now: ' + err.message);
+            }
         }
 
         // Two modes:
@@ -3119,6 +3543,9 @@
                     hostelName: pending.hostelName,
                     guestName: pending.guestName,
                     guestPhone: pending.guestPhone,
+                    // Needed so the guest can see this booking later on their own "My Bookings"
+                    // screen — without this, a booking has no link back to the account that made it.
+                    guestUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
                     bookingContext: pending.bookingContext,
                     paymentMethod: 'upi_manual',
                     utrRef: utr,
@@ -3217,6 +3644,7 @@
                             hostelName: pending.hostelName,
                             guestName: pending.guestName,
                             guestPhone: pending.guestPhone,
+                            guestUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
                             totalStayAmount: pending.totalStayAmount || pending.amount,
                             hostelBalanceDue: pending.hostelBalance || 0,
                             bookingContext: pending.bookingContext,
@@ -3274,6 +3702,7 @@
             businessRules.minStayDays = document.getElementById('formMinStayDays') ? Math.max(1, parseInt(document.getElementById('formMinStayDays').value) || 1) : 1;
             businessRules.minStayWeeks = document.getElementById('formMinStayWeeks') ? Math.max(1, parseInt(document.getElementById('formMinStayWeeks').value) || 1) : 1;
             businessRules.acType = document.getElementById('formAcType') ? document.getElementById('formAcType').value : 'AC & Non-AC Both';
+            businessRules.genderType = document.getElementById('formGenderType') ? document.getElementById('formGenderType').value : 'Co-ed';
             businessRules.bathType = document.getElementById('formBathType') ? document.getElementById('formBathType').value : 'Attached';
             businessRules.parking = document.getElementById('formParking') ? document.getElementById('formParking').value : 'Bike Only';
             businessRules.laundry = document.getElementById('formLaundry') ? document.getElementById('formLaundry').value : 'Not Available';
@@ -3613,16 +4042,34 @@
                             const fd = data.flatDetails || {};
                             statusText = data.status === 'pending_approval' ? '⏳ Pending' : (data.flatDetails && data.flatDetails.status === 'booked' ? '🔴 Booked' : '✅ Active');
                             statusChip = data.status === 'pending_approval' ? 'chip chip-warning' : (data.flatDetails && data.flatDetails.status === 'booked' ? 'chip' : 'chip chip-success');
-                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                             return;
                         }
-                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                     });
                     window._myPropertyIds = myIds; // used to scope this business's notification feed too
                     listenBizNotifications(); // re-filter now that we know which properties are "mine"
                     updateHtmlPreservingScroll(container, htmlContent);
+                    updateNewBookingBadges(myIds);
                 });
             } catch(error) { container.innerHTML = `<p class="text-red-500 font-bold col-span-2">Error: ${error.message}</p>`; }
+        }
+
+        // Shows a red count badge on each property's "📋 BOOKINGS" button for bookings that are
+        // 'paid_verified' but not yet checked in — this is the "new booking, owner hasn't seen it
+        // yet" signal. Without this, the owner had no way to know a booking came in except by
+        // manually opening the Bookings tab and checking.
+        async function updateNewBookingBadges(propertyIds) {
+            if (!propertyIds || propertyIds.length === 0) return;
+            try {
+                for (const propId of propertyIds) {
+                    const snap = await getDocs(query(collection(db, 'bookings'), where('propertyId', '==', propId), where('status', '==', 'paid_verified')));
+                    const badge = document.getElementById(`bookingsBadge-${propId}`);
+                    if (!badge) continue;
+                    if (snap.size > 0) { badge.innerText = snap.size; badge.classList.remove('hidden'); badge.classList.add('flex'); }
+                    else { badge.classList.add('hidden'); badge.classList.remove('flex'); }
+                }
+            } catch (e) { console.warn('Could not load new-booking badges', e); }
         }
 
         window.openBusinessEdit = async function(docId) {
@@ -3644,6 +4091,73 @@
         const DEFAULT_COMMISSION_PERCENT = 15;
         let pyPendingChequeFile = null;
         let pyPendingQrFile = null;
+
+        // ==========================================
+        // PROPERTY BOOKINGS (business owner's own view)
+        // ==========================================
+        let currentPropertyBookingsDocId = null;
+
+        window.openPropertyBookingsScreen = function(docId) {
+            currentPropertyBookingsDocId = docId;
+            goTo('screenPropertyBookings');
+            loadPropertyBookings(docId);
+        };
+
+        function refreshCurrentPropertyBookings() { loadPropertyBookings(currentPropertyBookingsDocId); }
+
+        async function loadPropertyBookings(docId) {
+            const container = document.getElementById('propertyBookingsContainer');
+            if (!container) return;
+            container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="loader mb-4"></div><p class="font-bold text-sm">Loading bookings...</p></div>`;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'), where('propertyId', '==', docId)));
+                const rows = [];
+                snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+                if (rows.length === 0) {
+                    container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">📭</span><p class="font-bold text-sm">No bookings yet for this property.</p></div>`;
+                    return;
+                }
+                rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                // Pending UPI submissions need a slightly different card (no check-in/no-show yet —
+                // those only apply once a payment is actually confirmed).
+                container.innerHTML = rows.map(b => {
+                    if (b.status === 'pending_payment_confirmation') {
+                        return `<div class="bg-amber-50 p-5 rounded-2xl border-2 border-amber-200"><h4 class="font-black text-lg text-slate-800">${b.guestName || 'Guest'} — ₹${b.amount}</h4><p class="text-xs font-bold text-slate-500 mt-0.5">📱 ${b.guestPhone || '—'} · UTR: ${b.utrRef || '—'}</p><span class="chip bg-amber-100 border-2 border-amber-200 text-amber-700 font-black text-[10px] mt-2 inline-block">⏳ Payment being verified by HostelOM</span></div>`;
+                    }
+                    if (b.status === 'rejected') {
+                        return `<div class="bg-slate-50 p-5 rounded-2xl border-2 border-slate-100 opacity-70"><h4 class="font-black text-lg text-slate-500">${b.guestName || 'Guest'} — ₹${b.amount}</h4><span class="chip bg-slate-100 border-2 border-slate-200 text-slate-500 font-black text-[10px] mt-2 inline-block">❌ Payment Rejected</span></div>`;
+                    }
+                    return renderBookingCard(b, 'refreshCurrentPropertyBookings', true);
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load property bookings', err);
+                container.innerHTML = `<div class="text-center py-16 text-red-500 font-bold text-sm">Could not load bookings. Please try again.</div>`;
+            }
+        }
+
+        // OWNER → GUEST CONTACT — routed through admin rather than exposing the guest's raw phone
+        // number to the property owner directly. This notifies admin, who manually relays the
+        // message/call via WhatsApp. Protects guest privacy (especially important for girls'
+        // hostels) at the cost of being slower than a direct call — that tradeoff is intentional.
+        async function requestContactWithGuest(bookingDocId) {
+            const reason = prompt('What do you need to tell/ask the guest? (e.g. "Please share arrival time", "Room ready, please collect keys")');
+            if (reason === null) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings')));
+                let bData = null; snap.forEach(d => { if (d.id === bookingDocId) bData = d.data(); });
+                if (!bData) { alert('Booking not found.'); return; }
+                await addDoc(collection(db, 'notifications'), {
+                    type: 'owner_contact_request', role: 'admin',
+                    message: `📞 Hostel owner wants to contact ${bData.guestName || 'a guest'} (Booking ${bData.bookingId || bookingDocId}): "${reason || 'No message given'}"`,
+                    guestPhone: bData.guestPhone || '', guestName: bData.guestName || '',
+                    read: false, createdAt: new Date().toISOString()
+                });
+                alert('✅ Sent to HostelOM support — we will reach out to the guest on your behalf shortly.');
+            } catch (err) {
+                console.error('Contact request failed', err);
+                alert('Could not send this request right now: ' + err.message);
+            }
+        }
 
         window.openPayoutsScreen = async function(docId) {
             currentPayoutsDocId = docId;
@@ -4210,6 +4724,61 @@
             applyDiscoverFilters();
         }
 
+        // GPS is opt-in ONLY — this is the single place in the whole app that ever asks for
+        // location, and only when the user explicitly taps "Show hostels near me". No background/
+        // automatic location capture happens anywhere else (that was removed as a privacy issue).
+        let userNearMeCoords = null;
+        function enableNearMeSort() {
+            const btn = document.getElementById('btnNearMe');
+            if (!navigator.geolocation) { alert('Your browser does not support location.'); return; }
+            btn.disabled = true; btn.innerText = '📍 Locating...';
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userNearMeCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    btn.innerText = '✅ Sorted by distance'; btn.disabled = false;
+                    sortDiscoverByDistance();
+                },
+                () => {
+                    alert('Could not get your location. Please check your browser/location permissions.');
+                    btn.disabled = false; btn.innerText = '📍 Show hostels near me';
+                },
+                { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            );
+        }
+
+        function haversineKm(lat1, lng1, lat2, lng2) {
+            const toRad = (d) => d * Math.PI / 180;
+            const R = 6371;
+            const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+            const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function sortDiscoverByDistance() {
+            if (!userNearMeCoords) return;
+            const grid = document.getElementById('discoverPropertiesGrid') || document.querySelector('[id^="prop-card-"]')?.parentElement;
+            if (!grid) return;
+            const cards = [...grid.querySelectorAll('[id^="prop-card-"]')];
+            const withDist = cards.map(card => {
+                const id = card.id.replace('prop-card-', '');
+                const prop = allApprovedProperties.find(p => p.id === id);
+                const coords = prop && prop.coordinates;
+                const dist = coords ? haversineKm(userNearMeCoords.lat, userNearMeCoords.lng, coords.lat, coords.lng) : Infinity;
+                return { card, dist };
+            });
+            withDist.sort((a, b) => a.dist - b.dist);
+            withDist.forEach(({ card, dist }) => {
+                grid.appendChild(card);
+                let tag = card.querySelector('.near-me-distance-tag');
+                if (!tag && dist !== Infinity) {
+                    tag = document.createElement('span');
+                    tag.className = 'near-me-distance-tag chip bg-indigo-600 text-white absolute top-4 left-1/2 -translate-x-1/2 shadow-lg';
+                    card.querySelector('.relative')?.appendChild(tag);
+                }
+                if (tag) tag.innerText = dist !== Infinity ? `📍 ${dist.toFixed(1)} km away` : '';
+            });
+        }
+
         window.applyDiscoverFilters = function() {
             const search = (document.getElementById('discoverSearchInput')?.value || '').toLowerCase();
             document.querySelectorAll('[id^="prop-card-"]').forEach(card => {
@@ -4217,6 +4786,7 @@
                 let show = true;
                 if (search && !(prop.propertyType || '').toLowerCase().includes(search) && !(prop.businessProfile?.company || '').toLowerCase().includes(search)) show = false;
                 if (discoverFilters.type !== 'all' && prop.propertyType !== discoverFilters.type) show = false;
+                if (discoverFilters.gender && discoverFilters.gender !== 'all' && (prop.rules?.genderType || 'Co-ed') !== discoverFilters.gender) show = false;
                 if (discoverFilters.stay !== 'all') { if(!prop.rules?.stayTypes?.[discoverFilters.stay]) show = false; }
                 if (discoverFilters.features.length > 0) {
                     if (discoverFilters.features.includes('ac') && (!prop.rules?.acType || !prop.rules.acType.includes('AC'))) show = false;
@@ -4262,6 +4832,9 @@
                         // "New" for properties published within the last 7 days.
                         const isNew = data.layout2DPublishedAt && ((Date.now() - new Date(data.layout2DPublishedAt).getTime()) < 7 * 24 * 60 * 60 * 1000);
                         const newBadge = isNew ? `<span class="chip" style="background:#ecfdf5; border-color:#6ee7b7; color:#047857;">🆕 New</span>` : '';
+                        const genderTypeVal = (data.rules && data.rules.genderType) || 'Co-ed';
+                        const genderBadgeColors = { Boys: 'background:#eff6ff; border-color:#93c5fd; color:#1d4ed8;', Girls: 'background:#fdf2f8; border-color:#f9a8d4; color:#be185d;', 'Co-ed': 'background:#f5f3ff; border-color:#c4b5fd; color:#6d28d9;' };
+                        const genderBadge = `<span class="chip" style="${genderBadgeColors[genderTypeVal] || genderBadgeColors['Co-ed']}">${genderTypeVal === 'Boys' ? '👦 Boys Only' : genderTypeVal === 'Girls' ? '👧 Girls Only' : '👥 Co-ed'}</span>`;
                         const occupancyHtml = totalBedsCount > 0 ? `<div class="flex items-center gap-2 mb-2"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full" style="width:${occupiedPct}%;"></div></div><span class="text-[10px] font-black text-slate-500 shrink-0">${occupiedPct}% full</span></div>` : '';
                         const ownerPhone = (data.businessProfile && data.businessProfile.phone) ? data.businessProfile.phone.replace(/\D/g, '') : '';
                         const whatsappBtn = ownerPhone ? `<a href="https://wa.me/${ownerPhone.length === 10 ? '91' + ownerPhone : ownerPhone}?text=${encodeURIComponent('Hi, I saw ' + (data.businessProfile?.company || data.propertyType) + ' on HostelOM and wanted to ask about availability.')}" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 border-2 border-emerald-200 rounded-xl text-xl hover:bg-emerald-500 hover:text-white transition shrink-0" title="Chat on WhatsApp">💬</a>` : '';
@@ -4274,7 +4847,7 @@
                             htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">🏡 ${fd.bhk || 'Flat/House'}</span> ${bookedBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-1">${data.businessName || 'Flat/House'}</h3> <p class="text-sm font-black text-indigo-600 mb-2">₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/month <span class="text-slate-400 font-bold text-xs">· Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></p> </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openFlatHouseView('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">${fd.bookingMode === 'visit' ? 'View & Schedule Visit →' : 'View & Book Now →'}</button> ${whatsappBtn} </div> </div>`;
                             return;
                         }
-                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
+                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} <span class="absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg">✓ VERIFIED</span> <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}${genderBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
@@ -4553,9 +5126,13 @@
             const propIdForLock = (window.currentPropertyData && window.currentPropertyData.id) || 'unknown';
             const bedIdForLock = (grfBookingContext && grfBookingContext.beds && grfBookingContext.beds[0]) ? grfBookingContext.beds[0].id : 'unknown';
             const lockId = `${propIdForLock}_${bedIdForLock}_${joiningDateVal}`.replace(/[^a-zA-Z0-9_-]/g, '');
-            const LOCK_EXPIRY_MS = 20 * 60 * 1000; // 20 minutes — if a lock is older than this and was
-            // never confirmed (payment step abandoned), it's treated as expired and safely reclaimed,
-            // instead of permanently blocking that bed+date for every future guest.
+            const LOCK_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours — manual UPI verification can take
+            // realistic time (hours, not minutes) for the admin to check their bank app and confirm.
+            // 20 minutes was fine for instant Razorpay payments, but for the current UPI-manual flow
+            // it meant a bed could get silently reclaimed and double-booked while a legitimate
+            // payment was still awaiting confirmation. If a lock is genuinely stale (payment step
+            // abandoned entirely), it's still safely reclaimed after 48h instead of blocking that
+            // bed+date forever.
             if (typeof db !== 'undefined' && bedIdForLock !== 'unknown') {
                 try {
                     await runTransaction(db, async (transaction) => {
@@ -4580,9 +5157,11 @@
             }
             submitBtn.innerText = 'Generating Form...';
 
-            // Ask for the guest's GPS location as part of booking (best-effort — if they deny the
-            // permission or it times out, booking still continues normally without it).
-            const guestLocation = await captureGuestLocation();
+            // GPS capture removed here too (same reasoning as at login) — the guest was never told
+            // why their exact location was being requested during booking, and nothing in the app
+            // actually used it. Silent location collection like this was flagged as an unnecessary
+            // privacy risk; removed rather than adding a consent flow for a feature nobody needs.
+            const guestLocation = null;
 
             const formData = {
                 fullName: document.getElementById('grfFullName').value.trim(),
