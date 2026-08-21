@@ -1519,8 +1519,32 @@
                 <div id="userCanvasHint" class="lg:hidden absolute top-3 left-3 right-3 z-10 bg-white/90 backdrop-blur rounded-xl px-3 py-2 text-[10px] font-bold text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 pointer-events-none">
                     <span>👆</span> Tap bed to book · Pinch to zoom · Drag to pan
                 </div>
-                <!-- TEST ONLY: simple HTML room/bed grid, toggled by "🧪 Test View" above -->
-                <div id="userSimpleBedGrid" class="hidden absolute inset-0 z-30 bg-white overflow-auto p-4 rounded-3xl"></div>
+                <!-- ROOM/BED GRID — the real booking view.
+                     #userSimpleBedGrid is the fixed VIEWPORT (never scrolls sideways).
+                     #bedGridZoomLayer inside it is laid out at a fixed desktop width and then
+                     CSS-scaled down to fit that viewport, so a phone shows the exact same
+                     side-by-side arrangement a desktop does — just smaller — instead of the
+                     squeezed/overlapping mess a narrow 3-column grid produced before.
+                     Pinch/drag then scales & pans that layer for readability. -->
+                <div id="userSimpleBedGrid" class="hidden absolute inset-0 z-30 bg-white rounded-3xl" style="overflow:hidden; touch-action:none;">
+                    <div id="bedGridZoomLayer" style="transform-origin:0 0; will-change:transform;"></div>
+
+                    <!-- Persistent gesture hint + reset-to-fit button (mobile only) -->
+                    <div id="bedGridZoomBar" class="lg:hidden" style="position:absolute; top:8px; left:8px; right:8px; z-index:20; display:flex; align-items:center; gap:8px; background:#1e293b; color:white; border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.18);">
+                        <span style="font-size:11px; font-weight:800; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🤏 Pinch to zoom · Drag to pan</span>
+                        <button type="button" onclick="resetBedGridZoom()" style="background:#334155; color:#cbd5e1; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:800; white-space:nowrap;">Reset</button>
+                    </div>
+
+                    <!-- First-visit coach mark. Shown once per device, then never again. -->
+                    <div id="bedGridZoomCoach" class="lg:hidden hidden" style="position:absolute; inset:0; z-index:30; background:rgba(15,23,42,0.62); display:flex; align-items:center; justify-content:center; padding:24px;">
+                        <div style="background:white; border-radius:24px; padding:28px 22px; text-align:center; max-width:320px; box-shadow:0 20px 50px rgba(0,0,0,0.3);">
+                            <div style="font-size:52px; line-height:1;">🤏</div>
+                            <h4 class="display-font" style="font-size:19px; font-weight:900; color:#1e293b; margin:14px 0 6px;">Pinch to zoom</h4>
+                            <p style="font-size:13px; font-weight:600; color:#64748b; line-height:1.5;">Use two fingers to zoom into the floor plan, and drag to move around. Tap any bed to book it.</p>
+                            <button type="button" onclick="dismissBedGridCoach()" style="margin-top:18px; background:#4f46e5; color:white; font-weight:900; font-size:14px; padding:11px 30px; border-radius:14px;">Got it</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Desktop-only right panel -->
@@ -5743,6 +5767,171 @@
                 if (btn) btn.innerText = '🧪 Test View';
             }
         }
+        // ==========================================================================
+        // BED GRID ZOOM / PAN
+        //
+        // The floor plan is always LAID OUT at BED_GRID_DESIGN_WIDTH (a desktop-ish width),
+        // then scaled with a CSS transform to fit whatever viewport it's in. That's the whole
+        // trick: a phone gets the identical desktop arrangement (rooms left, walkway middle,
+        // rooms right) rather than a 3-column CSS grid crushed into 390px, which is what was
+        // making rooms and door markers overlap. Because it's a transform and not a re-layout,
+        // nothing shifts position and no left/right scrolling is ever needed at fit level.
+        // ==========================================================================
+        const BED_GRID_DESIGN_WIDTH = 900;   // px — the width the plan is composed at
+        const BED_GRID_MAX_ZOOM = 3;         // hard ceiling so users can't get lost zoomed in
+        const BED_GRID_TAP_SLOP = 10;        // px of finger drift still counted as a tap, not a pan
+
+        let bedGridFitScale = 1;   // scale at which the whole plan fits the viewport
+        let bedGridScale = 1;      // current scale
+        let bedGridTx = 0, bedGridTy = 0;   // current pan offset
+
+        function applyBedGridTransform() {
+            const layer = document.getElementById('bedGridZoomLayer');
+            if (!layer) return;
+            layer.style.transform = `translate(${bedGridTx}px, ${bedGridTy}px) scale(${bedGridScale})`;
+        }
+
+        // Keeps the plan from being dragged completely off-screen. When the scaled plan is
+        // smaller than the viewport on an axis, it's centred on that axis instead.
+        function clampBedGridPan() {
+            const vp = document.getElementById('userSimpleBedGrid');
+            const layer = document.getElementById('bedGridZoomLayer');
+            if (!vp || !layer) return;
+            const vw = vp.clientWidth, vh = vp.clientHeight;
+            const cw = BED_GRID_DESIGN_WIDTH * bedGridScale;
+            const ch = layer.offsetHeight * bedGridScale;
+            bedGridTx = (cw <= vw) ? (vw - cw) / 2 : Math.min(0, Math.max(vw - cw, bedGridTx));
+            bedGridTy = (ch <= vh) ? Math.max(0, (vh - ch) / 2) : Math.min(0, Math.max(vh - ch, bedGridTy));
+        }
+
+        window.resetBedGridZoom = function() {
+            const vp = document.getElementById('userSimpleBedGrid');
+            if (!vp) return;
+            bedGridFitScale = Math.min(1, vp.clientWidth / BED_GRID_DESIGN_WIDTH);
+            bedGridScale = bedGridFitScale;
+            bedGridTx = 0; bedGridTy = 0;
+            clampBedGridPan();
+            applyBedGridTransform();
+        };
+
+        window.dismissBedGridCoach = function() {
+            const c = document.getElementById('bedGridZoomCoach');
+            if (c) c.classList.add('hidden');
+            try { localStorage.setItem('hoomBedGridCoachSeen', '1'); } catch (e) { /* private mode — just show it again next time */ }
+        };
+
+        function maybeShowBedGridCoach() {
+            if (window.innerWidth >= 1024) return;   // desktop has a mouse; no gesture to teach
+            let seen = false;
+            try { seen = localStorage.getItem('hoomBedGridCoachSeen') === '1'; } catch (e) {}
+            if (seen) return;
+            const c = document.getElementById('bedGridZoomCoach');
+            if (!c) return;
+            c.classList.remove('hidden');
+            setTimeout(() => { if (!c.classList.contains('hidden')) dismissBedGridCoach(); }, 6000);
+        }
+
+        // Wires pinch/drag once. Tap-vs-drag is decided by total finger travel: under
+        // BED_GRID_TAP_SLOP px the underlying bed's own onclick is allowed to fire normally,
+        // above it we treat the gesture as a pan and swallow the click so a stray finger
+        // wobble can't accidentally open a booking.
+        let bedGridGesturesBound = false;
+        function bindBedGridGestures() {
+            const vp = document.getElementById('userSimpleBedGrid');
+            if (!vp || bedGridGesturesBound) return;
+            bedGridGesturesBound = true;
+
+            let mode = null;              // 'pan' | 'pinch'
+            let startX = 0, startY = 0, startTx = 0, startTy = 0;
+            let startDist = 0, startScale = 1, pinchCx = 0, pinchCy = 0;
+            let travel = 0, movedPastSlop = false;
+            let lastTapAt = 0;
+
+            const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+            vp.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    mode = 'pinch';
+                    startDist = dist(e.touches) || 1;
+                    startScale = bedGridScale;
+                    const r = vp.getBoundingClientRect();
+                    pinchCx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+                    pinchCy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+                    movedPastSlop = true;   // a two-finger gesture is never a tap
+                } else if (e.touches.length === 1) {
+                    mode = 'pan';
+                    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+                    startTx = bedGridTx; startTy = bedGridTy;
+                    travel = 0; movedPastSlop = false;
+                }
+            }, { passive: true });
+
+            vp.addEventListener('touchmove', (e) => {
+                if (mode === 'pinch' && e.touches.length === 2) {
+                    e.preventDefault();
+                    const next = Math.max(bedGridFitScale, Math.min(BED_GRID_MAX_ZOOM, startScale * (dist(e.touches) / startDist)));
+                    // Zoom about the midpoint between the two fingers, so the plan grows out of
+                    // where the user is actually looking rather than the top-left corner.
+                    const k = next / bedGridScale;
+                    bedGridTx = pinchCx - (pinchCx - bedGridTx) * k;
+                    bedGridTy = pinchCy - (pinchCy - bedGridTy) * k;
+                    bedGridScale = next;
+                    clampBedGridPan(); applyBedGridTransform();
+                } else if (mode === 'pan' && e.touches.length === 1) {
+                    const dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
+                    travel = Math.hypot(dx, dy);
+                    if (travel > BED_GRID_TAP_SLOP) movedPastSlop = true;
+                    if (movedPastSlop) {
+                        e.preventDefault();
+                        bedGridTx = startTx + dx; bedGridTy = startTy + dy;
+                        clampBedGridPan(); applyBedGridTransform();
+                    }
+                }
+            }, { passive: false });
+
+            vp.addEventListener('touchend', (e) => {
+                if (e.touches.length === 0) {
+                    // Double-tap anywhere = snap back to fit. Cheap escape hatch if a guest
+                    // zooms in and loses track of where they are on the plan.
+                    if (!movedPastSlop) {
+                        const now = Date.now();
+                        if (now - lastTapAt < 300) { resetBedGridZoom(); lastTapAt = 0; }
+                        else lastTapAt = now;
+                    }
+                    mode = null;
+                }
+            }, { passive: true });
+
+            // Swallow the click that follows a pan, so dragging never books a bed.
+            vp.addEventListener('click', (e) => {
+                if (movedPastSlop && travel > BED_GRID_TAP_SLOP) {
+                    e.stopPropagation(); e.preventDefault();
+                    movedPastSlop = false; travel = 0;
+                }
+            }, true);
+
+            window.addEventListener('resize', () => {
+                if (!document.getElementById('userSimpleBedGrid')?.classList.contains('hidden')) resetBedGridZoom();
+            });
+        }
+
+        // Every render path funnels through here instead of touching container.innerHTML, so the
+        // fixed design width + fit scale + gesture wiring are applied consistently.
+        function setBedGridHTML(container, html) {
+            const layer = document.getElementById('bedGridZoomLayer');
+            if (!layer) { container.innerHTML = html; return; }
+            layer.style.width = BED_GRID_DESIGN_WIDTH + 'px';
+            // Clear space under the floating hint bar on mobile so it never covers Room 1.
+            // Divided by the fit scale because this padding lives inside the scaled layer.
+            const vpW = container.clientWidth || BED_GRID_DESIGN_WIDTH;
+            const fit = Math.min(1, vpW / BED_GRID_DESIGN_WIDTH);
+            layer.style.paddingTop = (window.innerWidth < 1024) ? Math.round(52 / Math.max(fit, 0.2)) + 'px' : '0px';
+            layer.innerHTML = html;
+            bindBedGridGestures();
+            // Wait a frame so offsetHeight reflects the freshly-inserted content before clamping.
+            requestAnimationFrame(() => { resetBedGridZoom(); maybeShowBedGridCoach(); });
+        }
+
         function renderUserSimpleBedGrid() {
             const container = document.getElementById('userSimpleBedGrid');
             if (!container) return;
@@ -5751,9 +5940,9 @@
             const rooms = filteredBlocks.filter(b => b.type === 'room');
             if (rooms.length === 0) {
                 if (testViewEditModeActive && isPreviewingAsUser) {
-                    container.innerHTML = `<div class="p-10 text-center"><p class="text-slate-400 font-bold mb-4">No rooms on this floor yet.</p><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`;
+                    setBedGridHTML(container, `<div class="p-10 text-center"><p class="text-slate-400 font-bold mb-4">No rooms on this floor yet.</p><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`);
                 } else {
-                    container.innerHTML = `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`;
+                    setBedGridHTML(container, `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`);
                 }
                 return;
             }
@@ -5763,8 +5952,11 @@
             // stack top-to-bottom instead — the corridor direction visually flips from vertical to
             // horizontal, but nothing about the actual room/bed data changes, and there's no more
             // sideways scrolling needed to reach every room.
-            const isNarrowScreen = window.innerWidth < 640;
-            const effectivePos = isNarrowScreen && (pos === 'left' || pos === 'right' || pos === 'center') ? 'middle' : pos;
+            // NOTE: this used to force side-by-side layouts to stack top-to-bottom on narrow
+            // screens. That's no longer needed (and was actively wrong — it made mobile show a
+            // different arrangement than desktop): the plan is now composed at a fixed desktop
+            // width and scaled to fit, so a phone shows the identical arrangement, just smaller.
+            const effectivePos = pos;
             const isVertical = effectivePos === 'left' || effectivePos === 'right' || effectivePos === 'center';
             const flexDir = (effectivePos === 'top') ? 'column' : (effectivePos === 'bottom') ? 'column-reverse' : (effectivePos === 'left') ? 'row' : (effectivePos === 'right') ? 'row-reverse' : (effectivePos === 'middle') ? 'column' : 'row';
             const corridorStyle = isVertical
@@ -5846,11 +6038,11 @@
             const corridorShapeTagUser = (corridors[0] && corridors[0].shape) || 'cross';
             if (corridors.length >= 2 && corridorShapeTagUser === 'H') {
                 const rotationUser = (corridors[0] && corridors[0].rotation) || 0;
-                container.innerHTML = addRoomToolbar + renderHShapeHTML(rooms, 'Walkway', renderRoomsBlock, rotationUser);
+                setBedGridHTML(container, addRoomToolbar + renderHShapeHTML(rooms, 'Walkway', renderRoomsBlock, rotationUser));
                 return;
             }
             if (corridors.length >= 2) {
-                container.innerHTML = addRoomToolbar + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock, corridorShapeTagUser);
+                setBedGridHTML(container, addRoomToolbar + renderCrossShapeHTML(rooms, 'Walkway', renderRoomsBlock, corridorShapeTagUser));
                 return;
             }
             if ((effectivePos === 'center' || effectivePos === 'middle') && corridors.length > 0) {
@@ -5863,7 +6055,7 @@
                 html += renderRoomsBlock(rooms);
             }
             html += `</div>`;
-            container.innerHTML = html;
+            setBedGridHTML(container, html);
         }
 
         window.showBedDetailsInPanel = function(bedId) {
