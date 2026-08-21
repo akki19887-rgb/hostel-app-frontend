@@ -3335,9 +3335,47 @@
             }
         }
 
-        // REMOVED: bypassLogin() and validateAndSubmitProfile() used to call routeToDashboard()
-        // with no authentication at all. Nothing referenced them, but they were globals on a live
-        // page — anyone could type bypassLogin() into the console and land on a dashboard.
+        // REMOVED: bypassLogin() used to call routeToDashboard() with no authentication at all.
+        // Nothing referenced it, but it was a global on a live page — anyone could type
+        // bypassLogin() into the console and land on a dashboard.
+
+        // The "Complete Profile" screen's button calls this. It previously ONLY did
+        // routeToDashboard() and never saved the name anywhere, so the name the user typed was
+        // silently thrown away. Now it validates, writes to users/{uid} (which the rules allow
+        // only for that user's own document), and then routes.
+        async function validateAndSubmitProfile() {
+            const btn = event && event.target ? event.target : null;
+            const nameEl = document.getElementById('profileName');
+            const fullName = (nameEl && nameEl.value || '').trim();
+            if (fullName.length < 2) {
+                alert('Please enter your full name.');
+                if (nameEl) nameEl.focus();
+                return;
+            }
+            const originalText = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = 'Saving...'; }
+            try {
+                const user = window.auth && window.auth.currentUser;
+                if (user) {
+                    await window.setDoc(
+                        window.doc(window.db, 'users', user.uid),
+                        {
+                            fullName: fullName,
+                            phone: user.phoneNumber || null,
+                            email: user.email || null,
+                            updatedAt: new Date().toISOString()
+                        },
+                        { merge: true }
+                    );
+                }
+            } catch (e) {
+                // Saving the display name is not worth blocking sign-in over — log it and carry on.
+                console.warn('Could not save profile name', e);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalText; }
+            }
+            await routeToDashboard();
+        }
         // Builds a human-readable "who" string from whatever identity we have — the name field if
         // it was just filled in on the profile-completion screen, otherwise the phone/email used to
         // log in (saved to localStorage at login time), falling back to "Unknown" as a last resort.
@@ -3365,7 +3403,12 @@
                     createdAt: new Date().toISOString()
                 });
             } catch(e) {}
-            if (accountMode === 'user') { goTo('screenUserDashboard'); }
+            if (accountMode === 'user') {
+                // If they were mid-booking when we asked them to sign in, put them back there
+                // instead of dumping them on the dashboard.
+                if (resumePendingBooking()) return;
+                goTo('screenUserDashboard');
+            }
             else if (accountMode === 'business') {
                 // Already-registered business user: skip "Welcome Aboard" and go to their dashboard.
                 // Firestore is the source of truth here; localStorage is only a cache for instant
@@ -4109,6 +4152,7 @@
             const originalText = btn.innerText; btn.disabled = true; btn.innerText = '⏳ Sending...';
             try {
                 await window.addDoc(window.collection(window.db, "notifications"), {
+                    type: 'broadcast',   // required by the rules' shape check
                     message: '📢 ' + msg,
                     isBroadcast: true,       // tags this as an admin-wide announcement, not a per-hostel booking event
                     read: false,
@@ -4424,7 +4468,9 @@
                 document.getElementById('pyCommissionLabel').innerText = `Platform Commission (${commissionPercent}%)`;
 
                 // Total Collected — sum of successfully paid bookings for this property
-                const bookingsSnap = await window.getDocs(window.query(window.collection(window.db, 'bookings'), window.where('propertyId', '==', docId)));
+                const meUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                const bookingsSnap = await window.getDocs(window.query(window.collection(window.db, 'bookings'),
+                    window.where('ownerUid', '==', meUid), window.where('propertyId', '==', docId)));
                 let totalCollected = 0;
                 bookingsSnap.forEach(d => { const b = d.data(); if (b.status === 'paid_verified' || b.status === 'paid_unverified_test') totalCollected += Number(b.amount) || 0; });
 
@@ -4432,7 +4478,8 @@
                 const netPayable = totalCollected - commissionAmount;
 
                 // Total Paid Out — sum of manual payout entries admin has logged for this property
-                const payoutsSnap = await window.getDocs(window.query(window.collection(window.db, 'payouts'), window.where('businessId', '==', docId)));
+                const payoutsSnap = await window.getDocs(window.query(window.collection(window.db, 'payouts'),
+                    window.where('ownerUid', '==', meUid), window.where('businessId', '==', docId)));
                 let totalPaidOut = 0; let historyRows = [];
                 payoutsSnap.forEach(d => {
                     const p = d.data();
@@ -5109,6 +5156,8 @@
             if (!currentFlatHouseData) return;
             const fd = currentFlatHouseData.flatDetails || {};
             if (fd.bookingMode === 'visit') { goTo('screenScheduleVisit'); return; }
+            // Ask for login BEFORE the long form, not after it (see ensureLoggedInForBooking).
+            if (!ensureLoggedInForBooking(fhViewPrimaryAction)) return;
             // Instant book — reuse the existing guest registration + payment pipeline, treating the
             // whole flat as a single "bed" unit so the same lock/payment logic applies unchanged.
             window.currentPropertyData = currentFlatHouseData;
@@ -5151,6 +5200,7 @@
         }
 
         function openGuestRegistrationForm() {
+            if (!ensureLoggedInForBooking(openGuestRegistrationForm)) return;
             const hostelName = (window.currentPropertyData && (window.currentPropertyData.businessName || window.currentPropertyData.name || window.currentPropertyData.companyName || (window.currentPropertyData.businessProfile && window.currentPropertyData.businessProfile.company))) || 'Selected Hostel';
             document.getElementById('grfHostelNameHeading').innerText = hostelName;
 
@@ -5171,6 +5221,37 @@
             document.getElementById('grfDob').max = todayStr; // no future date-of-birth
             grfResetSteps();
             goTo('screenGuestRegistrationForm');
+        }
+
+        // BOOKING LOGIN GATE
+        //
+        // Booking now requires a signed-in account: the Firestore rules tie every bedLock to a
+        // heldByUid and every booking to a guestUid, so an anonymous booking would be rejected at
+        // write time. Without this gate the guest fills in the whole ~20-field registration form
+        // and only fails at the very last step with "Could not verify bed availability", which is
+        // a terrible way to find out you needed to log in.
+        //
+        // It also gives the guest a real "My Bookings" screen and a way to request cancellation,
+        // neither of which works for an anonymous booking.
+        let pendingBookingResume = null;   // function to re-run once login completes
+
+        function ensureLoggedInForBooking(resumeFn) {
+            const user = window.auth && window.auth.currentUser;
+            if (user) return true;
+            pendingBookingResume = resumeFn || null;
+            showAppToast('Please sign in to continue with your booking');
+            switchAccountMode('user');
+            goTo('screenOptions');
+            return false;
+        }
+
+        // Called from routeToDashboard() once a guest finishes signing in, so they land back on
+        // the booking they were in the middle of rather than on a generic dashboard.
+        function resumePendingBooking() {
+            if (!pendingBookingResume) return false;
+            const fn = pendingBookingResume;
+            pendingBookingResume = null;
+            try { fn(); return true; } catch (e) { console.warn('Could not resume booking', e); return false; }
         }
 
         function closeGuestRegistrationForm() { goTo(grfReturnScreen); }
@@ -5496,6 +5577,11 @@
                             aadharPhotoUrl,
                             aadharPhotoBackUrl,
                             pdfUrl,
+                            // guestUid + phone are REQUIRED by the Firestore rules: guestUid is
+                            // what lets a guest read back their own registration, and it stops one
+                            // account filing a registration in someone else's name.
+                            guestUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                            phone: (window.auth && window.auth.currentUser && window.auth.currentUser.phoneNumber) || (formData.emergencyContact || ''),
                             propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
                             bookingContext: grfBookingContext
                         });
