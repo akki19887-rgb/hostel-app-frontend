@@ -302,6 +302,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
         import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc, orderBy, limit, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
         import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signInWithCustomToken, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
@@ -351,6 +352,10 @@
         window.setDoc = setDoc;
         window.deleteDoc = deleteDoc;
         window.getDoc = getDoc;
+        window.getMessaging = getMessaging;
+        window.getFcmToken = getToken;
+        window.onFcmMessage = onMessage;
+        window.isMessagingSupported = isMessagingSupported;
         window.orderBy = orderBy;
         window.limit = limit;
     </script>
@@ -760,8 +765,16 @@
         <div id="modalBroadcast" class="zoom-modal hidden" onclick="if(event.target===this) this.classList.add('hidden')">
             <div class="bg-white p-8 rounded-[2rem] max-w-md w-full relative">
                 <button onclick="document.getElementById('modalBroadcast').classList.add('hidden')" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
-                <h3 class="display-font text-xl font-black text-slate-900 mb-1">📢 Broadcast Announcement</h3>
-                <p class="text-xs text-slate-500 font-semibold mb-4">Ye message har business owner ke notification bell mein turant dikhega.</p>
+                <h3 class="display-font text-xl font-black text-slate-900 mb-1">📢 Send a Message</h3>
+                <p class="text-xs text-slate-500 font-semibold mb-4">Ek owner ko, sabhi owners ko, ek guest ko, ya sabhi guests ko.</p>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Kisko bhejna hai</label>
+                <select id="broadcastAudience" onchange="onBroadcastAudienceChange()" class="w-full mb-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm">
+                    <option value="allOwners">🏢 Sabhi hostel owners</option>
+                    <option value="owner">🏢 Ek hostel owner</option>
+                    <option value="allGuests">🙋 Sabhi guests</option>
+                    <option value="guest">🙋 Ek guest</option>
+                </select>
+                <select id="broadcastTarget" class="hidden w-full mb-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm"></select>
                 <textarea id="broadcastMessageInput" rows="4" placeholder="Jaise: Is weekend server maintenance hoga, 2-4 AM ke beech booking temporarily band rahegi." class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></textarea>
                 <button type="button" onclick="sendAdminBroadcast()" id="btnSendBroadcast" class="mt-4 w-full btn-gradient py-3.5 text-white font-black rounded-2xl shadow-lg tracking-wide">Send to All Owners</button>
             </div>
@@ -2091,8 +2104,9 @@
                 const snap = await window.getDocs(window.collection(window.db, 'notifications'));
                 const items = []; snap.forEach(d => items.push(d.data()));
                 items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-                const bizItems = items.filter(n => n.role === 'business');
-                const userItems = items.filter(n => n.role === 'user' || (!n.role && n.type !== 'business_visitor'));
+                // New rows carry `audience`; older rows still carry the legacy `role` field.
+                const bizItems = items.filter(n => n.audience === 'owner' || n.audience === 'allOwners' || n.role === 'business');
+                const userItems = items.filter(n => n.audience === 'guest' || n.audience === 'allGuests' || n.audience === 'admin' || n.role === 'user' || (!n.role && !n.audience));
                 const renderList = (list) => list.length
                     ? list.slice(0, 30).map(n => `<div class="p-3 border-b border-slate-100 last:border-0"><p class="text-xs font-bold text-slate-700">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p></div>`).join('')
                     : `<p class="text-xs text-slate-400 font-semibold text-center py-6">No activity yet</p>`;
@@ -2554,6 +2568,198 @@
             const storageRef = window.ref(window.storage, path); await window.uploadBytes(storageRef, toUpload); return await window.getDownloadURL(storageRef);
         }
 
+        // ==========================================================================
+        // PRIVATE FILE UPLOAD / DISPLAY  (Aadhaar, registration PDFs, UPI proofs, payout docs)
+        //
+        // These folders now have `allow read: if false` in the Storage rules, because the old
+        // `request.auth != null` meant ANY throwaway account could download every guest's Aadhaar
+        // in the whole bucket.
+        //
+        // Two consequences the code has to respect:
+        //   1. getDownloadURL() needs READ permission, so it now FAILS on these paths. We must not
+        //      call it — we store the storage PATH instead and never a download URL.
+        //   2. A download URL, once created, carries a token that bypasses rules entirely. So the
+        //      only way these stay private is to never mint one in the first place.
+        //
+        // To show the file, the app asks the backend (/secure-file), which checks the caller is
+        // admin or that hostel's owner and returns a signed link valid for 10 minutes.
+        // ==========================================================================
+        async function uploadPrivateFileToStorage(file, path) {
+            const ALREADY_SMALL_THRESHOLD = 2 * 1024 * 1024;
+            const toUpload = (file.size && file.size <= ALREADY_SMALL_THRESHOLD) ? file : await compressImage(file);
+            const storageRef = window.ref(window.storage, path);
+            await window.uploadBytes(storageRef, toUpload);
+            return path;   // deliberately NOT getDownloadURL — see note above
+        }
+
+        // Turns a stored storage path into a short-lived viewable link, or null if the caller
+        // isn't allowed to see it.
+        async function getPrivateFileUrl(storagePath, propertyId) {
+            if (!storagePath) return null;
+            // Legacy records saved a full download URL before this change. Those still open
+            // directly (their token predates the rules), so pass them straight through.
+            if (/^https?:\/\//i.test(storagePath)) return storagePath;
+            try {
+                const qs = `?path=${encodeURIComponent(storagePath)}` + (propertyId ? `&propertyId=${encodeURIComponent(propertyId)}` : '');
+                const res = await apiFetch('/secure-file' + qs);
+                if (!res.ok) return null;
+                const data = await res.json();
+                return data.url || null;
+            } catch (e) {
+                console.warn('Could not get secure file link', e);
+                return null;
+            }
+        }
+
+        // Drop-in for <img src=...> on a private file: sets the image once the signed link arrives.
+        async function setPrivateImageSrc(imgElOrId, storagePath, propertyId) {
+            const el = (typeof imgElOrId === 'string') ? document.getElementById(imgElOrId) : imgElOrId;
+            if (!el) return;
+            const url = await getPrivateFileUrl(storagePath, propertyId);
+            if (url) { el.src = url; el.classList.remove('hidden'); }
+            else { el.classList.add('hidden'); }
+        }
+
+        // Opens a private file in a new tab. Because the link has to be fetched from the backend
+        // first, we open the tab immediately (so the browser doesn't treat it as a popup) and then
+        // point it at the signed URL once it arrives.
+        window.openPrivateFile = async function(storagePath, propertyId) {
+            const tab = window.open('', '_blank');
+            const url = await getPrivateFileUrl(storagePath, propertyId || '');
+            if (!url) {
+                if (tab) { tab.document.write('<p style="font-family:sans-serif;padding:24px">You are not authorised to view this file, or it is no longer available.</p>'); }
+                else { showAppToast('Not authorised to view this file.'); }
+                return;
+            }
+            if (tab) tab.location.href = url; else window.location.href = url;
+        };
+
+        // Every notification now goes through the backend, which decides the audience and writes
+        // it with the Admin SDK. The browser can no longer create notifications directly (the
+        // Firestore rule is `create: if false`), so nobody can stuff junk into the collection.
+        // Fire-and-forget: a failed notification must never block the action that triggered it.
+        // ==========================================================================
+        // PUSH NOTIFICATIONS
+        //
+        // Why this matters: a hostel owner is not sitting with the app open. A message that
+        // only lands in the in-app bell is a message they see hours later — by which time the
+        // guest has booked somewhere else. Push is what makes the messenger actually work.
+        //
+        // Needs VAPID_PUBLIC_KEY below — get it from:
+        //   Firebase Console → Project settings → Cloud Messaging → Web Push certificates
+        // ==========================================================================
+        const VAPID_PUBLIC_KEY = 'BNdw2F7BeRsJi8-FcC93pfgGc951v4a70qK-D3ZrCHIfumJ_dNL8ffaGTVIez9yTwYKLmo6osVtil7XZEQ9wBQU';
+
+        let _fcmMessaging = null;
+        let _pushAskedThisSession = false;
+
+        function pushSupported() {
+            return ('Notification' in window) && ('serviceWorker' in navigator);
+        }
+
+        // Asks for permission and registers this device. Called after login, and from the
+        // "Enable notifications" banner if the user dismissed the browser prompt earlier.
+        window.enablePushNotifications = async function(role, silent) {
+            if (!pushSupported()) return false;
+            if (VAPID_PUBLIC_KEY === 'PASTE_YOUR_VAPID_KEY_HERE') {
+                console.warn('Push disabled: VAPID key not set yet.');
+                return false;
+            }
+            try {
+                const supported = await window.isMessagingSupported();
+                if (!supported) return false;
+
+                // Never prompt out of nowhere — a cold permission popup gets denied, and a
+                // denial is permanent until the user digs into browser settings.
+                if (Notification.permission === 'denied') { showPushBlockedHint(); return false; }
+                if (Notification.permission === 'default') {
+                    if (silent) { showPushBanner(role); return false; }
+                    const perm = await Notification.requestPermission();
+                    if (perm !== 'granted') { if (perm === 'denied') showPushBlockedHint(); return false; }
+                }
+
+                const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                if (!_fcmMessaging) _fcmMessaging = window.getMessaging();
+                const token = await window.getFcmToken(_fcmMessaging, {
+                    vapidKey: VAPID_PUBLIC_KEY,
+                    serviceWorkerRegistration: reg
+                });
+                if (!token) return false;
+
+                const res = await apiFetch('/push/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token, role: role || accountMode || 'guest' })
+                });
+                if (res.ok) {
+                    try { localStorage.setItem('hoom_push_token', token); } catch (e) {}
+                    hidePushBanner();
+                    listenForegroundPush();
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Push registration failed', e);
+            }
+            return false;
+        };
+
+        // While the app IS open, FCM does not draw a notification itself — we show a toast so
+        // the person still notices, and refresh the bell.
+        let _fgPushBound = false;
+        function listenForegroundPush() {
+            if (_fgPushBound || !_fcmMessaging) return;
+            _fgPushBound = true;
+            try {
+                window.onFcmMessage(_fcmMessaging, (payload) => {
+                    const n = payload.notification || {};
+                    showAppToast(`🔔 ${n.title || 'HO-Om'}: ${(n.body || '').slice(0, 60)}`);
+                    try { if (typeof loadBookingMessages === 'function' && currentChatBookingId) loadBookingMessages(); } catch (e) {}
+                    try { if (typeof listenBizNotifications === 'function') listenBizNotifications(); } catch (e) {}
+                });
+            } catch (e) { console.warn('Foreground push listener failed', e); }
+        }
+
+        function showPushBanner(role) {
+            if (_pushAskedThisSession) return;
+            _pushAskedThisSession = true;
+            let el = document.getElementById('pushBanner');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'pushBanner';
+                el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;z-index:9998;background:#1e293b;color:white;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,0.25);display:flex;align-items:center;gap:12px;';
+                el.innerHTML = `<div style="flex:1"><div style="font-weight:900;font-size:14px">🔔 Notification chalu karein</div><div style="font-size:12px;color:#cbd5e1;margin-top:2px">Nayi booking aur message turant pata chalega</div></div>
+                    <button type="button" onclick="enablePushNotifications(null,false)" style="background:#4f46e5;color:white;font-weight:900;font-size:12px;padding:9px 14px;border-radius:12px;white-space:nowrap">Chalu karein</button>
+                    <button type="button" onclick="hidePushBanner()" style="background:transparent;color:#94a3b8;font-size:18px;padding:4px 8px">✕</button>`;
+                document.body.appendChild(el);
+            }
+            el.style.display = 'flex';
+        }
+        window.hidePushBanner = function() {
+            const el = document.getElementById('pushBanner');
+            if (el) el.style.display = 'none';
+        };
+        function showPushBlockedHint() {
+            showAppToast('Notification browser settings me band hai. Address bar ke 🔒 icon se allow kar dijiye.');
+        }
+
+        async function pushNotification(payload) {
+            try {
+                const res = await apiFetch('/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) return true;
+                // The server rejects text containing phone numbers / emails. That's a
+                // deliberate rule the person needs to see, not a silent failure.
+                try {
+                    const j = await res.json();
+                    if (j && j.blocked) { showAppToast('⛔ ' + j.error); return false; }
+                } catch (e) {}
+                return false;
+            } catch (e) { console.warn('Notification failed (non-critical):', e); return false; }
+        }
+
         function goTo(screenId) {
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
@@ -2603,7 +2809,7 @@
                 container.innerHTML = rows.map(b => {
                     const beds = (b.bookingContext && b.bookingContext.beds) || [];
                     const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
-                    const screenshotHtml = b.screenshotUrl ? `<a href="${b.screenshotUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📷 View Screenshot</a>` : `<span class="text-[10px] text-slate-400 font-semibold">No screenshot</span>`;
+                    const screenshotHtml = b.screenshotUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${b.screenshotUrl}','${b.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📷 View Screenshot</a>` : `<span class="text-[10px] text-slate-400 font-semibold">No screenshot</span>`;
                     const isDupe = b.utrRef && utrCounts[b.utrRef] > 1;
                     const dupeWarning = isDupe ? `<p class="text-[10px] font-black text-red-600 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mt-1 inline-block">⚠️ Same UTR used on ${utrCounts[b.utrRef]} pending bookings — verify carefully</p>` : '';
                     return `<div class="bg-white p-5 rounded-2xl border-2 ${isDupe ? 'border-red-300' : 'border-amber-200'} shadow-sm">
@@ -2772,10 +2978,10 @@
                     cancellationRequestedAt: new Date().toISOString()
                 });
                 try {
-                    await addDoc(collection(db, 'notifications'), {
-                        type: 'cancellation_requested', role: 'admin',
+                    await pushNotification({
+                        type: 'cancellation_requested', audience: 'admin',
                         message: `🚫 A guest requested cancellation for booking ${bookingDocId}.`,
-                        read: false, createdAt: new Date().toISOString()
+                        bookingId: bookingDocId
                     });
                 } catch (e) {}
                 alert('Cancellation requested. The advance stays non-refundable per policy, but your bed claim has been released.');
@@ -2845,6 +3051,28 @@
             }
         }
 
+        // "Message Owner" on a property card. Chat lives per-booking, so if the guest already has
+        // a booking here we open that thread; otherwise we send the owner an enquiry notification
+        // and tell the guest the owner will be in touch. Either way no phone number changes hands.
+        window.messageOwnerAboutProperty = async function(propertyId) {
+            if (!ensureLoggedInForBooking(() => messageOwnerAboutProperty(propertyId))) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'),
+                    where('guestUid', '==', uid), where('propertyId', '==', propertyId), limit(1)));
+                if (!snap.empty) { openBookingChat(snap.docs[0].id, 'guest'); return; }
+            } catch (e) { console.warn('Could not look up existing booking', e); }
+
+            const q = prompt('Owner se kya poochna hai?\n\n(Aapka number share nahi hoga — jawab app me hi aayega.)');
+            if (!q || !q.trim()) return;
+            const ok = await pushNotification({
+                type: 'property_enquiry', audience: 'owner', propertyId: propertyId,
+                title: 'New enquiry',
+                message: `💬 Enquiry: ${q.trim().slice(0, 400)}`
+            });
+            showAppToast(ok ? '✅ Owner ko bhej diya — jawab app me aayega.' : '⚠️ Abhi bhej nahi paye, dobara try kijiye.');
+        };
+
         async function sendBookingMessage() {
             const input = document.getElementById('chatMessageInput');
             const text = input.value.trim();
@@ -2854,12 +3082,22 @@
             const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
             if (!uid) { errBox.innerText = 'Please sign in to send messages.'; errBox.classList.remove('hidden'); return; }
             try {
-                await addDoc(collection(db, 'bookings', currentChatBookingId, 'messages'), {
-                    senderRole: currentChatRole,
-                    senderUid: uid,
-                    text,
-                    createdAt: new Date().toISOString()
+                // Goes through the backend now, for two reasons: it fires a notification to the
+                // other party (without which the messenger is pointless — nobody knows a message
+                // arrived), and it strips phone numbers / emails so the two sides can never take
+                // the conversation off-platform. Writing straight to Firestore would skip both.
+                const res = await apiFetch('/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: currentChatBookingId, text: text })
                 });
+                if (!res.ok) {
+                    let msg = 'Could not send this message.';
+                    try { const j = await res.json(); msg = j.error || msg; } catch (e) {}
+                    errBox.innerText = msg;
+                    errBox.classList.remove('hidden');
+                    return;
+                }
                 input.value = '';
                 loadBookingMessages();
             } catch (err) {
@@ -2985,7 +3223,9 @@
             else if (mode === 'business') {
                 document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">Ho-Om Bizz</span>';
                 // Fire-and-forget: lets you know someone is exploring the Business side of the app right now.
-                try { addDoc(collection(db, 'notifications'), { type: 'business_visitor', role: 'business', message: '🧑‍💼 Someone is exploring the Business side of the app right now', read: false, createdAt: new Date().toISOString() }); } catch(e) {}
+                // Removed: this fired on every visit, before login, purely as analytics — it filled
+            // the admin feed with noise and was the main reason notifications had to stay
+            // world-writable. Real events (bookings, messages) are what matter here.
             }
             else { document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
@@ -2997,7 +3237,9 @@
         // notification) — just skips the DOM text updates that only exist on screenOptions.
         function openBusinessLoginPage() {
             accountMode = 'business';
-            try { addDoc(collection(db, 'notifications'), { type: 'business_visitor', role: 'business', message: '🧑‍💼 Someone is exploring the Business side of the app right now', read: false, createdAt: new Date().toISOString() }); } catch(e) {}
+            // Removed: this fired on every visit, before login, purely as analytics — it filled
+            // the admin feed with noise and was the main reason notifications had to stay
+            // world-writable. Real events (bookings, messages) are what matter here.
             goTo('screenBusinessLogin');
         }
 
@@ -3390,17 +3632,17 @@
         }
 
         async function routeToDashboard() {   // async: now reads the owner's profile from Firestore
+            // Register for push right after login. `silent` on the first pass means we show our
+            // own explanatory banner instead of firing the browser's permission popup cold — a
+            // cold popup usually gets denied, and denial is sticky.
+            try { enablePushNotifications(accountMode, Notification && Notification.permission === 'default'); } catch (e) {}
             // Fire-and-forget activity log for the Admin dashboard — tagged by role so admin can see
             // User activity and Business activity as two separate feeds, WITH who actually logged in.
             try {
                 const who = getLoggedInIdentityLabel();
-                addDoc(collection(db, 'notifications'), {
-                    type: 'login_activity',
-                    role: accountMode, // 'user' | 'business' | 'admin'
-                    who,
-                    message: accountMode === 'business' ? `🧑‍💼 Business login: ${who}` : (accountMode === 'user' ? `🙋 User login: ${who}` : `🔒 Admin logged in: ${who}`),
-                    read: false,
-                    createdAt: new Date().toISOString()
+                pushNotification({
+                    type: 'login_activity', audience: 'admin',
+                    message: accountMode === 'business' ? `🧑‍💼 Business login: ${who}` : (accountMode === 'user' ? `🙋 User login: ${who}` : `🔒 Admin logged in: ${who}`)
                 });
             } catch(e) {}
             if (accountMode === 'user') {
@@ -3456,7 +3698,7 @@
             try { localStorage.setItem('hostelom_business_profile', JSON.stringify(globalBizProfile)); } catch(e) {}
             try {
                 const who = `${globalBizProfile.firstName} ${globalBizProfile.lastName}`.trim() + (globalBizProfile.phone && globalBizProfile.phone !== 'N/A' ? ` (+91 ${globalBizProfile.phone})` : '') + (globalBizProfile.company ? ` — ${globalBizProfile.company}` : '');
-                addDoc(collection(db, 'notifications'), { type: 'login_activity', role: 'business', who, message: `🧑‍💼 New business onboarded: ${who}`, read: false, createdAt: new Date().toISOString() });
+                pushNotification({ type: 'business_onboarded', audience: 'admin', message: `🧑‍💼 New business onboarded: ${who}` });
             } catch(e) {}
             goTo('screenBusinessDashboard');
         }
@@ -3698,7 +3940,7 @@
                 let screenshotUrl = '';
                 if (pyUpiScreenshotFile) {
                     btn.innerText = '⏳ Uploading screenshot...';
-                    screenshotUrl = await uploadFileToStorage(pyUpiScreenshotFile, `upiPaymentProofs/${Date.now()}_${pyUpiScreenshotFile.name}`);
+                    screenshotUrl = await uploadPrivateFileToStorage(pyUpiScreenshotFile, `upiPaymentProofs/${Date.now()}_${pyUpiScreenshotFile.name}`);
                 }
                 const bookingId = 'BK-' + Date.now().toString(36).toUpperCase();
                 await window.addDoc(window.collection(window.db, 'bookings'), {
@@ -3730,13 +3972,10 @@
                     createdAt: new Date().toISOString()
                 });
                 try {
-                    await window.addDoc(window.collection(window.db, 'notifications'), {
+                    await pushNotification({
+                        type: 'upi_payment_pending', audience: 'admin',
                         propertyId: pending.propertyId || null,
-                        type: 'upi_payment_pending',
-                        role: 'admin',
-                        message: `💳 UPI payment submitted by ${pending.guestName || 'a guest'} for ₹${pending.amount} (${pending.hostelName || ''}) — needs verification.`,
-                        read: false,
-                        createdAt: new Date().toISOString()
+                        message: `💳 UPI payment submitted by ${pending.guestName || 'a guest'} for ₹${pending.amount} (${pending.hostelName || ''}) — needs verification.`
                     });
                 } catch (e) {}
 
@@ -4145,21 +4384,62 @@
             document.getElementById('broadcastMessageInput').value = '';
             document.getElementById('modalBroadcast').classList.remove('hidden');
         }
+        // Loads the owner/guest picker lists from the backend (admin-only route), so the admin
+        // can aim a message at one person instead of only ever blasting everyone.
+        let _recipientCache = null;
+        async function onBroadcastAudienceChange() {
+            const aud = document.getElementById('broadcastAudience').value;
+            const target = document.getElementById('broadcastTarget');
+            if (aud === 'allOwners' || aud === 'allGuests') { target.classList.add('hidden'); return; }
+            target.classList.remove('hidden');
+            target.innerHTML = '<option value="">Loading...</option>';
+            try {
+                if (!_recipientCache) {
+                    const res = await apiFetch('/admin/recipients');
+                    _recipientCache = res.ok ? await res.json() : { owners: [], guests: [] };
+                }
+                const list = aud === 'owner' ? (_recipientCache.owners || []) : (_recipientCache.guests || []);
+                target.innerHTML = list.length
+                    ? '<option value="">— chuniye —</option>' + list.map(r =>
+                        `<option value="${aud === 'owner' ? r.ownerUid : r.guestUid}">${r.name}</option>`).join('')
+                    : '<option value="">Koi nahi mila</option>';
+            } catch (e) {
+                target.innerHTML = '<option value="">Load nahi hua</option>';
+            }
+        }
+
         async function sendAdminBroadcast() {
             const msg = (document.getElementById('broadcastMessageInput').value || '').trim();
             if (!msg) { alert('Message likhna zaroori hai.'); return; }
             const btn = document.getElementById('btnSendBroadcast');
             const originalText = btn.innerText; btn.disabled = true; btn.innerText = '⏳ Sending...';
             try {
-                await window.addDoc(window.collection(window.db, "notifications"), {
-                    type: 'broadcast',   // required by the rules' shape check
-                    message: '📢 ' + msg,
-                    isBroadcast: true,       // tags this as an admin-wide announcement, not a per-hostel booking event
-                    read: false,
-                    createdAt: new Date().toISOString()
+                // The audience picker decides who this reaches: one owner, all owners, one guest,
+                // or all guests. The server re-checks admin rights before writing anything.
+                const audienceSel = document.getElementById('broadcastAudience');
+                const targetSel = document.getElementById('broadcastTarget');
+                const audience = audienceSel ? audienceSel.value : 'allOwners';
+                if ((audience === 'owner' || audience === 'guest') && !(targetSel && targetSel.value)) {
+                    alert('Kisko bhejna hai, wo chuniye.');
+                    btn.disabled = false; btn.innerText = originalText; return;
+                }
+                const body = { audience: audience, message: '📢 ' + msg, type: 'admin_message' };
+                if (audience === 'owner') body.ownerUid = targetSel.value;
+                if (audience === 'guest') body.guestUid = targetSel.value;
+
+                const bres = await apiFetch('/admin/notify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
+                if (!bres.ok) {
+                    let m = 'Could not send'; try { m = (await bres.json()).error || m; } catch (e) {}
+                    throw new Error(m);
+                }
                 document.getElementById('modalBroadcast').classList.add('hidden');
-                showAppToast('📢 Announcement sent to all business owners.');
+                document.getElementById('broadcastMessageInput').value = '';
+                const audLabel = { owner: 'us owner', allOwners: 'sabhi owners', guest: 'us guest', allGuests: 'sabhi guests' }[audience] || '';
+                showAppToast(`📢 Message ${audLabel} ko bhej diya gaya.`);
             } catch (err) {
                 console.error('Broadcast failed:', err);
                 alert('Could not send: ' + err.message);
@@ -4179,7 +4459,9 @@
                         // Show a business owner ONLY: (a) activity tied to one of THEIR OWN properties,
                         // or (b) an admin broadcast meant for everyone. Anything else (e.g. "new business
                         // onboarded" — an admin-only activity log entry) is hidden from owner dashboards.
-                        const isMine = n.propertyId && myIds && myIds.includes(n.propertyId);
+                        const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                    const isMine = (n.ownerUid && myUid && n.ownerUid === myUid)
+                                || (n.propertyId && myIds && myIds.includes(n.propertyId));
                         if (!isMine && !n.isBroadcast) return;
                         items.push({ ...n, _docId: d.id }); if (!n.read) unread++;
                     });
@@ -4187,7 +4469,7 @@
                     const clearAllBtn = items.length > 0 ? `<div class="p-2 border-b border-slate-100 flex justify-end"><button type="button" onclick="clearAllBizNotifications()" class="text-[10px] font-black text-red-500 hover:text-red-700">🗑️ Clear All</button></div>` : '';
                     items.slice(0, 20).forEach(n => {
                         const cardCls = n.isBroadcast ? 'p-3 border-b border-slate-100 last:border-0 relative bg-amber-50' : 'p-3 border-b border-slate-100 last:border-0 relative';
-                        html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${n._docId}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button><p class="text-xs font-bold text-slate-700 pr-6">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="${n.pdfUrl}" target="_blank" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
+                        html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${n._docId}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button><p class="text-xs font-bold text-slate-700 pr-6">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
                     });
                     const badge = document.getElementById('bizNotifBadge');
                     if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
@@ -4347,8 +4629,8 @@
                 const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
                 const bData = oneSnap.exists() ? oneSnap.data() : null;
                 if (!bData) { alert('Booking not found.'); return; }
-                await addDoc(collection(db, 'notifications'), {
-                    type: 'owner_contact_request', role: 'admin',
+                await pushNotification({
+                    type: 'owner_contact_request', audience: 'admin',
                     message: `📞 Hostel owner wants to contact ${bData.guestName || 'a guest'} (Booking ${bData.bookingId || bookingDocId}): "${reason || 'No message given'}"`,
                     guestPhone: bData.guestPhone || '', guestName: bData.guestName || '',
                     read: false, createdAt: new Date().toISOString()
@@ -4396,8 +4678,11 @@
             renderPayoutHistoryAndEarnings(docId);
         };
 
-        function renderPayoutImageSlot(kind, url) {
+        // `url` is now normally a storage PATH, not a URL — payoutDocs are private. Resolve it to
+        // a short-lived signed link before showing it.
+        async function renderPayoutImageSlot(kind, pathOrUrl) {
             const slot = document.getElementById(kind === 'cheque' ? 'pyChequeSlot' : 'pyQrSlot');
+            const url = await getPrivateFileUrl(pathOrUrl, currentPayoutsDocId);
             if (url) {
                 slot.style.backgroundImage = `url('${url}')`;
                 slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
@@ -4432,13 +4717,14 @@
             const btn = document.getElementById('pySaveBtn');
             btn.disabled = true; btn.innerText = '⏳ Saving...';
             try {
-                const bizSnap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
-                let existing = {}; bizSnap.forEach(d => { if (d.id === currentPayoutsDocId) existing = d.data().payoutDetails || {}; });
+                // Was a scan of every business document to read one field.
+                const bizSnap = await window.getDoc(window.doc(window.db, "businesses", currentPayoutsDocId));
+                const existing = (bizSnap.exists() ? (bizSnap.data().payoutDetails || {}) : {});
 
                 let chequePhotoUrl = existing.chequePhotoUrl || null;
                 let qrCodeUrl = existing.qrCodeUrl || null;
-                if (pyPendingChequeFile) { btn.innerText = '⏳ Uploading cheque...'; chequePhotoUrl = await uploadFileToStorage(pyPendingChequeFile, `payoutDocs/${currentPayoutsDocId}/cheque_${Date.now()}.jpg`); }
-                if (pyPendingQrFile) { btn.innerText = '⏳ Uploading QR...'; qrCodeUrl = await uploadFileToStorage(pyPendingQrFile, `payoutDocs/${currentPayoutsDocId}/qr_${Date.now()}.jpg`); }
+                if (pyPendingChequeFile) { btn.innerText = '⏳ Uploading cheque...'; chequePhotoUrl = await uploadPrivateFileToStorage(pyPendingChequeFile, `payoutDocs/${currentPayoutsDocId}/cheque_${Date.now()}.jpg`); }
+                if (pyPendingQrFile) { btn.innerText = '⏳ Uploading QR...'; qrCodeUrl = await uploadPrivateFileToStorage(pyPendingQrFile, `payoutDocs/${currentPayoutsDocId}/qr_${Date.now()}.jpg`); }
 
                 await window.updateDoc(window.doc(window.db, "businesses", currentPayoutsDocId), {
                     payoutDetails: {
@@ -5040,8 +5326,12 @@
                         const genderBadgeColors = { Boys: 'background:#eff6ff; border-color:#93c5fd; color:#1d4ed8;', Girls: 'background:#fdf2f8; border-color:#f9a8d4; color:#be185d;', 'Co-ed': 'background:#f5f3ff; border-color:#c4b5fd; color:#6d28d9;' };
                         const genderBadge = `<span class="chip" style="${genderBadgeColors[genderTypeVal] || genderBadgeColors['Co-ed']}">${genderTypeVal === 'Boys' ? '👦 Boys Only' : genderTypeVal === 'Girls' ? '👧 Girls Only' : '👥 Co-ed'}</span>`;
                         const occupancyHtml = totalBedsCount > 0 ? `<div class="flex items-center gap-2 mb-2"><div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-red-500 rounded-full" style="width:${occupiedPct}%;"></div></div><span class="text-[10px] font-black text-slate-500 shrink-0">${occupiedPct}% full</span></div>` : '';
-                        const ownerPhone = (data.businessProfile && data.businessProfile.phone) ? data.businessProfile.phone.replace(/\D/g, '') : '';
-                        const whatsappBtn = ownerPhone ? `<a href="https://wa.me/${ownerPhone.length === 10 ? '91' + ownerPhone : ownerPhone}?text=${encodeURIComponent('Hi, I saw ' + (data.businessProfile?.company || data.propertyType) + ' on HostelOM and wanted to ask about availability.')}" target="_blank" onclick="event.stopPropagation()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 border-2 border-emerald-200 rounded-xl text-xl hover:bg-emerald-500 hover:text-white transition shrink-0" title="Chat on WhatsApp">💬</a>` : '';
+                        // REMOVED: a wa.me link built from the owner's phone number. `businesses` is
+                        // world-readable (listings must be), so that number was scrapeable by anyone
+                        // without even an account — a ready-made contact list for competitors, and a
+                        // safety problem for girls' hostel owners. The number now lives in the private
+                        // businessContacts collection, and guests reach the owner through in-app chat.
+                        const whatsappBtn = `<button type="button" onclick="event.stopPropagation(); messageOwnerAboutProperty('${doc.id}')" class="inline-flex items-center gap-1 text-[10px] font-black text-indigo-600 hover:text-indigo-700"><span>💬</span> Message Owner</button>`;
                         const isWishlisted = getWishlist().includes(doc.id);
 
                         if (data.propertyType === 'House/Flat') {
@@ -5181,9 +5471,9 @@
             errBox.classList.add('hidden');
             const btn = document.getElementById('svSubmitBtn'); btn.disabled = true; btn.innerText = '⏳ Sending...';
             try {
-                await window.addDoc(window.collection(window.db, 'notifications'), {
+                await pushNotification({
                     propertyId: currentFlatHouseData.id,
-                    role: 'business',
+                    audience: 'owner',
                     type: 'visit_request',
                     message: `📅 Visit request for "${currentFlatHouseData.businessName || 'your flat/house'}" from ${name} (+91 ${phone})${document.getElementById('svDate').value ? ' — preferred date: ' + document.getElementById('svDate').value : ''}${document.getElementById('svMessage').value ? ' — "' + document.getElementById('svMessage').value.replace(/"/g,"'") + '"' : ''}`,
                     read: false,
@@ -5553,24 +5843,29 @@
                 if (aadharFrontInputForUpload && aadharFrontInputForUpload.files && aadharFrontInputForUpload.files[0] && typeof storage !== 'undefined') {
                     try {
                         const hostelSlugForGuest = slugify(formData.hostelName);
-                        const photoRef = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_front_${aadharFrontInputForUpload.files[0].name}`);
+                        const frontPath = `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_front_${aadharFrontInputForUpload.files[0].name}`;
+                        const photoRef = ref(storage, frontPath);
                         await uploadBytes(photoRef, aadharFrontInputForUpload.files[0]);
-                        aadharPhotoUrl = await getDownloadURL(photoRef);
+                        // Store the PATH, not a download URL. getDownloadURL() needs read access
+                        // (now closed), and a download URL carries a token that would bypass the
+                        // rules forever — which is the exact leak we're fixing.
+                        aadharPhotoUrl = frontPath;
                     } catch (upErr) { console.warn('Aadhar front photo upload failed (continuing without it):', upErr); }
                 }
                 if (aadharBackInputForUpload && aadharBackInputForUpload.files && aadharBackInputForUpload.files[0] && typeof storage !== 'undefined') {
                     try {
                         const hostelSlugForGuest = slugify(formData.hostelName);
-                        const photoRefBack = ref(storage, `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_back_${aadharBackInputForUpload.files[0].name}`);
+                        const backPath = `guestAadharDocs/${hostelSlugForGuest}/${Date.now()}_back_${aadharBackInputForUpload.files[0].name}`;
+                        const photoRefBack = ref(storage, backPath);
                         await uploadBytes(photoRefBack, aadharBackInputForUpload.files[0]);
-                        aadharPhotoBackUrl = await getDownloadURL(photoRefBack);
+                        aadharPhotoBackUrl = backPath;   // path, not a URL — see note above
                     } catch (upErr) { console.warn('Aadhar back photo upload failed (continuing without it):', upErr); }
                 }
                 if (typeof db !== 'undefined') {
                     try {
                         let pdfUrl = '';
                         if (typeof storage !== 'undefined') {
-                            try { const hostelSlugForGuest = slugify(formData.hostelName); const pdfRef = ref(storage, `guestRegistrationPdfs/${hostelSlugForGuest}/${Date.now()}_${pdfFile.name}`); await uploadBytes(pdfRef, pdfFile); pdfUrl = await getDownloadURL(pdfRef); } catch(pdfUpErr) { console.warn('Could not upload PDF copy', pdfUpErr); }
+                            try { const hostelSlugForGuest = slugify(formData.hostelName); const pdfPath = `guestRegistrationPdfs/${hostelSlugForGuest}/${Date.now()}_${pdfFile.name}`; const pdfRef = ref(storage, pdfPath); await uploadBytes(pdfRef, pdfFile); pdfUrl = pdfPath; /* path, not a URL — the PDF contains Aadhaar details */ } catch(pdfUpErr) { console.warn('Could not upload PDF copy', pdfUpErr); }
                         }
                         await addDoc(collection(db, 'guestRegistrations'), {
                             ...formData,
@@ -5586,14 +5881,12 @@
                             bookingContext: grfBookingContext
                         });
                         // Notify the business owner's dashboard (simple in-app notification, since there's no login-based ownership yet)
-                        await addDoc(collection(db, 'notifications'), {
+                        await pushNotification({
                             propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
                             type: 'new_booking',
-                            role: 'user',
-                            message: `New booking request from ${formData.fullName} for ${formData.hostelName}`,
-                            pdfUrl,
-                            read: false,
-                            createdAt: new Date().toISOString()
+                            audience: 'owner',
+                            title: 'New booking request',
+                            message: `New booking request from ${formData.fullName} for ${formData.hostelName}`
                         });
                         // Best-effort: email the admin too (needs RESEND_API_KEY + ADMIN_EMAIL set on the backend — see chat notes)
                         try {
@@ -5766,14 +6059,8 @@
             // now — shows up as a live notification (no page reload needed) while their app is open.
             // IMPORTANT: intentionally NOT awaited — this must never delay/block opening the property
             // itself, especially on a slow or unstable mobile connection.
-            addDoc(collection(db, 'notifications'), {
-                propertyId: docId,
-                type: 'property_view',
-                role: 'user',
-                message: `👀 Someone is viewing ${propertyData.businessName || propertyData.businessProfile && propertyData.businessProfile.company || 'your hostel'} right now`,
-                read: false,
-                createdAt: new Date().toISOString()
-            }).catch(e => console.warn('View notification failed (non-critical):', e));
+// Removed: a notification on every property view. It fired before login, filled the
+            // feed with noise, and was a big reason this collection had to stay world-writable.
 
             if(document.getElementById('agreeTnC')) { document.getElementById('agreeTnC').checked = false; }
             selected2DBeds = []; currentSelectedBedId = null; updateSmart2DBtn();
