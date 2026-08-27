@@ -363,6 +363,12 @@
     </script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-x-hidden">
+    <!-- OFFLINE BANNER — without this a guest fills in a 16-field form on patchy mobile data
+         and only discovers the connection died when Submit fails at the very end. -->
+    <div id="offlineBanner" class="hidden fixed top-0 left-0 right-0 z-[10001] bg-slate-900 text-white text-center py-2.5 px-4">
+        <p class="text-[12px] font-black">📡 Internet nahi hai — kaam ruk sakta hai</p>
+    </div>
+
     <div id="appToast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[999] bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-2xl max-w-[90vw] text-center transition-all duration-300"></div>
     <div class="bg-blob bg-blob-1"></div>
     <div class="bg-blob bg-blob-2"></div>
@@ -448,6 +454,38 @@
     <!-- Styled stand-in for the browser's alert(). A native alert says "ho-om.in says",
          can't be styled, and blocks the whole page — it looks like a phishing popup sitting
          inside an otherwise polished app. -->
+    <!-- BULK PRICE — changing the rate on a 40-bed hostel meant opening 40 separate prompts.
+         Owners simply did not do it, so prices went stale and guests saw the wrong number. -->
+    <div id="modalBulkPrice" class="zoom-modal hidden" onclick="if(event.target===this) closeBulkPrice()">
+        <div class="bg-white p-7 rounded-[2rem] max-w-md w-full relative">
+            <button type="button" onclick="closeBulkPrice()" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 transition">✕</button>
+
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-lg shadow-lg">💵</div>
+                <div>
+                    <h3 class="display-font text-xl font-black text-slate-900 leading-tight">Bulk Price</h3>
+                    <p class="text-[11px] font-bold text-emerald-600">Ek saath kai bed ka rate badlo</p>
+                </div>
+            </div>
+
+            <label class="block text-[10px] font-black text-slate-400 uppercase mt-5 mb-1">Kis-kis pe lagana hai</label>
+            <select id="bulkPriceScope" class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm mb-3"></select>
+
+            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Naya monthly rate (₹)</label>
+            <input type="number" inputmode="numeric" id="bulkPriceValue" placeholder="3500"
+                class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg outline-none focus:border-emerald-400 transition">
+
+            <p id="bulkPriceCount" class="text-[11px] font-bold text-slate-500 mt-3"></p>
+            <p id="bulkPriceError" class="hidden text-[11px] font-bold text-red-600 mt-2"></p>
+
+            <div class="flex gap-2 mt-5">
+                <button type="button" onclick="closeBulkPrice()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm rounded-2xl transition">Cancel</button>
+                <button type="button" onclick="applyBulkPrice()" class="flex-[2] py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-lg transition">Apply</button>
+            </div>
+            <p class="text-[10px] text-slate-400 font-semibold text-center mt-3">Publish dabane ke baad hi guests ko dikhega.</p>
+        </div>
+    </div>
+
     <div id="modalNotice" class="zoom-modal hidden" style="z-index:10000" onclick="if(event.target===this) closeNoticeModal()">
         <div class="bg-white p-7 rounded-[2rem] max-w-sm w-full relative text-center">
             <div id="noticeIcon" class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-lg mb-4">ℹ️</div>
@@ -759,6 +797,18 @@
                 <button onclick="toggleFeatureFilter('attached_bath')" id="flt-attached_bath" class="chip chip-outline hover:border-indigo-400 transition cursor-pointer">🚿 Att. Bath</button>
                 <button onclick="toggleFeatureFilter('study_table')" id="flt-study_table" class="chip chip-outline hover:border-indigo-400 transition cursor-pointer">📚 Table</button>
             </div>
+
+            <!-- BUDGET — the first thing a student actually filters on, and the one filter that
+                 was missing. Cheapest bed in each property is compared, not the average, because
+                 that is the number the guest is deciding against. -->
+            <div class="flex gap-1.5 flex-wrap items-center">
+                <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Budget:</span>
+                <button onclick="setBudgetFilter('all')" data-budget="all" class="budget-chip chip chip-solid transition cursor-pointer">Any</button>
+                <button onclick="setBudgetFilter('3000')" data-budget="3000" class="budget-chip chip chip-outline hover:border-indigo-400 transition cursor-pointer">Under ₹3,000</button>
+                <button onclick="setBudgetFilter('5000')" data-budget="5000" class="budget-chip chip chip-outline hover:border-indigo-400 transition cursor-pointer">Under ₹5,000</button>
+                <button onclick="setBudgetFilter('8000')" data-budget="8000" class="budget-chip chip chip-outline hover:border-indigo-400 transition cursor-pointer">Under ₹8,000</button>
+                <button onclick="setBudgetFilter('8001')" data-budget="8001" class="budget-chip chip chip-outline hover:border-indigo-400 transition cursor-pointer">₹8,000+</button>
+            </div>
         </div>
 
         <div id="userPropertyContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -993,12 +1043,120 @@
          them manually (Firebase Console → businesses/{id}.payoutDetails.status) and logs each
          transfer in the 'payouts' collection — designed so this can later be swapped for automatic
          Razorpay Route payouts without changing the ledger math. -->
+    <!-- ===================================================================
+         RENT TRACKER — the first piece of hostel management, not booking.
+         Booking brings an owner here two or three times a month. Rent brings them
+         here every day, because rent is the thing they actually worry about.
+
+         Designed for an owner who may not read English comfortably:
+           - faces, not names (the photo already exists from registration)
+           - two colours only: red = money pending, green = money received
+           - one tap to mark rent received; no form, no date picker
+           - the big number on top is the only thing that has to be read
+         =================================================================== -->
+    <div id="screenRentTracker" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-5">
+            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Rent</h2>
+                <p id="rentHostelName" class="text-[11px] font-bold text-indigo-600 truncate"></p>
+            </div>
+            <button type="button" onclick="loadRentTracker(currentRentPropertyId)" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <!-- The one number that matters. Deliberately huge. -->
+        <div id="rentSummaryCard" class="rounded-3xl p-6 mb-5 text-center bg-slate-100">
+            <p id="rentDueAmount" class="display-font text-5xl font-black text-slate-900 leading-none">₹0</p>
+            <p id="rentDueLabel" class="text-sm font-bold text-slate-500 mt-2">baaki hai</p>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button type="button" id="rentFilterDue" onclick="setRentFilter('due')"
+                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-red-500 text-white shadow-lg">🔴 Baaki</button>
+            <button type="button" id="rentFilterPaid" onclick="setRentFilter('paid')"
+                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500">🟢 Aa gaya</button>
+        </div>
+
+        <div id="rentList" class="space-y-2.5"></div>
+
+        <div class="mt-6 pt-5 border-t border-slate-200/60">
+            <button type="button" onclick="generateMonthlyRent()"
+                class="w-full py-4 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 font-black text-sm rounded-2xl hover:bg-indigo-100 transition">
+                📅 Is mahine ka rent banao
+            </button>
+            <p class="text-[10px] text-slate-400 font-semibold text-center mt-2">
+                Har guest ke liye is mahine ki entry ban jayegi. Dobara dabane se duplicate nahi banega.
+            </p>
+        </div>
+    </div>
+
+    <!-- ===================================================================
+         OCCUPANCY — "agle mahine kitne bed khali honge" is the question an owner
+         cannot answer today without opening every room one by one. Without it they
+         cannot plan, cannot advertise ahead, and find out a bed is empty only after
+         it has already been empty for a week.
+         =================================================================== -->
+    <div id="screenOccupancy" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-5">
+            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Occupancy</h2>
+                <p id="occHostelName" class="text-[11px] font-bold text-indigo-600 truncate"></p>
+            </div>
+            <button type="button" onclick="loadOccupancy(currentOccPropertyId)" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 mb-5">
+            <div class="bg-emerald-50 border-2 border-emerald-100 rounded-2xl p-4 text-center">
+                <p id="occFree" class="display-font text-3xl font-black text-emerald-700 leading-none">0</p>
+                <p class="text-[10px] font-black text-emerald-600 uppercase mt-1.5">Khali</p>
+            </div>
+            <div class="bg-slate-100 border-2 border-slate-200 rounded-2xl p-4 text-center">
+                <p id="occFull" class="display-font text-3xl font-black text-slate-700 leading-none">0</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase mt-1.5">Bhare</p>
+            </div>
+            <div class="bg-amber-50 border-2 border-amber-100 rounded-2xl p-4 text-center">
+                <p id="occLeaving" class="display-font text-3xl font-black text-amber-700 leading-none">0</p>
+                <p class="text-[10px] font-black text-amber-600 uppercase mt-1.5">Ja rahe</p>
+            </div>
+        </div>
+
+        <!-- One bar is easier to read at a glance than a percentage. -->
+        <div class="mb-2 flex justify-between items-end">
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kitna bhara hai</p>
+            <p id="occPercent" class="text-sm font-black text-slate-700">0%</p>
+        </div>
+        <div class="h-4 bg-slate-100 rounded-full overflow-hidden mb-6">
+            <div id="occBar" class="h-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
+        </div>
+
+        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Agle 3 mahine</h3>
+        <div id="occMonths" class="space-y-2.5 mb-6"></div>
+
+        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Room-wise</h3>
+        <div id="occRooms" class="space-y-2"></div>
+    </div>
+
     <div id="screenPayoutsEarnings" class="hidden premium-card p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
             <div>
                 <h2 class="display-font text-2xl font-black text-slate-900 tracking-tight">💰 Payouts & Earnings</h2>
                 <p class="text-xs font-semibold text-slate-500 mt-0.5">Bank details for manual transfer + your live earnings ledger</p>
+            </div>
+        </div>
+
+        <!-- PAYOUT SCHEDULE — an owner's first question is always "paisa kab milega", and
+             until now the app never answered it anywhere. A single line here removes the
+             single most common support message a marketplace like this gets. -->
+        <div class="flex items-start gap-3 bg-indigo-50 border-2 border-indigo-100 rounded-2xl p-4 mb-4">
+            <span class="text-lg leading-none mt-0.5">📅</span>
+            <div>
+                <p class="text-[13px] font-black text-indigo-900">Paisa kab milega?</p>
+                <p class="text-[11.5px] font-semibold text-indigo-700 leading-relaxed mt-1">
+                    Guest ke check-in ke <b>3 working din</b> ke andar aapke bank account me. Commission kat ke.
+                    Bank details verify hone ke baad hi pehla payout jaata hai.
+                </p>
             </div>
         </div>
 
@@ -1485,6 +1643,7 @@
             <div class="flex gap-2 bg-slate-50/80 p-2 border border-slate-200/60 rounded-2xl flex-wrap">
                 <button onclick="architectAddBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">🛏️ Bed</button>
                 <button onclick="qeAddRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
+                <button onclick="openBulkPrice()" class="text-xs bg-emerald-50 border border-emerald-200 text-emerald-700 font-black px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition" title="Set one price for many beds at once">💵 Bulk Price</button>
                 <button onclick="addBusinessCorridor('vertical')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↕️ V-Cor</button>
                 <button onclick="addBusinessCorridor('horizontal')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↔️ H-Cor</button>
                 <button onclick="addBusinessCorridor('middle')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Rooms on both sides, corridor running horizontally between them">⬍ Mid-Cor</button>
@@ -1708,7 +1867,7 @@
             <div class="grf-dot flex-1 h-1.5 rounded-full bg-indigo-500" data-dot="1"></div>
             <div class="grf-dot flex-1 h-1.5 rounded-full bg-slate-200" data-dot="2"></div>
         </div>
-        <p class="text-[11px] font-black text-indigo-500 uppercase tracking-widest mb-4" id="grfStepLabel">Step 1 of 5 — Personal Info</p>
+        <p class="text-[11px] font-black text-indigo-500 uppercase tracking-widest mb-4" id="grfStepLabel">Step 1 of 2 — Personal Info</p>
 
         <div class="space-y-5">
             <div class="grf-step" data-step="1">
@@ -1739,7 +1898,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Number</label>
-                    <input type="text" id="grfAadharNumber" maxlength="12" placeholder="XXXX XXXX XXXX" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="grfAadharNumber" maxlength="12" placeholder="XXXX XXXX XXXX" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Front <span class="text-slate-400 normal-case">(photo, name, DOB side)</span></label>
@@ -1753,11 +1912,11 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Blood Group</label>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Blood Group <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                     <input type="text" id="grfBloodGroup" placeholder="e.g. B+" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">College / School / Company Name</label>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">College / School / Company Name <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                     <input type="text" id="grfCollegeName" placeholder="Institute name, or your workplace if a working professional" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
@@ -1767,7 +1926,7 @@
                     <select id="grfOccupationType" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"><option value="Student">Student</option><option value="Working Professional">Working Professional</option></select>
                 </div>
                 <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Course / Year (if student)</label>
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Course / Year (if student) <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                     <input type="text" id="grfCourseYear" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                 </div>
             </div>
@@ -1777,18 +1936,18 @@
                 <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3">Parent / Guardian Details</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Father's Name</label>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Father's Name <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                         <input type="text" id="grfFatherName" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Mother's Name</label>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Mother's Name <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                         <input type="text" id="grfMotherName" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
                     </div>
                 </div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact Number</label><input type="tel" id="grfEmergencyContact" maxlength="10" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
                 <div class="mt-4"><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Permanent Address</label><textarea id="grfAddress" rows="2" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></textarea></div>
                 <h5 class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-3 mt-5">Health & Emergency</h5>
-                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative)</label><input type="text" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+                <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Emergency Contact (Relative) <span class="text-slate-300 normal-case font-bold">(optional)</span></label><input type="tel" inputmode="numeric" maxlength="10" id="grfRelativeContact" placeholder="Name & Number" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
             </div>
 
             <div class="grf-step hidden" data-step="2">
@@ -2035,7 +2194,7 @@
             mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0,
             genderType: 'Co-ed' // 'Boys' | 'Girls' | 'Co-ed' — used for the safety filter on Discover
         };
-        let discoverFilters = { type: 'all', stay: 'all', search: '', features: [], gender: 'all' };
+        let discoverFilters = { type: 'all', stay: 'all', search: '', features: [], gender: 'all', budget: 'all' };
         let accountMode = 'user';
         let currentMethod = '';
         let fullFormattedMobile = '';
@@ -2950,6 +3109,26 @@
             };
         })();
 
+        // Shows a bar the moment the connection drops, and clears it when it returns. The
+        // browser fires these events itself, so it costs nothing to listen.
+        (function () {
+            function paintOnline() {
+                const el = document.getElementById('offlineBanner');
+                if (!el) return;
+                if (navigator.onLine) {
+                    el.classList.add('hidden');
+                } else {
+                    el.classList.remove('hidden');
+                }
+            }
+            window.addEventListener('online', () => {
+                paintOnline();
+                try { showAppToast('✅ Internet wapas aa gaya'); } catch (e) {}
+            });
+            window.addEventListener('offline', paintOnline);
+            document.addEventListener('DOMContentLoaded', paintOnline);
+        })();
+
         function goTo(screenId) {
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
@@ -3566,17 +3745,27 @@
 
         function switchAccountMode(mode) {
             accountMode = mode;
-            // Remembered so a page reload can restore the right dashboard.
+            // Remembered so a page reload can restore the right dashboard instead of dropping
+            // a hostel owner onto the guest side.
             try { localStorage.setItem('hoom_account_mode', mode); } catch (e) {}
-            if (mode === 'user') { document.getElementById('mainHeading').innerText = "Welcome"; document.getElementById('mainSubheading').innerHTML = 'Sign in to <span class="gradient-text font-bold">HostelOM</span>'; }
-            else if (mode === 'business') {
-                document.getElementById('mainHeading').innerText = "Business Partner"; document.getElementById('mainSubheading').innerHTML = 'Manage your properties with <span class="gradient-text font-bold">HostelOM Bizz</span>';
-                // Fire-and-forget: lets you know someone is exploring the Business side of the app right now.
-                // Removed: this fired on every visit, before login, purely as analytics — it filled
-            // the admin feed with noise and was the main reason notifications had to stay
-            // world-writable. Real events (bookings, messages) are what matter here.
+
+            // These elements only exist on screenOptions. This function is also called from the
+            // dedicated Business login page, where they are absent — so guard, or the whole
+            // function throws and the mode never gets set.
+            const h = document.getElementById('mainHeading');
+            const sh = document.getElementById('mainSubheading');
+            if (!h || !sh) return;
+
+            if (mode === 'user') {
+                h.innerText = "Welcome";
+                sh.innerHTML = 'Sign in to <span class="gradient-text font-bold">HostelOM</span>';
+            } else if (mode === 'business') {
+                h.innerText = "Business Partner";
+                sh.innerHTML = 'Manage your properties with <span class="gradient-text font-bold">HostelOM Bizz</span>';
+            } else {
+                h.innerText = "Admin Portal";
+                sh.innerText = "Verify and manage network";
             }
-            else { document.getElementById('mainHeading').innerText = "Admin Portal"; document.getElementById('mainSubheading').innerText = "Verify and manage network"; }
         }
 
         // Opens the dedicated Business login screen (screenBusinessLogin) instead of just relabelling
@@ -3585,7 +3774,11 @@
         // routing still knows this is a business sign-in, plus the "someone's exploring Business"
         // notification) — just skips the DOM text updates that only exist on screenOptions.
         function openBusinessLoginPage() {
-            accountMode = 'business';
+            // Was: accountMode = 'business';
+            // Setting the variable directly meant localStorage never learned this was a business
+            // sign-in, so on the next page load the session restored as a plain user and the owner
+            // landed on the guest dashboard. switchAccountMode() is what persists it.
+            switchAccountMode('business');
             // Removed: this fired on every visit, before login, purely as analytics — it filled
             // the admin feed with noise and was the main reason notifications had to stay
             // world-writable. Real events (bookings, messages) are what matter here.
@@ -4953,10 +5146,10 @@
                             const fd = data.flatDetails || {};
                             statusText = data.status === 'pending_approval' ? '⏳ Pending' : (data.flatDetails && data.flatDetails.status === 'booked' ? '🔴 Booked' : '✅ Active');
                             statusChip = data.status === 'pending_approval' ? 'chip chip-warning' : (data.flatDetails && data.flatDetails.status === 'booked' ? 'chip' : 'chip chip-success');
-                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black rounded-xl border border-amber-200 hover:border-amber-500 transition tracking-wide">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                             return;
                         }
-                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black rounded-xl border border-amber-200 hover:border-amber-500 transition tracking-wide">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
                     });
                     window._myPropertyIds = myIds; // used to scope this business's notification feed too
                     listenBizNotifications(); // re-filter now that we know which properties are "mine"
@@ -5056,6 +5249,314 @@
         // relaying it over WhatsApp — slow, and it put a person in the middle of every
         // message. Now that in-app chat exists, the owner just talks to the guest directly:
         // instant, logged, and the guest's phone number still never changes hands.
+        // ==========================================================================
+        // RENT TRACKER
+        //
+        // The first management feature, and deliberately the smallest one. Booking brings an
+        // owner into the app a few times a month; rent brings them in every day, because rent
+        // is what they actually lose sleep over.
+        //
+        // The big advantage HostelOM has over every standalone PG-management app: the guest
+        // data is already here from the booking. Owners of those apps have to hand-type every
+        // guest before the app does anything useful, and most give up at that step.
+        // ==========================================================================
+        // ==========================================================================
+        // OCCUPANCY
+        //
+        // Today an owner can only answer "how many beds are free" by opening every room.
+        // "How many will be free next month" they cannot answer at all — which means they
+        // find out about an empty bed a week after it went empty.
+        //
+        // Everything here is derived from data already in the app: bed status for today,
+        // and each booking's check-out date for the months ahead.
+        // ==========================================================================
+        let currentOccPropertyId = null;
+
+        window.openOccupancy = async function(propertyId, hostelName) {
+            currentOccPropertyId = propertyId;
+            document.getElementById('occHostelName').innerText = hostelName || '';
+            document.getElementById('occMonths').innerHTML =
+                '<p class="text-center text-slate-400 font-bold text-sm py-6">Loading...</p>';
+            document.getElementById('occRooms').innerHTML = '';
+            goTo('screenOccupancy');
+            loadOccupancy(propertyId);
+        };
+
+        window.loadOccupancy = async function(propertyId) {
+            if (!propertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            try {
+                const bizSnap = await getDoc(doc(db, 'businesses', propertyId));
+                if (!bizSnap.exists()) return;
+                const rooms = bizSnap.data().roomsAndBeds || [];
+
+                let free = 0, full = 0;
+                const roomStats = rooms.map(r => {
+                    const beds = r.beds || [];
+                    const busy = beds.filter(b => b.status && b.status !== 'available').length;
+                    free += beds.length - busy;
+                    full += busy;
+                    return { name: r.name || 'Room', total: beds.length, busy: busy };
+                });
+
+                const total = free + full;
+                const pct = total ? Math.round((full / total) * 100) : 0;
+                document.getElementById('occFree').innerText = free;
+                document.getElementById('occFull').innerText = full;
+                document.getElementById('occPercent').innerText = pct + '%';
+                const bar = document.getElementById('occBar');
+                bar.style.width = pct + '%';
+                // Red when nearly full is wrong here — full is GOOD for an owner. Amber only
+                // warns when the place is emptying out.
+                bar.className = 'h-full transition-all duration-500 ' +
+                    (pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500');
+
+                // Who is leaving, and when
+                const bSnap = await getDocs(query(collection(db, 'bookings'),
+                    where('ownerUid', '==', uid),
+                    where('propertyId', '==', propertyId),
+                    where('status', '==', 'paid_verified')));
+
+                const now = new Date();
+                const months = [0, 1, 2].map(off => {
+                    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+                    return {
+                        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                        label: d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+                        leaving: 0
+                    };
+                });
+
+                bSnap.forEach(dd => {
+                    const b = dd.data();
+                    const out = b.checkOutDate || (b.bookingContext && b.bookingContext.checkOutDate);
+                    if (!out) return;
+                    const od = new Date(out);
+                    const key = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
+                    const m = months.find(x => x.key === key);
+                    if (m) m.leaving++;
+                });
+
+                document.getElementById('occLeaving').innerText = months[0].leaving;
+
+                document.getElementById('occMonths').innerHTML = months.map((m, i) => {
+                    const willBeFree = free + m.leaving;
+                    return `<div class="flex items-center gap-3 p-3.5 rounded-2xl border-2 ${i === 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-slate-200'}">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-900 text-[14px]">${m.label}${i === 0 ? ' <span class="text-[10px] text-indigo-600">(abhi)</span>' : ''}</p>
+                            <p class="text-[11px] font-bold text-slate-400">${m.leaving ? m.leaving + ' log ja rahe hain' : 'Koi nahi ja raha'}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="font-black text-[18px] ${willBeFree > 0 ? 'text-amber-600' : 'text-emerald-600'}">${willBeFree}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase">khali</p>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                document.getElementById('occRooms').innerHTML = roomStats.map(r => {
+                    const p = r.total ? Math.round((r.busy / r.total) * 100) : 0;
+                    return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                        <p class="font-black text-slate-700 text-[13px] w-24 shrink-0 truncate">${r.name}</p>
+                        <div class="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full ${p === 100 ? 'bg-emerald-500' : 'bg-indigo-400'}" style="width:${p}%"></div>
+                        </div>
+                        <p class="text-[12px] font-black text-slate-500 shrink-0 w-14 text-right">${r.busy}/${r.total}</p>
+                    </div>`;
+                }).join('') || '<p class="text-center text-slate-400 font-bold text-sm py-4">Koi room nahi mila</p>';
+
+            } catch (err) {
+                console.error('Occupancy load failed', err);
+                document.getElementById('occMonths').innerHTML =
+                    '<p class="text-center text-red-500 font-bold text-sm py-6">Load nahi hua. Dobara koshish kijiye.</p>';
+            }
+        };
+
+        let currentRentPropertyId = null;
+        let currentRentFilter = 'due';
+        let rentRowsCache = [];
+
+        window.openRentTracker = async function(propertyId, hostelName) {
+            currentRentPropertyId = propertyId;
+            currentRentFilter = 'due';
+            document.getElementById('rentHostelName').innerText = hostelName || '';
+            document.getElementById('rentList').innerHTML =
+                '<p class="text-center text-slate-400 font-bold text-sm py-8">Loading...</p>';
+            goTo('screenRentTracker');
+            loadRentTracker(propertyId);
+        };
+
+        window.loadRentTracker = async function(propertyId) {
+            if (!propertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            try {
+                const snap = await getDocs(query(collection(db, 'rentLedger'),
+                    where('ownerUid', '==', uid), where('propertyId', '==', propertyId)));
+                rentRowsCache = [];
+                snap.forEach(d => rentRowsCache.push({ id: d.id, ...d.data() }));
+                // Oldest due first — the one that has been pending longest needs chasing most.
+                rentRowsCache.sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+                renderRentList();
+            } catch (err) {
+                console.error('Rent load failed', err);
+                document.getElementById('rentList').innerHTML =
+                    '<p class="text-center text-red-500 font-bold text-sm py-8">Load nahi hua. Dobara koshish kijiye.</p>';
+            }
+        };
+
+        window.setRentFilter = function(f) {
+            currentRentFilter = f;
+            const due = document.getElementById('rentFilterDue');
+            const paid = document.getElementById('rentFilterPaid');
+            const on = 'flex-1 py-3 rounded-2xl font-black text-sm transition shadow-lg text-white ';
+            const off = 'flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500';
+            due.className = f === 'due' ? on + 'bg-red-500' : off;
+            paid.className = f === 'paid' ? on + 'bg-emerald-500' : off;
+            renderRentList();
+        };
+
+        function renderRentList() {
+            const box = document.getElementById('rentList');
+            const wantPaid = currentRentFilter === 'paid';
+            const rows = rentRowsCache.filter(r => !!r.paid === wantPaid);
+
+            // The summary always shows what is OUTSTANDING, whichever tab is open — that is
+            // the number the owner came here for.
+            const dueRows = rentRowsCache.filter(r => !r.paid);
+            const total = dueRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+            document.getElementById('rentDueAmount').innerText = '₹' + total.toLocaleString('en-IN');
+            document.getElementById('rentDueLabel').innerText =
+                total > 0 ? `${dueRows.length} logon ka baaki hai` : 'Sabka rent aa gaya 🎉';
+            document.getElementById('rentSummaryCard').className =
+                'rounded-3xl p-6 mb-5 text-center ' + (total > 0 ? 'bg-red-50' : 'bg-emerald-50');
+
+            if (rows.length === 0) {
+                box.innerHTML = `<div class="text-center py-10">
+                    <div class="text-3xl mb-2">${wantPaid ? '🟢' : '🎉'}</div>
+                    <p class="text-[13px] text-slate-400 font-bold">${wantPaid ? 'Abhi kisi ka rent nahi aaya' : 'Kisi ka rent baaki nahi'}</p>
+                </div>`;
+                return;
+            }
+
+            box.innerHTML = rows.map(r => {
+                const initial = (String(r.guestName || '?').trim()[0] || '?').toUpperCase();
+                const photo = r.guestPhotoUrl
+                    ? `<img src="${r.guestPhotoUrl}" class="w-14 h-14 rounded-full object-cover shrink-0">`
+                    : `<div class="w-14 h-14 rounded-full btn-gradient flex items-center justify-center text-white font-black text-xl shrink-0">${initial}</div>`;
+
+                // "3 din late" reads faster than a date, and it is what the owner reacts to.
+                let when = '';
+                if (r.dueDate) {
+                    const days = Math.floor((new Date() - new Date(r.dueDate)) / 86400000);
+                    if (r.paid) when = 'Aa gaya';
+                    else if (days > 0) when = `${days} din late`;
+                    else if (days === 0) when = 'Aaj due';
+                    else when = `${-days} din baad`;
+                }
+
+                return `<div class="flex items-center gap-3 p-3 rounded-2xl border-2 ${r.paid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-200'}">
+                    ${photo}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-black text-slate-900 text-[15px] truncate">${r.guestName || 'Guest'}</p>
+                        <p class="text-[11px] font-bold ${r.paid ? 'text-emerald-600' : (when.includes('late') ? 'text-red-500' : 'text-slate-400')}">${r.bedLabel ? r.bedLabel + ' · ' : ''}${when}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="font-black text-[17px] ${r.paid ? 'text-emerald-600' : 'text-slate-900'}">₹${(Number(r.amount) || 0).toLocaleString('en-IN')}</p>
+                    </div>
+                    ${r.paid
+                        ? `<button type="button" onclick="toggleRentPaid('${r.id}', true)" class="w-11 h-11 rounded-full bg-emerald-500 text-white font-black text-lg shrink-0 transition active:scale-95">✓</button>`
+                        : `<button type="button" onclick="toggleRentPaid('${r.id}', false)" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-emerald-500 hover:text-white text-slate-400 font-black text-lg shrink-0 transition active:scale-95">✓</button>`}
+                </div>`;
+            }).join('');
+        }
+
+        // One tap. No form, no date picker — the date is now, which it always is.
+        window.toggleRentPaid = async function(rowId, wasPaid) {
+            const row = rentRowsCache.find(r => r.id === rowId);
+            if (!row) return;
+
+            // Optimistic: flip it on screen first so the tap feels instant, then save.
+            row.paid = !wasPaid;
+            row.paidAt = row.paid ? new Date().toISOString() : null;
+            renderRentList();
+
+            try {
+                await updateDoc(doc(db, 'rentLedger', rowId), {
+                    paid: row.paid,
+                    paidAt: row.paidAt,
+                    paidMethod: row.paid ? 'cash' : null
+                });
+                if (row.paid) {
+                    showAppToast(`✅ ${row.guestName} ka ₹${(Number(row.amount) || 0).toLocaleString('en-IN')} mila`);
+                    // Tell the guest too — a receipt they did not have to ask for.
+                    pushNotification({
+                        type: 'rent_received', audience: 'guest', guestUid: row.guestUid,
+                        propertyId: row.propertyId,
+                        title: 'Rent received',
+                        message: `₹${(Number(row.amount) || 0).toLocaleString('en-IN')} rent received. Thank you!`
+                    });
+                }
+            } catch (err) {
+                console.error('Rent update failed', err);
+                row.paid = wasPaid;          // put it back — the save did not happen
+                renderRentList();
+                alert('Save nahi hua. Dobara koshish kijiye.');
+            }
+        };
+
+        // Builds this month's row for every active guest. The owner types nothing — every
+        // detail comes from the booking they already have.
+        window.generateMonthlyRent = async function() {
+            if (!currentRentPropertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            if (!confirm(`Is mahine (${monthKey}) ka rent banayein?\n\nHar active guest ke liye ek entry banegi. Jo pehle se ban chuki hain wo dobara nahi banengi.`)) return;
+
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'),
+                    where('ownerUid', '==', uid),
+                    where('propertyId', '==', currentRentPropertyId),
+                    where('status', '==', 'paid_verified')));
+
+                const existing = new Set(rentRowsCache.map(r => `${r.bookingId}_${r.monthKey}`));
+                let made = 0, skipped = 0;
+
+                for (const bdoc of snap.docs) {
+                    const b = bdoc.data();
+                    if (existing.has(`${bdoc.id}_${monthKey}`)) { skipped++; continue; }
+
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    // Monthly rent is the full stay amount, not the 20% advance we collected.
+                    const rent = Number(b.totalStayAmount) || beds.reduce((sum, x) => sum + (Number(x.price) || 0), 0);
+                    if (!rent) { skipped++; continue; }
+
+                    const due = new Date(now.getFullYear(), now.getMonth(), 5).toISOString().slice(0, 10);
+
+                    await addDoc(collection(db, 'rentLedger'), {
+                        ownerUid: uid,
+                        propertyId: currentRentPropertyId,
+                        bookingId: bdoc.id,
+                        guestUid: b.guestUid || null,
+                        guestName: b.guestName || 'Guest',
+                        bedLabel: beds.length ? ('Bed ' + beds.map(x => x.id).join(', ')) : '',
+                        amount: rent,
+                        monthKey,
+                        dueDate: due,
+                        paid: false,
+                        createdAt: new Date().toISOString()
+                    });
+                    made++;
+                }
+
+                showAppToast(made ? `✅ ${made} entry ban gayi` : 'Sab pehle se bani hui hain');
+                loadRentTracker(currentRentPropertyId);
+            } catch (err) {
+                console.error('Generate rent failed', err);
+                alert('Nahi ban paya: ' + err.message);
+            }
+        };
+
         window.openPayoutsScreen = async function(docId) {
             currentPayoutsDocId = docId;
             pyPendingChequeFile = null; pyPendingQrFile = null;
@@ -5726,6 +6227,30 @@
             });
         }
 
+        // Cheapest bed across all rooms — for a hostel that is the "starting from" price, and
+        // it is what the guest is comparing. Flats use their own monthly rent instead.
+        function lowestPriceOf(prop) {
+            if (prop.propertyType === 'flat_house') return Number(prop.flatDetails?.monthlyRent) || 0;
+            let min = Infinity;
+            (prop.roomsAndBeds || []).forEach(room => {
+                (room.beds || []).forEach(bed => {
+                    const p = Number(bed.priceMonthly || bed.price || 0);
+                    if (p > 0 && p < min) min = p;
+                });
+            });
+            return min === Infinity ? 0 : min;
+        }
+
+        window.setBudgetFilter = function(val) {
+            discoverFilters.budget = val;
+            document.querySelectorAll('.budget-chip').forEach(b => {
+                const on = b.dataset.budget === val;
+                b.className = 'budget-chip chip transition cursor-pointer ' +
+                    (on ? 'chip-solid' : 'chip-outline hover:border-indigo-400');
+            });
+            applyDiscoverFilters();
+        };
+
         window.applyDiscoverFilters = function() {
             const search = (document.getElementById('discoverSearchInput')?.value || '').toLowerCase();
             document.querySelectorAll('[id^="prop-card-"]').forEach(card => {
@@ -5742,6 +6267,15 @@
                     if (discoverFilters.features.includes('food') && (!prop.rules?.mess || prop.rules.mess === 'Not Available')) show = false;
                     if (discoverFilters.features.includes('attached_bath') && (!prop.rules?.bathType || !prop.rules.bathType.includes('Attached'))) show = false;
                     if (discoverFilters.features.includes('study_table') && !prop.rules?.studyTable) show = false;
+                }
+                if (discoverFilters.budget && discoverFilters.budget !== 'all') {
+                    const low = lowestPriceOf(prop);
+                    // A property with no price set yet is left visible rather than hidden —
+                    // hiding it would silently punish an owner who simply hasn't finished setup.
+                    if (low > 0) {
+                        if (discoverFilters.budget === '8001') { if (low <= 8000) show = false; }
+                        else if (low > Number(discoverFilters.budget)) show = false;
+                    }
                 }
                 card.style.display = show ? '' : 'none';
             });
@@ -6055,7 +6589,48 @@
             document.getElementById('grfSubmitBtn').classList.toggle('hidden', grfCurrentStep !== GRF_TOTAL_STEPS);
             document.getElementById('screenGuestRegistrationForm').scrollTop = 0;
         }
-        function grfNextStep() { if (grfCurrentStep < GRF_TOTAL_STEPS) { grfCurrentStep++; grfRenderStepUI(); } }
+        // Which fields must be filled before leaving each step. Without this the guest could
+        // reach step 5, hit Submit, and only THEN be told something on step 1 was blank — then
+        // hunt backwards through five screens to find it.
+        // The form is TWO steps. Step 1 = who you are + ID, step 2 = guardian, preferences,
+        // declaration. These are checked on "Next" so a blank field on step 1 is caught there,
+        // not after the guest has filled in everything on step 2.
+        const GRF_REQUIRED = {
+            1: [['grfFullName', 'Full Name'], ['grfDob', 'Date of Birth'], ['grfAadharNumber', 'Aadhar Number']],
+            2: [['grfEmergencyContact', 'Emergency Contact'], ['grfAddress', 'Permanent Address']]
+        };
+
+        function grfValidateStep(step) {
+            const err = document.getElementById('grfFormError');
+            for (const pair of (GRF_REQUIRED[step] || [])) {
+                const el = document.getElementById(pair[0]);
+                if (!el) continue;
+                if (!String(el.value || '').trim()) {
+                    if (err) { err.innerText = pair[1] + ' bharna zaroori hai.'; err.classList.remove('hidden'); }
+                    el.focus();
+                    el.classList.add('ring-2', 'ring-red-400');
+                    setTimeout(function () { el.classList.remove('ring-2', 'ring-red-400'); }, 2200);
+                    return false;
+                }
+            }
+            // Aadhaar length checked on step 1, where the field actually lives.
+            if (step === 1) {
+                const a = document.getElementById('grfAadharNumber');
+                const digits = String((a && a.value) || '').replace(/\D/g, '');
+                if (digits.length !== 12) {
+                    if (err) { err.innerText = 'Aadhar number 12 digit ka hona chahiye.'; err.classList.remove('hidden'); }
+                    if (a) a.focus();
+                    return false;
+                }
+            }
+            if (err) err.classList.add('hidden');
+            return true;
+        }
+
+        function grfNextStep() {
+            if (!grfValidateStep(grfCurrentStep)) return;
+            if (grfCurrentStep < GRF_TOTAL_STEPS) { grfCurrentStep++; grfRenderStepUI(); }
+        }
         function grfPrevStep() { if (grfCurrentStep > 1) { grfCurrentStep--; grfRenderStepUI(); } }
         function grfResetSteps() { grfCurrentStep = 1; grfRenderStepUI(); }
 
@@ -6307,7 +6882,17 @@
                         // (now closed), and a download URL carries a token that would bypass the
                         // rules forever — which is the exact leak we're fixing.
                         aadharPhotoUrl = frontPath;
-                    } catch (upErr) { console.warn('Aadhar front photo upload failed (continuing without it):', upErr); }
+                    } catch (upErr) {
+                        // This used to swallow the error and carry on. The guest saw a successful
+                        // booking while the hostel ended up with no Aadhaar on file — which is a
+                        // legal requirement here, not an optional extra.
+                        console.error('Aadhar front photo upload failed', upErr);
+                        errBox.innerText = 'Aadhar photo upload nahi hua. Internet check karke dobara try kijiye.';
+                        errBox.classList.remove('hidden');
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = 'Submit & Confirm Booking';
+                        return;
+                    }
                 }
                 if (aadharBackInputForUpload && aadharBackInputForUpload.files && aadharBackInputForUpload.files[0] && typeof storage !== 'undefined') {
                     try {
@@ -7728,6 +8313,64 @@
                 alert('Status changed here, but could not sync to live users: ' + err.message);
             }
         }
+        window.openBulkPrice = function() {
+            const sel = document.getElementById('bulkPriceScope');
+            const rooms = (admin2DBlocks || []).filter(b => b.beds && b.beds.length);
+            if (!rooms.length) { alert('Pehle rooms aur beds bana lijiye.'); return; }
+
+            const totalBeds = rooms.reduce((n, r) => n + r.beds.length, 0);
+            sel.innerHTML = `<option value="__all__">Sabhi beds (${totalBeds})</option>` +
+                rooms.map(r => `<option value="${r.id}">${r.name || 'Room'} (${r.beds.length} bed)</option>`).join('');
+
+            document.getElementById('bulkPriceValue').value = '';
+            document.getElementById('bulkPriceError').classList.add('hidden');
+            sel.onchange = updateBulkPriceCount;
+            updateBulkPriceCount();
+            document.getElementById('modalBulkPrice').classList.remove('hidden');
+        };
+
+        function updateBulkPriceCount() {
+            const scope = document.getElementById('bulkPriceScope').value;
+            const rooms = (admin2DBlocks || []).filter(b => b.beds && b.beds.length);
+            const n = scope === '__all__'
+                ? rooms.reduce((sum, r) => sum + r.beds.length, 0)
+                : (rooms.find(r => r.id === scope)?.beds.length || 0);
+            document.getElementById('bulkPriceCount').innerText = `${n} bed ka rate badlega.`;
+        }
+
+        window.closeBulkPrice = function() {
+            document.getElementById('modalBulkPrice').classList.add('hidden');
+        };
+
+        window.applyBulkPrice = function() {
+            const scope = document.getElementById('bulkPriceScope').value;
+            const raw = document.getElementById('bulkPriceValue').value;
+            const err = document.getElementById('bulkPriceError');
+            const price = Number(raw);
+
+            if (!raw || !isFinite(price) || price <= 0) {
+                err.innerText = 'Sahi rate daaliye.'; err.classList.remove('hidden'); return;
+            }
+            // A price this far off is almost always a typo (30000 instead of 3000), and it would
+            // go straight onto the public listing.
+            if (price > 100000) {
+                err.innerText = 'Ye rate bahut zyada lag raha hai. Dobara check kijiye.';
+                err.classList.remove('hidden'); return;
+            }
+            err.classList.add('hidden');
+
+            let changed = 0;
+            (admin2DBlocks || []).forEach(room => {
+                if (!room.beds) return;
+                if (scope !== '__all__' && room.id !== scope) return;
+                room.beds.forEach(bed => { bed.price = price; bed.priceMonthly = price; changed++; });
+            });
+
+            closeBulkPrice();
+            qeRefreshAll();
+            showAppToast(`✅ ${changed} bed ka rate ₹${price.toLocaleString('en-IN')} kar diya`);
+        };
+
         function qeEditBedPrice(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
             const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
