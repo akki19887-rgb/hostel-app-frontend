@@ -370,7 +370,7 @@
     <!-- OFFLINE BANNER — without this a guest fills in a 16-field form on patchy mobile data
          and only discovers the connection died when Submit fails at the very end. -->
     <div id="offlineBanner" class="hidden fixed top-0 left-0 right-0 z-[10001] bg-slate-900 text-white text-center py-2.5 px-4">
-        <p class="text-[12px] font-black">📡 Internet nahi hai — kaam ruk sakta hai</p>
+        <p class="text-[12px] font-black">📡 No internet — some actions may not work</p>
     </div>
 
     <div id="appToast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[999] bg-slate-900 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-2xl max-w-[90vw] text-center transition-all duration-300"></div>
@@ -468,14 +468,14 @@
                 <div class="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-lg shadow-lg">💵</div>
                 <div>
                     <h3 class="display-font text-xl font-black text-slate-900 leading-tight">Bulk Price</h3>
-                    <p class="text-[11px] font-bold text-emerald-600">Ek saath kai bed ka rate badlo</p>
+                    <p class="text-[11px] font-bold text-emerald-600">Change the rate for many beds at once</p>
                 </div>
             </div>
 
-            <label class="block text-[10px] font-black text-slate-400 uppercase mt-5 mb-1">Kis-kis pe lagana hai</label>
+            <label class="block text-[10px] font-black text-slate-400 uppercase mt-5 mb-1">Apply to</label>
             <select id="bulkPriceScope" class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm mb-3"></select>
 
-            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Naya monthly rate (₹)</label>
+            <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">New monthly rate (₹)</label>
             <input type="number" inputmode="numeric" id="bulkPriceValue" placeholder="3500"
                 class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-black text-lg outline-none focus:border-emerald-400 transition">
 
@@ -486,7 +486,7 @@
                 <button type="button" onclick="closeBulkPrice()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm rounded-2xl transition">Cancel</button>
                 <button type="button" onclick="applyBulkPrice()" class="flex-[2] py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-lg transition">Apply</button>
             </div>
-            <p class="text-[10px] text-slate-400 font-semibold text-center mt-3">Publish dabane ke baad hi guests ko dikhega.</p>
+            <p class="text-[10px] text-slate-400 font-semibold text-center mt-3">Guests will see this only after you press Publish.</p>
         </div>
     </div>
 
@@ -867,16 +867,16 @@
             <div class="bg-white p-8 rounded-[2rem] max-w-md w-full relative">
                 <button onclick="document.getElementById('modalBroadcast').classList.add('hidden')" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
                 <h3 class="display-font text-xl font-black text-slate-900 mb-1">📢 Send a Message</h3>
-                <p class="text-xs text-slate-500 font-semibold mb-4">Ek owner ko, sabhi owners ko, ek guest ko, ya sabhi guests ko.</p>
-                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Kisko bhejna hai</label>
+                <p class="text-xs text-slate-500 font-semibold mb-4">To one owner, all owners, one guest, or all guests.</p>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Send to</label>
                 <select id="broadcastAudience" onchange="onBroadcastAudienceChange()" class="w-full mb-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm">
-                    <option value="allOwners">🏢 Sabhi hostel owners</option>
-                    <option value="owner">🏢 Ek hostel owner</option>
-                    <option value="allGuests">🙋 Sabhi guests</option>
-                    <option value="guest">🙋 Ek guest</option>
+                    <option value="allOwners">🏢 All hostel owners</option>
+                    <option value="owner">🏢 One hostel owner</option>
+                    <option value="allGuests">🙋 All guests</option>
+                    <option value="guest">🙋 One guest</option>
                 </select>
                 <select id="broadcastTarget" class="hidden w-full mb-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm"></select>
-                <textarea id="broadcastMessageInput" rows="4" placeholder="Jaise: Is weekend server maintenance hoga, 2-4 AM ke beech booking temporarily band rahegi." class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></textarea>
+                <textarea id="broadcastMessageInput" rows="4" placeholder="e.g. Server maintenance this weekend — bookings will be paused between 2-4 AM." class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></textarea>
                 <button type="button" onclick="sendAdminBroadcast()" id="btnSendBroadcast" class="mt-4 w-full btn-gradient py-3.5 text-white font-black rounded-2xl shadow-lg tracking-wide">Send to All Owners</button>
             </div>
         </div>
@@ -1071,25 +1071,29 @@
         <!-- The one number that matters. Deliberately huge. -->
         <div id="rentSummaryCard" class="rounded-3xl p-6 mb-5 text-center bg-slate-100">
             <p id="rentDueAmount" class="display-font text-5xl font-black text-slate-900 leading-none">₹0</p>
-            <p id="rentDueLabel" class="text-sm font-bold text-slate-500 mt-2">baaki hai</p>
+            <p id="rentDueLabel" class="text-sm font-bold text-slate-500 mt-2">pending</p>
         </div>
 
         <div class="flex gap-2 mb-4">
             <button type="button" id="rentFilterDue" onclick="setRentFilter('due')"
-                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-red-500 text-white shadow-lg">🔴 Baaki</button>
+                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-red-500 text-white shadow-lg">🔴 Pending</button>
             <button type="button" id="rentFilterPaid" onclick="setRentFilter('paid')"
-                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500">🟢 Aa gaya</button>
+                class="flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500">🟢 Received</button>
         </div>
 
         <div id="rentList" class="space-y-2.5"></div>
 
         <div class="mt-6 pt-5 border-t border-slate-200/60">
+            <button type="button" onclick="remindAllPending()"
+                class="w-full py-4 bg-amber-50 border-2 border-amber-200 text-amber-700 font-black text-sm rounded-2xl hover:bg-amber-500 hover:text-white hover:border-amber-500 transition mb-2">
+                🔔 Remind everyone who owes
+            </button>
             <button type="button" onclick="generateMonthlyRent()"
                 class="w-full py-4 bg-indigo-50 border-2 border-indigo-200 text-indigo-700 font-black text-sm rounded-2xl hover:bg-indigo-100 transition">
-                📅 Is mahine ka rent banao
+                📅 Generate this month's rent
             </button>
             <p class="text-[10px] text-slate-400 font-semibold text-center mt-2">
-                Har guest ke liye is mahine ki entry ban jayegi. Dobara dabane se duplicate nahi banega.
+                Creates this month's entry for every guest. Pressing again will not create duplicates.
             </p>
         </div>
     </div>
@@ -1113,29 +1117,35 @@
         <div class="grid grid-cols-3 gap-2.5 mb-5">
             <div class="bg-emerald-50 border-2 border-emerald-100 rounded-2xl p-4 text-center">
                 <p id="occFree" class="display-font text-3xl font-black text-emerald-700 leading-none">0</p>
-                <p class="text-[10px] font-black text-emerald-600 uppercase mt-1.5">Khali</p>
+                <p class="text-[10px] font-black text-emerald-600 uppercase mt-1.5">Free</p>
             </div>
             <div class="bg-slate-100 border-2 border-slate-200 rounded-2xl p-4 text-center">
                 <p id="occFull" class="display-font text-3xl font-black text-slate-700 leading-none">0</p>
-                <p class="text-[10px] font-black text-slate-500 uppercase mt-1.5">Bhare</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase mt-1.5">Occupied</p>
             </div>
             <div class="bg-amber-50 border-2 border-amber-100 rounded-2xl p-4 text-center">
                 <p id="occLeaving" class="display-font text-3xl font-black text-amber-700 leading-none">0</p>
-                <p class="text-[10px] font-black text-amber-600 uppercase mt-1.5">Ja rahe</p>
+                <p class="text-[10px] font-black text-amber-600 uppercase mt-1.5">Leaving</p>
             </div>
         </div>
 
         <!-- One bar is easier to read at a glance than a percentage. -->
         <div class="mb-2 flex justify-between items-end">
-            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kitna bhara hai</p>
+            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Occupancy</p>
             <p id="occPercent" class="text-sm font-black text-slate-700">0%</p>
         </div>
         <div class="h-4 bg-slate-100 rounded-full overflow-hidden mb-6">
             <div id="occBar" class="h-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
         </div>
 
-        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Agle 3 mahine</h3>
+        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Next 3 months</h3>
         <div id="occMonths" class="space-y-2.5 mb-6"></div>
+
+        <!-- WHO IS STAYING — the counts above answer "how many", this answers "who", which is
+             what an owner actually needs when a bed is occupied and they want to reach that
+             person. Before this, the app could tell you a bed was full but not whose it was. -->
+        <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Who is staying</h3>
+        <div id="occGuests" class="space-y-2.5 mb-6"></div>
 
         <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Room-wise</h3>
         <div id="occRooms" class="space-y-2"></div>
@@ -1156,10 +1166,10 @@
         <div class="flex items-start gap-3 bg-indigo-50 border-2 border-indigo-100 rounded-2xl p-4 mb-4">
             <span class="text-lg leading-none mt-0.5">📅</span>
             <div>
-                <p class="text-[13px] font-black text-indigo-900">Paisa kab milega?</p>
+                <p class="text-[13px] font-black text-indigo-900">When do I get paid?</p>
                 <p class="text-[11.5px] font-semibold text-indigo-700 leading-relaxed mt-1">
-                    Guest ke check-in ke <b>3 working din</b> ke andar aapke bank account me. Commission kat ke.
-                    Bank details verify hone ke baad hi pehla payout jaata hai.
+                    Within <b>3 working days</b> of guest check-in, straight to your bank account, minus commission.
+                    The first payout goes out only after your bank details are verified.
                 </p>
             </div>
         </div>
@@ -2266,7 +2276,7 @@
         // This used to unconditionally send everyone to the login screen 2.5s after load.
         // Firebase itself keeps the session alive indefinitely (browserLocalPersistence is
         // the default) — the app just never asked. So every refresh, every time the phone
-        // killed the tab, every time an owner reopened the app, they were asked to log in
+        // killed the tab, every time an owner reopened the app, they were asked to guests in
         // again. For phone users that means ANOTHER OTP, which costs real money on every
         // single one, and is the fastest way to make an owner stop using the app.
         //
@@ -3044,8 +3054,8 @@
                 el = document.createElement('div');
                 el.id = 'pushBanner';
                 el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:16px;z-index:9998;background:#1e293b;color:white;border-radius:18px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,0.25);display:flex;align-items:center;gap:12px;';
-                el.innerHTML = `<div style="flex:1"><div style="font-weight:900;font-size:14px">🔔 Notification chalu karein</div><div style="font-size:12px;color:#cbd5e1;margin-top:2px">Nayi booking aur message turant pata chalega</div></div>
-                    <button type="button" onclick="enablePushNotifications(null,false)" style="background:#4f46e5;color:white;font-weight:900;font-size:12px;padding:9px 14px;border-radius:12px;white-space:nowrap">Chalu karein</button>
+                el.innerHTML = `<div style="flex:1"><div style="font-weight:900;font-size:14px">🔔 Turn on notifications</div><div style="font-size:12px;color:#cbd5e1;margin-top:2px">Get instant alerts for new bookings and messages</div></div>
+                    <button type="button" onclick="enablePushNotifications(null,false)" style="background:#4f46e5;color:white;font-weight:900;font-size:12px;padding:9px 14px;border-radius:12px;white-space:nowrap">Turn on</button>
                     <button type="button" onclick="hidePushBanner()" style="background:transparent;color:#94a3b8;font-size:18px;padding:4px 8px">✕</button>`;
                 document.body.appendChild(el);
             }
@@ -3056,7 +3066,7 @@
             if (el) el.style.display = 'none';
         };
         function showPushBlockedHint() {
-            showAppToast('Notification browser settings me band hai. Address bar ke 🔒 icon se allow kar dijiye.');
+            showAppToast('Notifications are blocked in your browser settings. Tap the 🔒 icon in the address bar to allow them.');
         }
 
         async function pushNotification(payload) {
@@ -3127,7 +3137,7 @@
             }
             window.addEventListener('online', () => {
                 paintOnline();
-                try { showAppToast('✅ Internet wapas aa gaya'); } catch (e) {}
+                try { showAppToast('✅ Back online'); } catch (e) {}
             });
             window.addEventListener('offline', paintOnline);
             document.addEventListener('DOMContentLoaded', paintOnline);
@@ -3258,6 +3268,23 @@
                 const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
                 await markBedsOccupiedForBooking(bData.propertyId, bedIds, bData.bookingId, bData.lockId);
 
+                // Confirming is the moment the booking becomes real — the bed is now off the
+                // market. Both the owner and the guest need to hear about that, and neither
+                // was being told before.
+                await pushNotification({
+                    type: 'booking_confirmed', audience: 'owner',
+                    propertyId: bData.propertyId || null, bookingId: bookingDocId,
+                    title: 'Booking confirmed',
+                    message: `✅ ${bData.guestName || 'A guest'}'s payment is verified. Bed is now occupied.`
+                });
+                await pushNotification({
+                    type: 'booking_confirmed', audience: 'guest',
+                    guestUid: bData.guestUid || null,
+                    propertyId: bData.propertyId || null, bookingId: bookingDocId,
+                    title: 'Payment verified',
+                    message: `✅ Your payment is verified and your bed is confirmed at ${bData.hostelName || 'the hostel'}.`
+                });
+
                 alert('✅ Payment confirmed — bed marked occupied and booking finalized.');
                 loadPendingUpiPayments();
             } catch (err) {
@@ -3386,6 +3413,7 @@
             openChatDrawer();
             renderQuickChat(role);
             loadBookingMessages();
+            startChatListener(bookingDocId);
 
             try {
                 const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
@@ -3420,6 +3448,7 @@
             ov.classList.add('opacity-0');
             setTimeout(() => ov.classList.add('hidden'), 300);
             document.body.style.overflow = '';
+            stopChatListener();   // stop paying for reads once the drawer is shut
             currentChatBookingId = null;
         };
 
@@ -3473,6 +3502,28 @@
             document.getElementById('chatMessageInput').value = btn.getAttribute('data-msg');
             sendBookingMessage();
         };
+
+        // Live listener for the open chat. Without this the person had to hit Refresh to see a
+        // reply — which is not a messenger, it's an inbox you have to poll by hand. Rapido,
+        // WhatsApp, Swiggy all push new messages in as they arrive; so does this now.
+        let chatUnsubscribe = null;
+
+        function startChatListener(bookingDocId) {
+            stopChatListener();
+            try {
+                chatUnsubscribe = onSnapshot(
+                    collection(db, 'bookings', bookingDocId, 'messages'),
+                    () => { renderChatMessages(); },
+                    (err) => console.warn('Chat listener failed, falling back to manual refresh', err)
+                );
+            } catch (e) { console.warn('Could not start chat listener', e); }
+        }
+
+        function stopChatListener() {
+            if (chatUnsubscribe) { try { chatUnsubscribe(); } catch (e) {} chatUnsubscribe = null; }
+        }
+
+        async function renderChatMessages() { return loadBookingMessages(); }
 
         async function loadBookingMessages() {
             if (!currentChatBookingId) return;
@@ -3653,7 +3704,10 @@
                 actionButtons = `
                 <div class="flex gap-2 shrink-0 flex-wrap justify-end">
                     ${chatBtnOwner}
-                    ${hidePhone ? `<button type="button" onclick="requestContactWithGuest('${b.id}')" class="px-4 py-2.5 bg-indigo-50 border-2 border-indigo-100 text-indigo-600 font-bold rounded-xl text-xs hover:bg-indigo-500 hover:text-white transition">📞 Request Contact</button>` : ''}
+                    <!-- REMOVED: "Request Contact". It used to send a message to admin, who then
+                         relayed it over WhatsApp. Since in-app chat exists it just opened the same
+                         chat as the button beside it — two buttons doing one thing, which only
+                         makes the owner hesitate over which one to press. -->
                     <button type="button" onclick="markBookingNoShow('${b.id}', () => ${refreshFnName}())" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white transition">🚫 No-show</button>
                     <button type="button" onclick="markBookingCheckedIn('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-indigo-500 text-white font-black rounded-xl text-xs hover:bg-indigo-600 transition">✅ Check-in</button>
                 </div>`;
@@ -3671,7 +3725,7 @@
                 actionButtons = `
                 <div class="flex gap-2 shrink-0">
                     ${chatBtnOwner}
-                    <button type="button" onclick="requestContactWithGuest('${b.id}')" class="px-4 py-2.5 bg-indigo-50 border-2 border-indigo-100 text-indigo-600 font-bold rounded-xl text-xs hover:bg-indigo-500 hover:text-white transition">📞 Request Contact</button>
+                    <!-- REMOVED: duplicate "Request Contact" — same as the chat button above it. -->
                 </div>`;
             }
             // Owners never see the guest's raw phone number directly (privacy) — they can only
@@ -4157,7 +4211,7 @@
                     );
                 }
             } catch (e) {
-                // Saving the display name is not worth blocking sign-in over — log it and carry on.
+                // Saving the display name is not worth blocking sign-in over — guests it and carry on.
                 console.warn('Could not save profile name', e);
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = originalText; }
@@ -4166,7 +4220,7 @@
         }
         // Builds a human-readable "who" string from whatever identity we have — the name field if
         // it was just filled in on the profile-completion screen, otherwise the phone/email used to
-        // log in (saved to localStorage at login time), falling back to "Unknown" as a last resort.
+        // guests in (saved to localStorage at login time), falling back to "Unknown" as a last resort.
         function getLoggedInIdentityLabel() {
             try {
                 const nameInput = document.getElementById('profileName');
@@ -4182,7 +4236,7 @@
         async function routeToDashboard(isRestore) {
             try { enablePushNotifications(accountMode, Notification && Notification.permission === 'default'); } catch (e) {}
 
-            // Activity log for the Admin feed — but ONLY for a real login. Without this guard
+            // Activity guests for the Admin feed — but ONLY for a real login. Without this guard
             // every page refresh would write "Business login: …" again, and the feed would be
             // useless within a day.
             if (!isRestore) {
@@ -4447,6 +4501,416 @@
             }
         };
 
+        // ==========================================================================
+        // PAYOUTS
+        // ==========================================================================
+        window.openPayoutsScreen = async function(docId) {
+            currentPayoutsDocId = docId;
+            pyPendingChequeFile = null; pyPendingQrFile = null;
+            document.getElementById('pyFormError').classList.add('hidden');
+            document.getElementById('pySaveBtn').disabled = false;
+            document.getElementById('pySaveBtn').innerText = '💾 Save Payout Details';
+
+            // Load existing payout details from the PRIVATE collection. This used to scan the
+            // entire businesses collection (one read per hostel) to pull a field that should
+            // never have been in a world-readable document in the first place.
+            let pd = {};
+            try {
+                const paySnap = await window.getDoc(window.doc(window.db, "businessPayouts", docId));
+                if (paySnap.exists()) pd = paySnap.data();
+            } catch (e) { console.warn('Could not load payout details', e); }
+
+            document.getElementById('pyAccountHolder').value = pd.accountHolderName || '';
+            document.getElementById('pyAccountNumber').value = pd.accountNumber || '';
+            document.getElementById('pyAccountNumberConfirm').value = pd.accountNumber || '';
+            document.getElementById('pyIfsc').value = pd.ifsc || '';
+            document.getElementById('pyUpiId').value = pd.upiId || '';
+            await renderPayoutImageSlot('cheque', pd.chequePhotoUrl);
+            await renderPayoutImageSlot('qr', pd.qrCodeUrl);
+
+            const statusEl = document.getElementById('pyStatusBadge');
+            if (pd.status) {
+                statusEl.classList.remove('hidden');
+                const map = {
+                    pending_verification: ['⏳ Pending Verification', 'bg-amber-50 border-amber-200 text-amber-700'],
+                    verified: ['✅ Verified — payouts active', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
+                    rejected: ['❌ Rejected — please re-check and re-submit', 'bg-red-50 border-red-200 text-red-700']
+                };
+                const [label, cls] = map[pd.status] || map.pending_verification;
+                statusEl.innerHTML = `<span class="chip ${cls} border-2 font-black">${label}</span>`;
+            } else {
+                statusEl.classList.add('hidden');
+            }
+
+            goTo('screenPayoutsEarnings');
+            renderPayoutHistoryAndEarnings(docId);
+        };
+
+        // ==========================================================================
+        // RENT TRACKER
+        //
+        // The first management feature, and deliberately the smallest one. Booking brings an
+        // owner into the app a few times a month; rent brings them in every day, because rent
+        // is what they actually lose sleep over.
+        //
+        // The advantage HostelOM has over a standalone PG-management app: the guest data is
+        // already here from the booking. Owners of those apps have to hand-type every guest
+        // before the app does anything useful, and most give up at that step.
+        // ==========================================================================
+        let currentRentPropertyId = null;
+        let currentRentFilter = 'due';
+        let rentRowsCache = [];
+
+        window.openRentTracker = async function(propertyId, hostelName) {
+            currentRentPropertyId = propertyId;
+            currentRentFilter = 'due';
+            document.getElementById('rentHostelName').innerText = hostelName || '';
+            document.getElementById('rentList').innerHTML =
+                '<p class="text-center text-slate-400 font-bold text-sm py-8">Loading...</p>';
+            goTo('screenRentTracker');
+            loadRentTracker(propertyId);
+        };
+
+        window.loadRentTracker = async function(propertyId) {
+            if (!propertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            try {
+                const snap = await getDocs(query(collection(db, 'rentLedger'),
+                    where('ownerUid', '==', uid), where('propertyId', '==', propertyId)));
+                rentRowsCache = [];
+                snap.forEach(d => rentRowsCache.push({ id: d.id, ...d.data() }));
+                // Oldest due first — the one pending longest needs chasing most.
+                rentRowsCache.sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+                renderRentList();
+            } catch (err) {
+                console.error('Rent load failed', err);
+                document.getElementById('rentList').innerHTML =
+                    '<p class="text-center text-red-500 font-bold text-sm py-8">Could not load. Please try again.</p>';
+            }
+        };
+
+        window.setRentFilter = function(f) {
+            currentRentFilter = f;
+            const due = document.getElementById('rentFilterDue');
+            const paid = document.getElementById('rentFilterPaid');
+            const on = 'flex-1 py-3 rounded-2xl font-black text-sm transition shadow-lg text-white ';
+            const off = 'flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500';
+            due.className = f === 'due' ? on + 'bg-red-500' : off;
+            paid.className = f === 'paid' ? on + 'bg-emerald-500' : off;
+            renderRentList();
+        };
+
+        function renderRentList() {
+            const box = document.getElementById('rentList');
+            const wantPaid = currentRentFilter === 'paid';
+            const rows = rentRowsCache.filter(r => !!r.paid === wantPaid);
+
+            // The summary always shows what is OUTSTANDING, whichever tab is open — that is
+            // the number the owner came here for.
+            const dueRows = rentRowsCache.filter(r => !r.paid);
+            const total = dueRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+            document.getElementById('rentDueAmount').innerText = '₹' + total.toLocaleString('en-IN');
+            document.getElementById('rentDueLabel').innerText =
+                total > 0 ? `${dueRows.length} pending` : 'All rent received 🎉';
+            document.getElementById('rentSummaryCard').className =
+                'rounded-3xl p-6 mb-5 text-center ' + (total > 0 ? 'bg-red-50' : 'bg-emerald-50');
+
+            if (rows.length === 0) {
+                box.innerHTML = `<div class="text-center py-10">
+                    <div class="text-3xl mb-2">${wantPaid ? '🟢' : '🎉'}</div>
+                    <p class="text-[13px] text-slate-400 font-bold">${wantPaid ? 'No rent received yet' : 'No rent pending'}</p>
+                </div>`;
+                return;
+            }
+
+            box.innerHTML = rows.map(r => {
+                const initial = (String(r.guestName || '?').trim()[0] || '?').toUpperCase();
+                const photo = r.guestPhotoUrl
+                    ? `<img src="${r.guestPhotoUrl}" class="w-14 h-14 rounded-full object-cover shrink-0">`
+                    : `<div class="w-14 h-14 rounded-full btn-gradient flex items-center justify-center text-white font-black text-xl shrink-0">${initial}</div>`;
+
+                // "3 days late" reads faster than a date, and it is what the owner reacts to.
+                let when = '';
+                if (r.dueDate) {
+                    const days = Math.floor((new Date() - new Date(r.dueDate)) / 86400000);
+                    if (r.paid) when = 'Received';
+                    else if (days > 0) when = `${days} days late`;
+                    else if (days === 0) when = 'Due today';
+                    else when = `${-days} days to go`;
+                }
+
+                return `<div class="flex items-center gap-3 p-3 rounded-2xl border-2 ${r.paid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-200'}">
+                    ${photo}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-black text-slate-900 text-[15px] truncate">${r.guestName || 'Guest'}</p>
+                        <p class="text-[11px] font-bold ${r.paid ? 'text-emerald-600' : (when.includes('late') ? 'text-red-500' : 'text-slate-400')}">${r.bedLabel ? r.bedLabel + ' · ' : ''}${when}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="font-black text-[17px] ${r.paid ? 'text-emerald-600' : 'text-slate-900'}">₹${(Number(r.amount) || 0).toLocaleString('en-IN')}</p>
+                    </div>
+                    <button type="button" onclick="openBookingChat('${r.bookingId}', 'owner')" title="Message this guest"
+                        class="w-11 h-11 rounded-full bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white shrink-0 transition active:scale-95 flex items-center justify-center">💬</button>
+                    ${r.paid
+                        ? `<button type="button" onclick="toggleRentPaid('${r.id}', true)" class="w-11 h-11 rounded-full bg-emerald-500 text-white font-black text-lg shrink-0 transition active:scale-95">✓</button>`
+                        : `<button type="button" onclick="toggleRentPaid('${r.id}', false)" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-emerald-500 hover:text-white text-slate-400 font-black text-lg shrink-0 transition active:scale-95">✓</button>`}
+                </div>`;
+            }).join('');
+        }
+
+        // One tap. No form, no date picker — the date is now, which it always is.
+        window.toggleRentPaid = async function(rowId, wasPaid) {
+            const row = rentRowsCache.find(r => r.id === rowId);
+            if (!row) return;
+
+            // Optimistic: flip it on screen first so the tap feels instant, then save.
+            row.paid = !wasPaid;
+            row.paidAt = row.paid ? new Date().toISOString() : null;
+            renderRentList();
+
+            try {
+                await updateDoc(doc(db, 'rentLedger', rowId), {
+                    paid: row.paid,
+                    paidAt: row.paidAt,
+                    paidMethod: row.paid ? 'cash' : null
+                });
+                if (row.paid) {
+                    showAppToast(`✅ Received ₹${(Number(row.amount) || 0).toLocaleString('en-IN')} from ${row.guestName}`);
+                    // Tell the guest too — a receipt they did not have to ask for.
+                    pushNotification({
+                        type: 'rent_received', audience: 'guest', guestUid: row.guestUid,
+                        propertyId: row.propertyId,
+                        title: 'Rent received',
+                        message: `₹${(Number(row.amount) || 0).toLocaleString('en-IN')} rent received. Thank you!`
+                    });
+                }
+            } catch (err) {
+                console.error('Rent update failed', err);
+                row.paid = wasPaid;          // put it back — the save did not happen
+                renderRentList();
+                alert('Could not save. Please try again.');
+            }
+        };
+
+        // One tap sends every pending guest a reminder. The owner's alternative is opening
+        // WhatsApp and typing the same line five times, which is why rent reminders quietly
+        // stop happening after the first month.
+        window.remindAllPending = async function() {
+            const due = rentRowsCache.filter(r => !r.paid);
+            if (!due.length) { showAppToast('No pending rent to remind about.'); return; }
+            const total = due.reduce((n, r) => n + (Number(r.amount) || 0), 0);
+            if (!confirm(`Send a rent reminder to ${due.length} guest(s)?\n\nTotal pending: ₹${total.toLocaleString('en-IN')}`)) return;
+
+            let sent = 0;
+            for (const r of due) {
+                const ok = await pushNotification({
+                    type: 'rent_reminder', audience: 'guest',
+                    guestUid: r.guestUid, propertyId: r.propertyId,
+                    title: 'Rent reminder',
+                    message: `Your rent of ₹${(Number(r.amount) || 0).toLocaleString('en-IN')} is pending. Please pay at the hostel.`
+                });
+                if (ok) sent++;
+            }
+            showAppToast(sent ? `🔔 Reminder sent to ${sent} guest(s)` : 'Could not send reminders right now.');
+        };
+
+        // Builds this month's row for every active guest. The owner types nothing — every
+        // detail comes from the booking they already have.
+        window.generateMonthlyRent = async function() {
+            if (!currentRentPropertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+            if (!confirm(`Generate rent for this month (${monthKey})?\n\nOne entry will be created for every active guest. Entries that already exist will not be duplicated.`)) return;
+
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'),
+                    where('ownerUid', '==', uid),
+                    where('propertyId', '==', currentRentPropertyId),
+                    where('status', '==', 'paid_verified')));
+
+                const existing = new Set(rentRowsCache.map(r => `${r.bookingId}_${r.monthKey}`));
+                let made = 0, skipped = 0;
+
+                for (const bdoc of snap.docs) {
+                    const b = bdoc.data();
+                    if (existing.has(`${bdoc.id}_${monthKey}`)) { skipped++; continue; }
+
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    // Monthly rent is the full stay amount, not the 20% advance we collected.
+                    const rent = Number(b.totalStayAmount) || beds.reduce((sum, x) => sum + (Number(x.price) || 0), 0);
+                    if (!rent) { skipped++; continue; }
+
+                    const due = new Date(now.getFullYear(), now.getMonth(), 5).toISOString().slice(0, 10);
+
+                    await addDoc(collection(db, 'rentLedger'), {
+                        ownerUid: uid,
+                        propertyId: currentRentPropertyId,
+                        bookingId: bdoc.id,
+                        guestUid: b.guestUid || null,
+                        guestName: b.guestName || 'Guest',
+                        bedLabel: beds.length ? ('Bed ' + beds.map(x => x.id).join(', ')) : '',
+                        amount: rent,
+                        monthKey,
+                        dueDate: due,
+                        paid: false,
+                        createdAt: new Date().toISOString()
+                    });
+                    made++;
+                }
+
+                showAppToast(made ? `✅ ${made} entries created` : 'All entries already exist');
+                loadRentTracker(currentRentPropertyId);
+            } catch (err) {
+                console.error('Generate rent failed', err);
+                alert('Could not generate: ' + err.message);
+            }
+        };
+
+        // ==========================================================================
+        // OCCUPANCY
+        //
+        // Today an owner can only answer "how many beds are free" by opening every room.
+        // "How many will be free next month" they cannot answer at all — which means they
+        // find out about an empty bed a week after it went empty.
+        // ==========================================================================
+        let currentOccPropertyId = null;
+
+        window.openOccupancy = async function(propertyId, hostelName) {
+            currentOccPropertyId = propertyId;
+            document.getElementById('occHostelName').innerText = hostelName || '';
+            document.getElementById('occMonths').innerHTML =
+                '<p class="text-center text-slate-400 font-bold text-sm py-6">Loading...</p>';
+            document.getElementById('occRooms').innerHTML = '';
+            goTo('screenOccupancy');
+            loadOccupancy(propertyId);
+        };
+
+        window.loadOccupancy = async function(propertyId) {
+            if (!propertyId) return;
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            try {
+                const bizSnap = await getDoc(doc(db, 'businesses', propertyId));
+                if (!bizSnap.exists()) return;
+                const rooms = bizSnap.data().roomsAndBeds || [];
+
+                let free = 0, full = 0;
+                const roomStats = rooms.map(r => {
+                    const beds = r.beds || [];
+                    const busy = beds.filter(b => b.status && b.status !== 'available').length;
+                    free += beds.length - busy;
+                    full += busy;
+                    return { name: r.name || 'Room', total: beds.length, busy: busy };
+                });
+
+                const total = free + full;
+                const pct = total ? Math.round((full / total) * 100) : 0;
+                document.getElementById('occFree').innerText = free;
+                document.getElementById('occFull').innerText = full;
+                document.getElementById('occPercent').innerText = pct + '%';
+                const bar = document.getElementById('occBar');
+                bar.style.width = pct + '%';
+                // Red when nearly full is wrong here — full is GOOD for an owner. Amber only
+                // warns when the place is emptying out.
+                bar.className = 'h-full transition-all duration-500 ' +
+                    (pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500');
+
+                // Who is leaving, and when
+                const bSnap = await getDocs(query(collection(db, 'bookings'),
+                    where('ownerUid', '==', uid),
+                    where('propertyId', '==', propertyId),
+                    where('status', '==', 'paid_verified')));
+
+                const now = new Date();
+                const months = [0, 1, 2].map(off => {
+                    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
+                    return {
+                        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+                        label: d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+                        leaving: 0
+                    };
+                });
+
+                bSnap.forEach(dd => {
+                    const b = dd.data();
+                    const out = b.checkOutDate || (b.bookingContext && b.bookingContext.checkOutDate);
+                    if (!out) return;
+                    const od = new Date(out);
+                    const key = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
+                    const m = months.find(x => x.key === key);
+                    if (m) m.leaving++;
+                });
+
+                document.getElementById('occLeaving').innerText = months[0].leaving;
+
+                // Current guests, newest first, each with a way to reach them. The counts above
+                // answer "how many"; this answers "who", which is what an owner needs when a bed
+                // is occupied and they want to reach that person.
+                const guests = [];
+                bSnap.forEach(dd => {
+                    const b = dd.data();
+                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
+                    guests.push({
+                        id: dd.id,
+                        name: b.guestName || 'Guest',
+                        bed: beds.length ? 'Bed ' + beds.map(x => x.id).join(', ') : '',
+                        since: b.bookingContext && (b.bookingContext.joiningDate || b.joiningDate),
+                        out: b.checkOutDate || (b.bookingContext && b.bookingContext.checkOutDate)
+                    });
+                });
+                guests.sort((a, b) => String(b.since || '').localeCompare(String(a.since || '')));
+
+                document.getElementById('occGuests').innerHTML = guests.length ? guests.map(g => {
+                    const initial = (String(g.name).trim()[0] || '?').toUpperCase();
+                    let leaving = '';
+                    if (g.out) {
+                        const days = Math.ceil((new Date(g.out) - new Date()) / 86400000);
+                        if (days <= 0) leaving = '<span class="text-red-500">Left / overdue</span>';
+                        else if (days <= 30) leaving = `<span class="text-amber-600">Leaving in ${days} days</span>`;
+                    }
+                    return `<div class="flex items-center gap-3 p-3 rounded-2xl border-2 bg-white border-slate-200">
+                        <div class="w-12 h-12 rounded-full btn-gradient flex items-center justify-center text-white font-black text-lg shrink-0">${initial}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-900 text-[14px] truncate">${g.name}</p>
+                            <p class="text-[11px] font-bold text-slate-400">${g.bed}${leaving ? ' · ' + leaving : ''}</p>
+                        </div>
+                        <button type="button" onclick="openBookingChat('${g.id}', 'owner')" title="Message this guest"
+                            class="w-11 h-11 rounded-full bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white shrink-0 transition active:scale-95 flex items-center justify-center">💬</button>
+                    </div>`;
+                }).join('') : '<p class="text-center text-slate-400 font-bold text-sm py-4">No guests staying right now</p>';
+
+                document.getElementById('occMonths').innerHTML = months.map((m, i) => {
+                    const willBeFree = free + m.leaving;
+                    return `<div class="flex items-center gap-3 p-3.5 rounded-2xl border-2 ${i === 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-slate-200'}">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-900 text-[14px]">${m.label}${i === 0 ? ' <span class="text-[10px] text-indigo-600">(now)</span>' : ''}</p>
+                            <p class="text-[11px] font-bold text-slate-400">${m.leaving ? m.leaving + ' leaving' : 'Nobody leaving'}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="font-black text-[18px] ${willBeFree > 0 ? 'text-amber-600' : 'text-emerald-600'}">${willBeFree}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase">free</p>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                document.getElementById('occRooms').innerHTML = roomStats.map(r => {
+                    const p = r.total ? Math.round((r.busy / r.total) * 100) : 0;
+                    return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+                        <p class="font-black text-slate-700 text-[13px] w-24 shrink-0 truncate">${r.name}</p>
+                        <div class="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div class="h-full ${p === 100 ? 'bg-emerald-500' : 'bg-indigo-400'}" style="width:${p}%"></div>
+                        </div>
+                        <p class="text-[12px] font-black text-slate-500 shrink-0 w-14 text-right">${r.busy}/${r.total}</p>
+                    </div>`;
+                }).join('') || '<p class="text-center text-slate-400 font-bold text-sm py-4">No rooms found</p>';
+
+            } catch (err) {
+                console.error('Occupancy load failed', err);
+                document.getElementById('occMonths').innerHTML =
+                    '<p class="text-center text-red-500 font-bold text-sm py-6">Could not load. Please try again.</p>';
+            }
+        };
+
         async function markBookingNoShow(bookingDocId, onDone) {
             if (!confirm("Mark as No-Show? This releases the bed for other guests. Per policy, the advance the guest paid stays non-refundable — only the bed is freed up.")) return;
             try {
@@ -4603,10 +5067,20 @@
                     createdAt: new Date().toISOString()
                 });
                 try {
+                    // Admin: needs to verify the UTR against the bank app.
                     await pushNotification({
                         type: 'upi_payment_pending', audience: 'admin',
                         propertyId: pending.propertyId || null,
                         message: `💳 UPI payment submitted by ${pending.guestName || 'a guest'} for ₹${pending.amount} (${pending.hostelName || ''}) — needs verification.`
+                    });
+                    // Owner: this was missing entirely. A guest would pay, and the person who
+                    // actually has to keep the bed free heard nothing until they opened the app.
+                    // Payment is exactly the moment they need to know.
+                    await pushNotification({
+                        type: 'new_payment', audience: 'owner',
+                        propertyId: pending.propertyId || null,
+                        title: 'New booking payment',
+                        message: `💳 ${pending.guestName || 'A guest'} paid ₹${pending.amount} advance. Verification pending — we'll confirm shortly.`
                     });
                 } catch (e) {}
 
@@ -5031,17 +5505,17 @@
                 }
                 const list = aud === 'owner' ? (_recipientCache.owners || []) : (_recipientCache.guests || []);
                 target.innerHTML = list.length
-                    ? '<option value="">— chuniye —</option>' + list.map(r =>
+                    ? '<option value="">— select —</option>' + list.map(r =>
                         `<option value="${aud === 'owner' ? r.ownerUid : r.guestUid}">${r.name}</option>`).join('')
-                    : '<option value="">Koi nahi mila</option>';
+                    : '<option value="">None found</option>';
             } catch (e) {
-                target.innerHTML = '<option value="">Load nahi hua</option>';
+                target.innerHTML = '<option value="">Could not load</option>';
             }
         }
 
         async function sendAdminBroadcast() {
             const msg = (document.getElementById('broadcastMessageInput').value || '').trim();
-            if (!msg) { alert('Message likhna zaroori hai.'); return; }
+            if (!msg) { alert('Please type a message.'); return; }
             const btn = document.getElementById('btnSendBroadcast');
             const originalText = btn.innerText; btn.disabled = true; btn.innerText = '⏳ Sending...';
             try {
@@ -5051,7 +5525,7 @@
                 const targetSel = document.getElementById('broadcastTarget');
                 const audience = audienceSel ? audienceSel.value : 'allOwners';
                 if ((audience === 'owner' || audience === 'guest') && !(targetSel && targetSel.value)) {
-                    alert('Kisko bhejna hai, wo chuniye.');
+                    alert('Please choose who to send this to.');
                     btn.disabled = false; btn.innerText = originalText; return;
                 }
                 const body = { audience: audience, message: '📢 ' + msg, type: 'admin_message' };
@@ -5070,7 +5544,7 @@
                 document.getElementById('modalBroadcast').classList.add('hidden');
                 document.getElementById('broadcastMessageInput').value = '';
                 const audLabel = { owner: 'us owner', allOwners: 'sabhi owners', guest: 'us guest', allGuests: 'sabhi guests' }[audience] || '';
-                showAppToast(`📢 Message ${audLabel} ko bhej diya gaya.`);
+                showAppToast(`📢 Message sent to ${audLabel}.`);
             } catch (err) {
                 console.error('Broadcast failed:', err);
                 alert('Could not send: ' + err.message);
@@ -5089,7 +5563,7 @@
                         const n = d.data();
                         // Show a business owner ONLY: (a) activity tied to one of THEIR OWN properties,
                         // or (b) an admin broadcast meant for everyone. Anything else (e.g. "new business
-                        // onboarded" — an admin-only activity log entry) is hidden from owner dashboards.
+                        // onboarded" — an admin-only activity guests entry) is hidden from owner dashboards.
                         const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
                     const isMine = (n.ownerUid && myUid && n.ownerUid === myUid)
                                 || (n.propertyId && myIds && myIds.includes(n.propertyId));
@@ -5247,369 +5721,6 @@
             }
         }
 
-        // OWNER → GUEST CONTACT
-        //
-        // This used to open a browser prompt(), send the text to admin, and rely on a human
-        // relaying it over WhatsApp — slow, and it put a person in the middle of every
-        // message. Now that in-app chat exists, the owner just talks to the guest directly:
-        // instant, logged, and the guest's phone number still never changes hands.
-        // ==========================================================================
-        // RENT TRACKER
-        //
-        // The first management feature, and deliberately the smallest one. Booking brings an
-        // owner into the app a few times a month; rent brings them in every day, because rent
-        // is what they actually lose sleep over.
-        //
-        // The big advantage HostelOM has over every standalone PG-management app: the guest
-        // data is already here from the booking. Owners of those apps have to hand-type every
-        // guest before the app does anything useful, and most give up at that step.
-        // ==========================================================================
-        // ==========================================================================
-        // OCCUPANCY
-        //
-        // Today an owner can only answer "how many beds are free" by opening every room.
-        // "How many will be free next month" they cannot answer at all — which means they
-        // find out about an empty bed a week after it went empty.
-        //
-        // Everything here is derived from data already in the app: bed status for today,
-        // and each booking's check-out date for the months ahead.
-        // ==========================================================================
-        let currentOccPropertyId = null;
-
-        window.openOccupancy = async function(propertyId, hostelName) {
-            currentOccPropertyId = propertyId;
-            document.getElementById('occHostelName').innerText = hostelName || '';
-            document.getElementById('occMonths').innerHTML =
-                '<p class="text-center text-slate-400 font-bold text-sm py-6">Loading...</p>';
-            document.getElementById('occRooms').innerHTML = '';
-            goTo('screenOccupancy');
-            loadOccupancy(propertyId);
-        };
-
-        window.loadOccupancy = async function(propertyId) {
-            if (!propertyId) return;
-            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-            try {
-                const bizSnap = await getDoc(doc(db, 'businesses', propertyId));
-                if (!bizSnap.exists()) return;
-                const rooms = bizSnap.data().roomsAndBeds || [];
-
-                let free = 0, full = 0;
-                const roomStats = rooms.map(r => {
-                    const beds = r.beds || [];
-                    const busy = beds.filter(b => b.status && b.status !== 'available').length;
-                    free += beds.length - busy;
-                    full += busy;
-                    return { name: r.name || 'Room', total: beds.length, busy: busy };
-                });
-
-                const total = free + full;
-                const pct = total ? Math.round((full / total) * 100) : 0;
-                document.getElementById('occFree').innerText = free;
-                document.getElementById('occFull').innerText = full;
-                document.getElementById('occPercent').innerText = pct + '%';
-                const bar = document.getElementById('occBar');
-                bar.style.width = pct + '%';
-                // Red when nearly full is wrong here — full is GOOD for an owner. Amber only
-                // warns when the place is emptying out.
-                bar.className = 'h-full transition-all duration-500 ' +
-                    (pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500');
-
-                // Who is leaving, and when
-                const bSnap = await getDocs(query(collection(db, 'bookings'),
-                    where('ownerUid', '==', uid),
-                    where('propertyId', '==', propertyId),
-                    where('status', '==', 'paid_verified')));
-
-                const now = new Date();
-                const months = [0, 1, 2].map(off => {
-                    const d = new Date(now.getFullYear(), now.getMonth() + off, 1);
-                    return {
-                        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-                        label: d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
-                        leaving: 0
-                    };
-                });
-
-                bSnap.forEach(dd => {
-                    const b = dd.data();
-                    const out = b.checkOutDate || (b.bookingContext && b.bookingContext.checkOutDate);
-                    if (!out) return;
-                    const od = new Date(out);
-                    const key = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, '0')}`;
-                    const m = months.find(x => x.key === key);
-                    if (m) m.leaving++;
-                });
-
-                document.getElementById('occLeaving').innerText = months[0].leaving;
-
-                document.getElementById('occMonths').innerHTML = months.map((m, i) => {
-                    const willBeFree = free + m.leaving;
-                    return `<div class="flex items-center gap-3 p-3.5 rounded-2xl border-2 ${i === 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-slate-200'}">
-                        <div class="flex-1 min-w-0">
-                            <p class="font-black text-slate-900 text-[14px]">${m.label}${i === 0 ? ' <span class="text-[10px] text-indigo-600">(abhi)</span>' : ''}</p>
-                            <p class="text-[11px] font-bold text-slate-400">${m.leaving ? m.leaving + ' log ja rahe hain' : 'Koi nahi ja raha'}</p>
-                        </div>
-                        <div class="text-right shrink-0">
-                            <p class="font-black text-[18px] ${willBeFree > 0 ? 'text-amber-600' : 'text-emerald-600'}">${willBeFree}</p>
-                            <p class="text-[9px] font-black text-slate-400 uppercase">khali</p>
-                        </div>
-                    </div>`;
-                }).join('');
-
-                document.getElementById('occRooms').innerHTML = roomStats.map(r => {
-                    const p = r.total ? Math.round((r.busy / r.total) * 100) : 0;
-                    return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-                        <p class="font-black text-slate-700 text-[13px] w-24 shrink-0 truncate">${r.name}</p>
-                        <div class="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div class="h-full ${p === 100 ? 'bg-emerald-500' : 'bg-indigo-400'}" style="width:${p}%"></div>
-                        </div>
-                        <p class="text-[12px] font-black text-slate-500 shrink-0 w-14 text-right">${r.busy}/${r.total}</p>
-                    </div>`;
-                }).join('') || '<p class="text-center text-slate-400 font-bold text-sm py-4">Koi room nahi mila</p>';
-
-            } catch (err) {
-                console.error('Occupancy load failed', err);
-                document.getElementById('occMonths').innerHTML =
-                    '<p class="text-center text-red-500 font-bold text-sm py-6">Load nahi hua. Dobara koshish kijiye.</p>';
-            }
-        };
-
-        let currentRentPropertyId = null;
-        let currentRentFilter = 'due';
-        let rentRowsCache = [];
-
-        window.openRentTracker = async function(propertyId, hostelName) {
-            currentRentPropertyId = propertyId;
-            currentRentFilter = 'due';
-            document.getElementById('rentHostelName').innerText = hostelName || '';
-            document.getElementById('rentList').innerHTML =
-                '<p class="text-center text-slate-400 font-bold text-sm py-8">Loading...</p>';
-            goTo('screenRentTracker');
-            loadRentTracker(propertyId);
-        };
-
-        window.loadRentTracker = async function(propertyId) {
-            if (!propertyId) return;
-            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-            try {
-                const snap = await getDocs(query(collection(db, 'rentLedger'),
-                    where('ownerUid', '==', uid), where('propertyId', '==', propertyId)));
-                rentRowsCache = [];
-                snap.forEach(d => rentRowsCache.push({ id: d.id, ...d.data() }));
-                // Oldest due first — the one that has been pending longest needs chasing most.
-                rentRowsCache.sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
-                renderRentList();
-            } catch (err) {
-                console.error('Rent load failed', err);
-                document.getElementById('rentList').innerHTML =
-                    '<p class="text-center text-red-500 font-bold text-sm py-8">Load nahi hua. Dobara koshish kijiye.</p>';
-            }
-        };
-
-        window.setRentFilter = function(f) {
-            currentRentFilter = f;
-            const due = document.getElementById('rentFilterDue');
-            const paid = document.getElementById('rentFilterPaid');
-            const on = 'flex-1 py-3 rounded-2xl font-black text-sm transition shadow-lg text-white ';
-            const off = 'flex-1 py-3 rounded-2xl font-black text-sm transition bg-slate-100 text-slate-500';
-            due.className = f === 'due' ? on + 'bg-red-500' : off;
-            paid.className = f === 'paid' ? on + 'bg-emerald-500' : off;
-            renderRentList();
-        };
-
-        function renderRentList() {
-            const box = document.getElementById('rentList');
-            const wantPaid = currentRentFilter === 'paid';
-            const rows = rentRowsCache.filter(r => !!r.paid === wantPaid);
-
-            // The summary always shows what is OUTSTANDING, whichever tab is open — that is
-            // the number the owner came here for.
-            const dueRows = rentRowsCache.filter(r => !r.paid);
-            const total = dueRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-            document.getElementById('rentDueAmount').innerText = '₹' + total.toLocaleString('en-IN');
-            document.getElementById('rentDueLabel').innerText =
-                total > 0 ? `${dueRows.length} logon ka baaki hai` : 'Sabka rent aa gaya 🎉';
-            document.getElementById('rentSummaryCard').className =
-                'rounded-3xl p-6 mb-5 text-center ' + (total > 0 ? 'bg-red-50' : 'bg-emerald-50');
-
-            if (rows.length === 0) {
-                box.innerHTML = `<div class="text-center py-10">
-                    <div class="text-3xl mb-2">${wantPaid ? '🟢' : '🎉'}</div>
-                    <p class="text-[13px] text-slate-400 font-bold">${wantPaid ? 'Abhi kisi ka rent nahi aaya' : 'Kisi ka rent baaki nahi'}</p>
-                </div>`;
-                return;
-            }
-
-            box.innerHTML = rows.map(r => {
-                const initial = (String(r.guestName || '?').trim()[0] || '?').toUpperCase();
-                const photo = r.guestPhotoUrl
-                    ? `<img src="${r.guestPhotoUrl}" class="w-14 h-14 rounded-full object-cover shrink-0">`
-                    : `<div class="w-14 h-14 rounded-full btn-gradient flex items-center justify-center text-white font-black text-xl shrink-0">${initial}</div>`;
-
-                // "3 din late" reads faster than a date, and it is what the owner reacts to.
-                let when = '';
-                if (r.dueDate) {
-                    const days = Math.floor((new Date() - new Date(r.dueDate)) / 86400000);
-                    if (r.paid) when = 'Aa gaya';
-                    else if (days > 0) when = `${days} din late`;
-                    else if (days === 0) when = 'Aaj due';
-                    else when = `${-days} din baad`;
-                }
-
-                return `<div class="flex items-center gap-3 p-3 rounded-2xl border-2 ${r.paid ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-200'}">
-                    ${photo}
-                    <div class="flex-1 min-w-0">
-                        <p class="font-black text-slate-900 text-[15px] truncate">${r.guestName || 'Guest'}</p>
-                        <p class="text-[11px] font-bold ${r.paid ? 'text-emerald-600' : (when.includes('late') ? 'text-red-500' : 'text-slate-400')}">${r.bedLabel ? r.bedLabel + ' · ' : ''}${when}</p>
-                    </div>
-                    <div class="text-right shrink-0">
-                        <p class="font-black text-[17px] ${r.paid ? 'text-emerald-600' : 'text-slate-900'}">₹${(Number(r.amount) || 0).toLocaleString('en-IN')}</p>
-                    </div>
-                    ${r.paid
-                        ? `<button type="button" onclick="toggleRentPaid('${r.id}', true)" class="w-11 h-11 rounded-full bg-emerald-500 text-white font-black text-lg shrink-0 transition active:scale-95">✓</button>`
-                        : `<button type="button" onclick="toggleRentPaid('${r.id}', false)" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-emerald-500 hover:text-white text-slate-400 font-black text-lg shrink-0 transition active:scale-95">✓</button>`}
-                </div>`;
-            }).join('');
-        }
-
-        // One tap. No form, no date picker — the date is now, which it always is.
-        window.toggleRentPaid = async function(rowId, wasPaid) {
-            const row = rentRowsCache.find(r => r.id === rowId);
-            if (!row) return;
-
-            // Optimistic: flip it on screen first so the tap feels instant, then save.
-            row.paid = !wasPaid;
-            row.paidAt = row.paid ? new Date().toISOString() : null;
-            renderRentList();
-
-            try {
-                await updateDoc(doc(db, 'rentLedger', rowId), {
-                    paid: row.paid,
-                    paidAt: row.paidAt,
-                    paidMethod: row.paid ? 'cash' : null
-                });
-                if (row.paid) {
-                    showAppToast(`✅ ${row.guestName} ka ₹${(Number(row.amount) || 0).toLocaleString('en-IN')} mila`);
-                    // Tell the guest too — a receipt they did not have to ask for.
-                    pushNotification({
-                        type: 'rent_received', audience: 'guest', guestUid: row.guestUid,
-                        propertyId: row.propertyId,
-                        title: 'Rent received',
-                        message: `₹${(Number(row.amount) || 0).toLocaleString('en-IN')} rent received. Thank you!`
-                    });
-                }
-            } catch (err) {
-                console.error('Rent update failed', err);
-                row.paid = wasPaid;          // put it back — the save did not happen
-                renderRentList();
-                alert('Save nahi hua. Dobara koshish kijiye.');
-            }
-        };
-
-        // Builds this month's row for every active guest. The owner types nothing — every
-        // detail comes from the booking they already have.
-        window.generateMonthlyRent = async function() {
-            if (!currentRentPropertyId) return;
-            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-            const now = new Date();
-            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-            if (!confirm(`Is mahine (${monthKey}) ka rent banayein?\n\nHar active guest ke liye ek entry banegi. Jo pehle se ban chuki hain wo dobara nahi banengi.`)) return;
-
-            try {
-                const snap = await getDocs(query(collection(db, 'bookings'),
-                    where('ownerUid', '==', uid),
-                    where('propertyId', '==', currentRentPropertyId),
-                    where('status', '==', 'paid_verified')));
-
-                const existing = new Set(rentRowsCache.map(r => `${r.bookingId}_${r.monthKey}`));
-                let made = 0, skipped = 0;
-
-                for (const bdoc of snap.docs) {
-                    const b = bdoc.data();
-                    if (existing.has(`${bdoc.id}_${monthKey}`)) { skipped++; continue; }
-
-                    const beds = (b.bookingContext && b.bookingContext.beds) || [];
-                    // Monthly rent is the full stay amount, not the 20% advance we collected.
-                    const rent = Number(b.totalStayAmount) || beds.reduce((sum, x) => sum + (Number(x.price) || 0), 0);
-                    if (!rent) { skipped++; continue; }
-
-                    const due = new Date(now.getFullYear(), now.getMonth(), 5).toISOString().slice(0, 10);
-
-                    await addDoc(collection(db, 'rentLedger'), {
-                        ownerUid: uid,
-                        propertyId: currentRentPropertyId,
-                        bookingId: bdoc.id,
-                        guestUid: b.guestUid || null,
-                        guestName: b.guestName || 'Guest',
-                        bedLabel: beds.length ? ('Bed ' + beds.map(x => x.id).join(', ')) : '',
-                        amount: rent,
-                        monthKey,
-                        dueDate: due,
-                        paid: false,
-                        createdAt: new Date().toISOString()
-                    });
-                    made++;
-                }
-
-                showAppToast(made ? `✅ ${made} entry ban gayi` : 'Sab pehle se bani hui hain');
-                loadRentTracker(currentRentPropertyId);
-            } catch (err) {
-                console.error('Generate rent failed', err);
-                alert('Nahi ban paya: ' + err.message);
-            }
-        };
-
-        window.openPayoutsScreen = async function(docId) {
-            currentPayoutsDocId = docId;
-            pyPendingChequeFile = null; pyPendingQrFile = null;
-            document.getElementById('pyFormError').classList.add('hidden');
-            document.getElementById('pySaveBtn').disabled = false; document.getElementById('pySaveBtn').innerText = '💾 Save Payout Details';
-
-            // Load existing payout details from the PRIVATE collection. This used to scan the
-            // entire businesses collection (one read per hostel) to pull a field that should
-            // never have been in a world-readable document in the first place.
-            let pd = {};
-            try {
-                const paySnap = await window.getDoc(window.doc(window.db, "businessPayouts", docId));
-                if (paySnap.exists()) pd = paySnap.data();
-            } catch (e) { console.warn('Could not load payout details', e); }
-            document.getElementById('pyAccountHolder').value = pd.accountHolderName || '';
-            document.getElementById('pyAccountNumber').value = pd.accountNumber || '';
-            document.getElementById('pyAccountNumberConfirm').value = pd.accountNumber || '';
-            document.getElementById('pyIfsc').value = pd.ifsc || '';
-            document.getElementById('pyUpiId').value = pd.upiId || '';
-            await renderPayoutImageSlot('cheque', pd.chequePhotoUrl || null);
-            await renderPayoutImageSlot('qr', pd.qrCodeUrl || null);
-
-            const statusEl = document.getElementById('pyStatusBadge');
-            if (pd.status) {
-                statusEl.classList.remove('hidden');
-                const map = {
-                    pending_verification: ['⏳ Pending Verification', 'bg-amber-50 border-amber-200 text-amber-700'],
-                    verified: ['✅ Verified — payouts active', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
-                    rejected: ['❌ Rejected — please re-check and re-submit', 'bg-red-50 border-red-200 text-red-700']
-                };
-                const [label, cls] = map[pd.status] || map.pending_verification;
-                statusEl.innerHTML = `<span class="chip ${cls} border-2 font-black">${label}</span>`;
-            } else {
-                statusEl.classList.add('hidden');
-            }
-
-            goTo('screenPayoutsEarnings');
-            renderPayoutHistoryAndEarnings(docId);
-        };
-
-
-        async function requestContactWithGuest(bookingDocId) {
-            try {
-                openBookingChat(bookingDocId, 'owner');
-            } catch (e) {
-                console.error('Could not open chat', e);
-                alert('Could not open the chat. Please try again.');
-            }
-        }
         async function renderPayoutImageSlot(kind, pathOrUrl) {
             const slot = document.getElementById(kind === 'cheque' ? 'pyChequeSlot' : 'pyQrSlot');
             const url = await getPrivateFileUrl(pathOrUrl, currentPayoutsDocId);
@@ -6514,7 +6625,7 @@
         // heldByUid and every booking to a guestUid, so an anonymous booking would be rejected at
         // write time. Without this gate the guest fills in the whole ~20-field registration form
         // and only fails at the very last step with "Could not verify bed availability", which is
-        // a terrible way to find out you needed to log in.
+        // a terrible way to find out you needed to guests in.
         //
         // It also gives the guest a real "My Bookings" screen and a way to request cancellation,
         // neither of which works for an anonymous booking.
@@ -6610,7 +6721,7 @@
                 const el = document.getElementById(pair[0]);
                 if (!el) continue;
                 if (!String(el.value || '').trim()) {
-                    if (err) { err.innerText = pair[1] + ' bharna zaroori hai.'; err.classList.remove('hidden'); }
+                    if (err) { err.innerText = pair[1] + ' is required.'; err.classList.remove('hidden'); }
                     el.focus();
                     el.classList.add('ring-2', 'ring-red-400');
                     setTimeout(function () { el.classList.remove('ring-2', 'ring-red-400'); }, 2200);
@@ -6622,7 +6733,7 @@
                 const a = document.getElementById('grfAadharNumber');
                 const digits = String((a && a.value) || '').replace(/\D/g, '');
                 if (digits.length !== 12) {
-                    if (err) { err.innerText = 'Aadhar number 12 digit ka hona chahiye.'; err.classList.remove('hidden'); }
+                    if (err) { err.innerText = 'Aadhar number must be 12 digits.'; err.classList.remove('hidden'); }
                     if (a) a.focus();
                     return false;
                 }
@@ -6891,7 +7002,7 @@
                         // booking while the hostel ended up with no Aadhaar on file — which is a
                         // legal requirement here, not an optional extra.
                         console.error('Aadhar front photo upload failed', upErr);
-                        errBox.innerText = 'Aadhar photo upload nahi hua. Internet check karke dobara try kijiye.';
+                        errBox.innerText = 'Aadhar photo could not be uploaded. Please check your connection and try again.';
                         errBox.classList.remove('hidden');
                         submitBtn.disabled = false;
                         submitBtn.innerText = 'Submit & Confirm Booking';
@@ -8197,7 +8308,7 @@
         }
         function architectRequireSelectedRoom() {
             if (!architectSelectedRoomId || !admin2DBlocks.find(b => b.id === architectSelectedRoomId)) {
-                alert('Pehle neeche kisi room ko tap karke select karo, phir ye button dabao.');
+                alert('Select a room below first, then press this button.');
                 return null;
             }
             return architectSelectedRoomId;
@@ -8320,10 +8431,10 @@
         window.openBulkPrice = function() {
             const sel = document.getElementById('bulkPriceScope');
             const rooms = (admin2DBlocks || []).filter(b => b.beds && b.beds.length);
-            if (!rooms.length) { alert('Pehle rooms aur beds bana lijiye.'); return; }
+            if (!rooms.length) { alert('Please add rooms and beds first.'); return; }
 
             const totalBeds = rooms.reduce((n, r) => n + r.beds.length, 0);
-            sel.innerHTML = `<option value="__all__">Sabhi beds (${totalBeds})</option>` +
+            sel.innerHTML = `<option value="__all__">All beds (${totalBeds})</option>` +
                 rooms.map(r => `<option value="${r.id}">${r.name || 'Room'} (${r.beds.length} bed)</option>`).join('');
 
             document.getElementById('bulkPriceValue').value = '';
@@ -8339,7 +8450,7 @@
             const n = scope === '__all__'
                 ? rooms.reduce((sum, r) => sum + r.beds.length, 0)
                 : (rooms.find(r => r.id === scope)?.beds.length || 0);
-            document.getElementById('bulkPriceCount').innerText = `${n} bed ka rate badlega.`;
+            document.getElementById('bulkPriceCount').innerText = `${n} bed(s) will be updated.`;
         }
 
         window.closeBulkPrice = function() {
@@ -8353,12 +8464,12 @@
             const price = Number(raw);
 
             if (!raw || !isFinite(price) || price <= 0) {
-                err.innerText = 'Sahi rate daaliye.'; err.classList.remove('hidden'); return;
+                err.innerText = 'Please enter a valid rate.'; err.classList.remove('hidden'); return;
             }
             // A price this far off is almost always a typo (30000 instead of 3000), and it would
             // go straight onto the public listing.
             if (price > 100000) {
-                err.innerText = 'Ye rate bahut zyada lag raha hai. Dobara check kijiye.';
+                err.innerText = 'That rate looks unusually high. Please double-check it.';
                 err.classList.remove('hidden'); return;
             }
             err.classList.add('hidden');
@@ -8372,7 +8483,7 @@
 
             closeBulkPrice();
             qeRefreshAll();
-            showAppToast(`✅ ${changed} bed ka rate ₹${price.toLocaleString('en-IN')} kar diya`);
+            showAppToast(`✅ Rate set to ₹${price.toLocaleString('en-IN')} for ${changed} bed(s)`);
         };
 
         function qeEditBedPrice(blockId, bedId) {
