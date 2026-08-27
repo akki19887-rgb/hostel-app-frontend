@@ -3332,6 +3332,7 @@
                     pending_payment_confirmation: ['⏳ Verifying your payment', 'bg-amber-50 border-amber-200 text-amber-700'],
                     paid_verified: ['✅ Confirmed', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
                     checked_in: ['🏠 Checked In', 'bg-indigo-50 border-indigo-200 text-indigo-700'],
+                    checked_out: ['🚪 Stay Completed', 'bg-slate-100 border-slate-300 text-slate-500'],
                     no_show: ['🚫 Marked as No-show', 'bg-slate-100 border-slate-300 text-slate-500'],
                     rejected: ['❌ Payment Not Verified', 'bg-red-50 border-red-200 text-red-600'],
                     cancellation_requested: ['🚫 Cancellation Requested', 'bg-orange-50 border-orange-200 text-orange-600'],
@@ -3420,7 +3421,17 @@
                 const bData = oneSnap.exists() ? oneSnap.data() : null;
                 const name = role === 'guest' ? (bData?.hostelName || 'Hostel') : (bData?.guestName || 'Guest');
                 document.getElementById('chatHeaderTitle').innerText = name;
-                document.getElementById('chatHeaderSubtitle').innerText = `Booking ${bData?.bookingId || bookingDocId}`;
+
+                // The owner needs to know WHICH bed is messaging, not a booking code. "Bed 4"
+                // is something they can act on; "BK-M3X9K2" tells them nothing and means they
+                // have to go and look it up before they can even reply.
+                const beds = (bData?.bookingContext?.beds || []).map(x => x.id).filter(Boolean);
+                const bedLabel = beds.length ? `Bed ${beds.join(', ')}` : '';
+                const room = bData?.bookingContext?.roomName || '';
+                const parts = role === 'guest'
+                    ? [bedLabel, `Booking ${bData?.bookingId || bookingDocId}`]
+                    : [room, bedLabel, `Booking ${bData?.bookingId || bookingDocId}`];
+                document.getElementById('chatHeaderSubtitle').innerText = parts.filter(Boolean).join(' · ');
                 document.getElementById('chatAvatar').innerText = (name.trim()[0] || '?').toUpperCase();
             } catch (e) {
                 document.getElementById('chatHeaderSubtitle').innerText = `Booking ${bookingDocId}`;
@@ -3694,6 +3705,7 @@
                 paid_verified: ['🟢 Paid — Awaiting Check-in', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
                 checked_in: ['✅ Checked In', 'bg-indigo-50 border-indigo-200 text-indigo-700'],
                 no_show: ['🚫 No-show — Bed Released', 'bg-slate-100 border-slate-300 text-slate-500'],
+                checked_out: ['🚪 Checked Out — Bed Free', 'bg-slate-100 border-slate-300 text-slate-500'],
                 cancellation_requested: ['⚠️ Guest Requested Cancellation', 'bg-orange-50 border-orange-200 text-orange-600'],
                     cancelled: ['Cancelled', 'bg-slate-100 border-slate-300 text-slate-600'],
             };
@@ -3721,11 +3733,14 @@
                     <button type="button" onclick="rejectCancellation('${b.id}', () => ${refreshFnName}())" class="px-4 py-2.5 bg-slate-50 border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-700 hover:text-white transition">✕ Reject</button>
                     <button type="button" onclick="approveCancellation('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-orange-500 text-white font-black rounded-xl text-xs hover:bg-orange-600 transition">✅ Approve &amp; Free Bed</button>
                 </div>`;
-            } else if (b.status === 'checked_in' && hidePhone) {
+            } else if (b.status === 'checked_in') {
+                // Until now a checked-in booking had no way to end. The guest left, the owner had
+                // no button to press, and the bed stayed "occupied" forever — so it never came
+                // back on the market and the owner had to remember it by hand.
                 actionButtons = `
-                <div class="flex gap-2 shrink-0">
+                <div class="flex gap-2 shrink-0 flex-wrap justify-end">
                     ${chatBtnOwner}
-                    <!-- REMOVED: duplicate "Request Contact" — same as the chat button above it. -->
+                    <button type="button" onclick="markBookingCheckedOut('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-amber-500 text-white font-black rounded-xl text-xs hover:bg-amber-600 transition">🚪 Check-out &amp; Free Bed</button>
                 </div>`;
             }
             // Owners never see the guest's raw phone number directly (privacy) — they can only
@@ -4413,6 +4428,26 @@
             if (!confirm('Mark this guest as checked in?')) return;
             try {
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'checked_in', checkedInAt: new Date().toISOString() });
+
+                // Check-in is when the money actually becomes real for the owner (payout is
+                // counted from here) and when the guest's stay officially starts. Neither side
+                // was being told, so both had to take someone's word for the date.
+                const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
+                const bData = oneSnap.exists() ? oneSnap.data() : null;
+                if (bData) {
+                    await pushNotification({
+                        type: 'checked_in', audience: 'guest',
+                        guestUid: bData.guestUid, propertyId: bData.propertyId, bookingId: bookingDocId,
+                        title: 'Checked in',
+                        message: `Welcome! Your stay at ${bData.hostelName || 'the hostel'} has started.`
+                    });
+                    await pushNotification({
+                        type: 'checked_in', audience: 'owner',
+                        propertyId: bData.propertyId, bookingId: bookingDocId,
+                        title: 'Guest checked in',
+                        message: `${bData.guestName || 'A guest'} has checked in. Payout clock starts now.`
+                    });
+                }
                 if (onDone) onDone();
             } catch (err) {
                 console.error('Check-in update failed', err);
@@ -4724,10 +4759,13 @@
             if (!confirm(`Generate rent for this month (${monthKey})?\n\nOne entry will be created for every active guest. Entries that already exist will not be duplicated.`)) return;
 
             try {
+                // Both statuses count as "currently staying". A guest who has checked in is
+                // still here; one who has checked out is not, and must stop generating rent —
+                // otherwise the owner keeps chasing money from someone who left months ago.
                 const snap = await getDocs(query(collection(db, 'bookings'),
                     where('ownerUid', '==', uid),
                     where('propertyId', '==', currentRentPropertyId),
-                    where('status', '==', 'paid_verified')));
+                    where('status', 'in', ['paid_verified', 'checked_in'])));
 
                 const existing = new Set(rentRowsCache.map(r => `${r.bookingId}_${r.monthKey}`));
                 let made = 0, skipped = 0;
@@ -4819,7 +4857,7 @@
                 const bSnap = await getDocs(query(collection(db, 'bookings'),
                     where('ownerUid', '==', uid),
                     where('propertyId', '==', propertyId),
-                    where('status', '==', 'paid_verified')));
+                    where('status', 'in', ['paid_verified', 'checked_in'])));
 
                 const now = new Date();
                 const months = [0, 1, 2].map(off => {
@@ -4911,6 +4949,61 @@
             }
         };
 
+        // Ends a stay: frees the bed, closes the rent ledger, and tells both sides.
+        //
+        // This is the piece that was missing from the whole lifecycle. A booking could start
+        // but never end, so an owner who had a guest leave was stuck: the bed showed occupied,
+        // the rent kept generating each month, and the only fix was editing the layout by hand.
+        window.markBookingCheckedOut = async function(bookingDocId, onDone) {
+            try {
+                const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
+                const bData = oneSnap.exists() ? oneSnap.data() : null;
+                if (!bData) { alert('Booking not found.'); return; }
+
+                const beds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
+                const bedLabel = beds.length ? 'Bed ' + beds.join(', ') : 'the bed';
+
+                if (!confirm(`Check out ${bData.guestName || 'this guest'}?\n\n${bedLabel} will be free immediately and can be booked by someone else.\nAny unpaid rent stays on your Rent list.`)) return;
+
+                await releaseBedsForBooking(bData.propertyId, beds, bData.lockId);
+                await updateDoc(doc(db, 'bookings', bookingDocId), {
+                    status: 'checked_out',
+                    checkedOutAt: new Date().toISOString()
+                });
+
+                // Stop generating next month's rent for someone who has left. Unpaid rows are
+                // left alone deliberately — money still owed does not disappear because the
+                // guest walked out.
+                try {
+                    const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                    const rentSnap = await getDocs(query(collection(db, 'rentLedger'),
+                        where('ownerUid', '==', uid), where('bookingId', '==', bookingDocId)));
+                    let unpaid = 0;
+                    rentSnap.forEach(rd => { if (!rd.data().paid) unpaid++; });
+                    if (unpaid) showAppToast(`⚠️ ${unpaid} unpaid rent entr${unpaid === 1 ? 'y' : 'ies'} still pending`);
+                } catch (e) { console.warn('Rent check failed', e); }
+
+                await pushNotification({
+                    type: 'checked_out', audience: 'owner',
+                    propertyId: bData.propertyId, bookingId: bookingDocId,
+                    title: 'Bed is free again',
+                    message: `${bData.guestName || 'A guest'} checked out. ${bedLabel} is available for new bookings.`
+                });
+                await pushNotification({
+                    type: 'checked_out', audience: 'guest',
+                    guestUid: bData.guestUid, propertyId: bData.propertyId, bookingId: bookingDocId,
+                    title: 'Checked out',
+                    message: `Thank you for staying at ${bData.hostelName || 'the hostel'}. Your stay is now closed.`
+                });
+
+                showAppToast(`🚪 ${bedLabel} is free now`);
+                if (onDone) onDone();
+            } catch (err) {
+                console.error('Check-out failed', err);
+                alert('Could not check out right now: ' + err.message);
+            }
+        };
+
         async function markBookingNoShow(bookingDocId, onDone) {
             if (!confirm("Mark as No-Show? This releases the bed for other guests. Per policy, the advance the guest paid stays non-refundable — only the bed is freed up.")) return;
             try {
@@ -4922,6 +5015,23 @@
                 const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
                 await releaseBedsForBooking(bData.propertyId, bedIds, bData.lockId);
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'no_show', noShowAt: new Date().toISOString() });
+
+                // The bed just went back on the market. The owner needs to know that so they can
+                // re-list it, and the guest needs to know their booking is gone — otherwise they
+                // turn up next week expecting a bed that has since been sold to someone else.
+                await pushNotification({
+                    type: 'no_show', audience: 'owner',
+                    propertyId: bData.propertyId, bookingId: bookingDocId,
+                    title: 'Bed is free again',
+                    message: `${bData.guestName || 'A guest'} did not turn up. ${bedIds.length || 1} bed(s) are available again.`
+                });
+                await pushNotification({
+                    type: 'no_show', audience: 'guest',
+                    guestUid: bData.guestUid, propertyId: bData.propertyId, bookingId: bookingDocId,
+                    title: 'Booking cancelled — no show',
+                    message: `Your booking at ${bData.hostelName || 'the hostel'} was marked no-show and the bed has been released.`
+                });
+
                 if (onDone) onDone();
             } catch (err) {
                 console.error('No-show update failed', err);
