@@ -460,6 +460,101 @@
          inside an otherwise polished app. -->
     <!-- BULK PRICE — changing the rate on a 40-bed hostel meant opening 40 separate prompts.
          Owners simply did not do it, so prices went stale and guests saw the wrong number. -->
+    <!-- WALK-IN GUEST — someone who booked at the hostel directly, not through HostelOM.
+         Without this the owner could mark a bed occupied but the app had no idea WHO was in it:
+         the occupancy screen said "2 occupied / no guests staying", and rent could not be tracked
+         for the very people who make up most of a hostel's beds. -->
+    <div id="modalWalkIn" class="zoom-modal hidden" onclick="if(event.target===this) closeWalkIn()">
+        <div class="bg-white p-7 rounded-[2rem] max-w-md w-full relative max-h-[92vh] overflow-y-auto layout-scroll">
+            <button type="button" onclick="closeWalkIn()" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 transition">✕</button>
+
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center text-white text-lg shadow-lg">🚶</div>
+                <div>
+                    <h3 class="display-font text-xl font-black text-slate-900 leading-tight">Add walk-in guest</h3>
+                    <p id="walkInBedLabel" class="text-[11px] font-bold text-amber-600"></p>
+                </div>
+            </div>
+
+            <label class="block text-[10px] font-black text-slate-400 uppercase mt-5 mb-1">Guest name *</label>
+            <input type="text" id="walkInName" placeholder="Full name"
+                class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+
+            <label class="block text-[10px] font-black text-slate-400 uppercase mt-3 mb-1">Phone number *</label>
+            <input type="tel" inputmode="numeric" maxlength="10" id="walkInPhone" placeholder="10-digit mobile"
+                class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Monthly rent (₹) *</label>
+                    <input type="number" inputmode="numeric" id="walkInRent" placeholder="3500"
+                        class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Joining date *</label>
+                    <input type="date" id="walkInJoining"
+                        class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+                </div>
+            </div>
+
+            <!-- ID PROOF — the law does not care how a guest arrived. A hostel must hold ID for
+                 everyone sleeping in it, and most beds in a real hostel are walk-ins. Without this
+                 the owner has 20 residents and paperwork for five, and finds out at the worst
+                 possible moment: a police check. -->
+            <div class="mt-5 pt-4 border-t-2 border-dashed border-slate-200">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-base">🪪</span>
+                    <h4 class="text-[11px] font-black text-slate-700 uppercase tracking-widest">ID Proof</h4>
+                    <span class="text-[9px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">REQUIRED BY LAW</span>
+                </div>
+                <p class="text-[10px] font-semibold text-slate-400 mb-3">Police verification ke liye zaroori hai.</p>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <select id="walkInIdType"
+                        class="col-span-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-[13px] outline-none focus:border-amber-400 transition">
+                        <option value="Aadhaar">Aadhaar</option>
+                        <option value="Voter ID">Voter ID</option>
+                        <option value="Driving Licence">DL</option>
+                        <option value="Passport">Passport</option>
+                        <option value="College ID">College ID</option>
+                    </select>
+                    <input type="text" inputmode="numeric" id="walkInIdNumber" placeholder="ID number"
+                        class="col-span-2 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+                </div>
+
+                <button type="button" onclick="document.getElementById('walkInIdFile').click()"
+                    id="walkInIdPhotoBtn"
+                    class="w-full mt-2 py-3.5 bg-white border-2 border-dashed border-slate-300 rounded-2xl font-black text-[13px] text-slate-500 hover:border-amber-400 hover:text-amber-600 transition">
+                    📷 ID ki photo lagayein
+                </button>
+                <input type="file" id="walkInIdFile" accept="image/*" capture="environment" class="hidden"
+                    onchange="onWalkInIdPicked(this)">
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Emergency contact (guardian)</label>
+                <input type="tel" inputmode="numeric" maxlength="10" id="walkInEmergency" placeholder="Ghar ka number"
+                    class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
+                <p class="text-[10px] font-semibold text-slate-400 mt-1">Raat me kuch ho jaye to isi number pe call jayega.</p>
+            </div>
+
+            <div class="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-2xl p-3 mt-4">
+                <span class="text-sm leading-none mt-0.5">📞</span>
+                <p class="text-[11px] font-bold text-amber-900 leading-relaxed">
+                    Walk-in guest ke paas app account nahi hai, isliye in-app chat nahi chalega —
+                    aap seedhe call ya WhatsApp kar sakte hain.
+                </p>
+            </div>
+
+            <p id="walkInError" class="hidden text-[11px] font-bold text-red-600 mt-3"></p>
+
+            <div class="flex gap-2 mt-5">
+                <button type="button" onclick="closeWalkIn()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm rounded-2xl transition">Cancel</button>
+                <button type="button" id="walkInSaveBtn" onclick="saveWalkInGuest()" class="flex-[2] py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-sm rounded-2xl shadow-lg transition">Add &amp; Occupy Bed</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalBulkPrice" class="zoom-modal hidden" onclick="if(event.target===this) closeBulkPrice()">
         <div class="bg-white p-7 rounded-[2rem] max-w-md w-full relative">
             <button type="button" onclick="closeBulkPrice()" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 transition">✕</button>
@@ -728,6 +823,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" onclick="openMessages('guest')" class="relative px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">💬 Messages<span id="guestMsgBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
                 <button type="button" onclick="goTo('screenMyBookings')" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">📋 My Bookings</button>
                 <button type="button" onclick="logout()" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
@@ -926,6 +1022,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" onclick="openMessages('owner')" title="Messages" class="relative w-11 h-11 bg-white/70 rounded-2xl flex items-center justify-center hover:bg-white transition shadow-sm border border-slate-200/60">💬<span id="ownerMsgBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
                 <button type="button" onclick="toggleBizNotifications()" class="relative w-11 h-11 bg-white/70 rounded-2xl flex items-center justify-center hover:bg-white transition shadow-sm border border-slate-200/60">🔔<span id="bizNotifBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">0</span></button>
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
@@ -1058,6 +1155,23 @@
            - one tap to mark rent received; no form, no date picker
            - the big number on top is the only thing that has to be read
          =================================================================== -->
+    <!-- MESSAGES — every conversation in one place.
+         Until now a chat could only be opened from inside a specific booking, so an owner had
+         to remember which guest had written and go hunting for that booking. Any message they
+         did not happen to see the push for was effectively invisible. -->
+    <div id="screenMessages" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-5">
+            <button type="button" onclick="goTo(messagesBackScreen)" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Messages</h2>
+                <p id="messagesSubtitle" class="text-[11px] font-bold text-indigo-600">All your conversations</p>
+            </div>
+            <button type="button" onclick="loadMessagesList()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <div id="messagesList" class="space-y-2.5"></div>
+    </div>
+
     <div id="screenRentTracker" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-5">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
@@ -1112,6 +1226,22 @@
                 <p id="occHostelName" class="text-[11px] font-bold text-indigo-600 truncate"></p>
             </div>
             <button type="button" onclick="loadOccupancy(currentOccPropertyId)" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <!-- INTEREST — the number that brings an owner back tomorrow. Occupancy tells them
+             what they already know; this tells them something they cannot see any other way. -->
+        <div id="occInterest" class="hidden rounded-3xl p-5 mb-5 bg-indigo-50 border-2 border-indigo-100">
+            <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">This week</p>
+            <div class="flex items-end gap-6">
+                <div>
+                    <p id="occViews" class="display-font text-4xl font-black text-indigo-700 leading-none">0</p>
+                    <p class="text-[11px] font-bold text-indigo-500 mt-1">people viewed</p>
+                </div>
+                <div>
+                    <p id="occPlanOpens" class="display-font text-4xl font-black text-indigo-700 leading-none">0</p>
+                    <p class="text-[11px] font-bold text-indigo-500 mt-1">opened your rooms</p>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-3 gap-2.5 mb-5">
@@ -1658,6 +1788,10 @@
                 <button onclick="architectAddBed()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">🛏️ Bed</button>
                 <button onclick="qeAddRoom()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">🔳 Room</button>
                 <button onclick="openBulkPrice()" class="text-xs bg-emerald-50 border border-emerald-200 text-emerald-700 font-black px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition" title="Set one price for many beds at once">💵 Bulk Price</button>
+                <!-- Attached to the FLOOR, not to a corridor object. The AI often gets the
+                     corridor wrong or misses it entirely; the floor always exists. -->
+                <button onclick="document.getElementById('walkthroughFileInput').click()" id="walkthroughBtn" class="text-xs bg-purple-50 border border-purple-200 text-purple-700 font-black px-4 py-2 rounded-xl shadow-sm hover:bg-purple-600 hover:text-white hover:border-purple-600 transition" title="Upload a walk-through video of this floor">🎥 Walkthrough</button>
+                <input type="file" id="walkthroughFileInput" accept="video/*,image/*" class="hidden" onchange="uploadFloorWalkthrough(this)">
                 <button onclick="addBusinessCorridor('vertical')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↕️ V-Cor</button>
                 <button onclick="addBusinessCorridor('horizontal')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↔️ H-Cor</button>
                 <button onclick="addBusinessCorridor('middle')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Rooms on both sides, corridor running horizontally between them">⬍ Mid-Cor</button>
@@ -1800,7 +1934,7 @@
                 <div id="userBedTapIndicator" class="hidden" style="position:absolute; border:3px solid #4f46e5; background:rgba(99,102,241,0.18); border-radius:12px; pointer-events:none; z-index:6; box-shadow:0 0 0 4px rgba(99,102,241,0.15);"></div>
                 <!-- Mobile pinch-zoom hint (auto-hides after first interaction) -->
                 <div id="userCanvasHint" class="lg:hidden absolute top-3 left-3 right-3 z-10 bg-white/90 backdrop-blur rounded-xl px-3 py-2 text-[10px] font-bold text-slate-600 border border-slate-200 shadow-sm flex items-center gap-2 pointer-events-none">
-                    <span>👆</span> Tap bed to book · Pinch to zoom · Drag to pan
+                    <span>👆</span> <span class="lg:hidden">Tap bed to book · Pinch to zoom · Drag to pan</span><span class="hidden lg:inline">Click a bed to book · Scroll to move · Ctrl + scroll to zoom · Drag to pan</span>
                 </div>
                 <!-- ROOM/BED GRID — the real booking view.
                      #userSimpleBedGrid is the fixed VIEWPORT (never scrolls sideways).
@@ -1809,7 +1943,7 @@
                      side-by-side arrangement a desktop does — just smaller — instead of the
                      squeezed/overlapping mess a narrow 3-column grid produced before.
                      Pinch/drag then scales & pans that layer for readability. -->
-                <div id="userSimpleBedGrid" class="hidden absolute inset-0 z-30 bg-white rounded-3xl" style="overflow:hidden; touch-action:none;">
+                <div id="userSimpleBedGrid" class="hidden absolute inset-0 z-30 bg-white rounded-3xl" style="overflow:hidden; touch-action:none; cursor:grab;">
                     <div id="bedGridZoomLayer" style="transform-origin:0 0; will-change:transform;"></div>
 
                     <!-- Persistent gesture hint + reset-to-fit button (mobile only) -->
@@ -3041,6 +3175,7 @@
                     const n = payload.notification || {};
                     showAppToast(`🔔 ${n.title || 'HostelOM'}: ${(n.body || '').slice(0, 60)}`);
                     try { if (typeof loadBookingMessages === 'function' && currentChatBookingId) loadBookingMessages(); } catch (e) {}
+                    try { refreshMessageBadge(); } catch (e) {}
                     try { if (typeof listenBizNotifications === 'function') listenBizNotifications(); } catch (e) {}
                 });
             } catch (e) { console.warn('Foreground push listener failed', e); }
@@ -3068,6 +3203,25 @@
         function showPushBlockedHint() {
             showAppToast('Notifications are blocked in your browser settings. Tap the 🔒 icon in the address bar to allow them.');
         }
+
+        // Fires once per property per session — a guest scrolling up and down a listing should
+        // not inflate the number the owner is shown. Deliberately fire-and-forget: a counter
+        // must never slow down or break browsing.
+        const _viewsSent = new Set();
+        window.trackPropertyView = function(propertyId, kind) {
+            if (!propertyId) return;
+            const key = propertyId + ':' + (kind || 'view');
+            if (_viewsSent.has(key)) return;
+            _viewsSent.add(key);
+            try {
+                fetch(`${BACKEND_URL}/track-view`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ propertyId, kind: kind || 'view' }),
+                    keepalive: true
+                }).catch(() => {});
+            } catch (e) {}
+        };
 
         async function pushNotification(payload) {
             try {
@@ -3461,6 +3615,7 @@
             document.body.style.overflow = '';
             stopChatListener();   // stop paying for reads once the drawer is shut
             currentChatBookingId = null;
+            try { refreshMessageBadge(); } catch (e) {}
         };
 
         // Escape closes it, like every other drawer people have used.
@@ -3514,6 +3669,18 @@
             sendBookingMessage();
         };
 
+        // Which messages this person has already seen. Kept in localStorage rather than
+        // Firestore because it is per-device and nobody else needs it — and writing a
+        // "seen" flag to the database on every message would triple the write cost.
+        function chatSeenKey(bookingId) { return 'hoom_seen_' + bookingId; }
+
+        function markChatSeen(bookingId, count) {
+            try { localStorage.setItem(chatSeenKey(bookingId), String(count)); } catch (e) {}
+        }
+        function getChatSeen(bookingId) {
+            try { return Number(localStorage.getItem(chatSeenKey(bookingId)) || 0); } catch (e) { return 0; }
+        }
+
         // Live listener for the open chat. Without this the person had to hit Refresh to see a
         // reply — which is not a messenger, it's an inbox you have to poll by hand. Rapido,
         // WhatsApp, Swiggy all push new messages in as they arrive; so does this now.
@@ -3545,6 +3712,8 @@
                 const rows = [];
                 snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
                 rows.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+                // The chat is open and on screen, so everything in it counts as read.
+                markChatSeen(currentChatBookingId, rows.length);
                 if (rows.length === 0) {
                     container.innerHTML = `<div class="text-center py-10">
                         <div class="text-3xl mb-2">💬</div>
@@ -4250,6 +4419,8 @@
         // rather than someone actually logging in.
         async function routeToDashboard(isRestore) {
             try { enablePushNotifications(accountMode, Notification && Notification.permission === 'default'); } catch (e) {}
+            // Show the waiting-chats count as soon as a dashboard appears.
+            setTimeout(() => { try { refreshMessageBadge(); } catch (e) {} }, 1200);
 
             // Activity guests for the Admin feed — but ONLY for a real login. Without this guard
             // every page refresh would write "Business login: …" again, and the feed would be
@@ -4683,8 +4854,9 @@
                     <div class="text-right shrink-0">
                         <p class="font-black text-[17px] ${r.paid ? 'text-emerald-600' : 'text-slate-900'}">₹${(Number(r.amount) || 0).toLocaleString('en-IN')}</p>
                     </div>
-                    <button type="button" onclick="openBookingChat('${r.bookingId}', 'owner')" title="Message this guest"
-                        class="w-11 h-11 rounded-full bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white shrink-0 transition active:scale-95 flex items-center justify-center">💬</button>
+                    ${contactButtonHTML(r.bookingId, r.guestUid, r.guestPhone, 11)}
+                    ${!r.paid && r.guestPhone ? `<button type="button" onclick="remindOnWhatsApp('${r.id}')" title="WhatsApp reminder"
+                        class="w-11 h-11 rounded-full bg-amber-50 hover:bg-amber-500 text-amber-600 hover:text-white shrink-0 transition active:scale-95 flex items-center justify-center">🔔</button>` : ''}
                     ${r.paid
                         ? `<button type="button" onclick="toggleRentPaid('${r.id}', true)" class="w-11 h-11 rounded-full bg-emerald-500 text-white font-black text-lg shrink-0 transition active:scale-95">✓</button>`
                         : `<button type="button" onclick="toggleRentPaid('${r.id}', false)" class="w-11 h-11 rounded-full bg-slate-100 hover:bg-emerald-500 hover:text-white text-slate-400 font-black text-lg shrink-0 transition active:scale-95">✓</button>`}
@@ -4729,14 +4901,34 @@
         // One tap sends every pending guest a reminder. The owner's alternative is opening
         // WhatsApp and typing the same line five times, which is why rent reminders quietly
         // stop happening after the first month.
+        // WhatsApp reminder for ONE guest. Owners live in WhatsApp, not in this app, and a
+        // walk-in guest cannot receive an in-app notification at all — so for them this is the
+        // only way to chase rent. Opens WhatsApp with the message pre-typed; the owner presses
+        // send, which also means nothing goes out without them seeing it.
+        window.remindOnWhatsApp = function(rowId) {
+            const row = rentRowsCache.find(r => r.id === rowId);
+            if (!row) return;
+            const phone = String(row.guestPhone || '').replace(/\D/g, '');
+            if (!phone) { showAppToast('Is guest ka phone number nahi hai.'); return; }
+            const amt = (Number(row.amount) || 0).toLocaleString('en-IN');
+            const msg = `Namaste ${row.guestName || ''}, aapka rent Rs ${amt} pending hai${row.dueDate ? ' (due ' + row.dueDate + ')' : ''}. Kripya jaldi jama kar dijiye. - ${row.hostelName || 'Hostel'}`;
+            window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
         window.remindAllPending = async function() {
             const due = rentRowsCache.filter(r => !r.paid);
             if (!due.length) { showAppToast('No pending rent to remind about.'); return; }
             const total = due.reduce((n, r) => n + (Number(r.amount) || 0), 0);
             if (!confirm(`Send a rent reminder to ${due.length} guest(s)?\n\nTotal pending: ₹${total.toLocaleString('en-IN')}`)) return;
 
+            // Platform guests get an in-app notification. Walk-ins have no account, so the
+            // only way to reach them is WhatsApp — which is where the owner would have gone
+            // anyway. Opening several tabs at once gets blocked by the browser, so those are
+            // listed separately for the owner to tap one by one.
             let sent = 0;
+            const walkIns = [];
             for (const r of due) {
+                if (!r.guestUid) { if (r.guestPhone) walkIns.push(r); continue; }
                 const ok = await pushNotification({
                     type: 'rent_reminder', audience: 'guest',
                     guestUid: r.guestUid, propertyId: r.propertyId,
@@ -4745,7 +4937,16 @@
                 });
                 if (ok) sent++;
             }
-            showAppToast(sent ? `🔔 Reminder sent to ${sent} guest(s)` : 'Could not send reminders right now.');
+
+            if (walkIns.length) {
+                const first = walkIns[0];
+                const msg = encodeURIComponent(`Namaste ${first.guestName}, aapka rent ₹${(Number(first.amount)||0).toLocaleString('en-IN')} pending hai. Kripya jama kar dijiye. Dhanyavaad.`);
+                if (confirm(`${sent} guest(s) ko app par reminder chala gaya.\n\n${walkIns.length} walk-in guest hain jinke paas app nahi hai — WhatsApp kholein?`)) {
+                    window.open(`https://wa.me/91${String(first.guestPhone).replace(/\D/g,'')}?text=${msg}`, '_blank');
+                }
+            } else {
+                showAppToast(sent ? `🔔 Reminder sent to ${sent} guest(s)` : 'Could not send reminders right now.');
+            }
         };
 
         // Builds this month's row for every active guest. The owner types nothing — every
@@ -4786,7 +4987,9 @@
                         propertyId: currentRentPropertyId,
                         bookingId: bdoc.id,
                         guestUid: b.guestUid || null,
+                        guestPhone: b.guestPhone || null,   // walk-ins are reached by phone, not chat
                         guestName: b.guestName || 'Guest',
+                        hostelName: b.hostelName || '',      // used to sign the WhatsApp reminder
                         bedLabel: beds.length ? ('Bed ' + beds.map(x => x.id).join(', ')) : '',
                         amount: rent,
                         monthKey,
@@ -4824,6 +5027,40 @@
             loadOccupancy(propertyId);
         };
 
+        async function loadOccupancyInterest(propertyId, uid) {
+            const box = document.getElementById('occInterest');
+            if (!box) return;
+            try {
+                const days = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    days.push(`${propertyId}_${d.toISOString().slice(0, 10)}`);
+                }
+                let views = 0, plans = 0;
+                // One get() per day rather than a query — 7 reads, no index needed, and it keeps
+                // working even if a day has no document at all.
+                const results = await Promise.allSettled(
+                    days.map(id => getDoc(doc(db, 'propertyViews', id)))
+                );
+                results.forEach(r => {
+                    if (r.status !== 'fulfilled' || !r.value.exists()) return;
+                    const v = r.value.data();
+                    views += Number(v.views || 0);
+                    plans += Number(v.planOpens || 0);
+                });
+
+                // Hidden entirely when there is nothing to show — "0 people viewed" is worse
+                // than saying nothing at all to an owner who just signed up.
+                if (views === 0 && plans === 0) { box.classList.add('hidden'); return; }
+                document.getElementById('occViews').innerText = views;
+                document.getElementById('occPlanOpens').innerText = plans;
+                box.classList.remove('hidden');
+            } catch (e) {
+                console.warn('Interest load failed', e);
+                box.classList.add('hidden');
+            }
+        }
+
         window.loadOccupancy = async function(propertyId) {
             if (!propertyId) return;
             const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
@@ -4852,6 +5089,10 @@
                 // warns when the place is emptying out.
                 bar.className = 'h-full transition-all duration-500 ' +
                     (pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500');
+
+                // Last 7 days of interest. Loaded after the counts so a slow or empty result
+                // never holds up the numbers the owner actually came here for.
+                loadOccupancyInterest(propertyId, uid);
 
                 // Who is leaving, and when
                 const bSnap = await getDocs(query(collection(db, 'bookings'),
@@ -4890,6 +5131,13 @@
                     const beds = (b.bookingContext && b.bookingContext.beds) || [];
                     guests.push({
                         id: dd.id,
+                        guestUid: b.guestUid || null,
+                        guestPhone: b.guestPhone || null,
+                        walkIn: b.source === 'walk_in',
+                        idType: b.idType || '',
+                        idLast4: b.idLast4 || '',
+                        idPhotoPath: b.idPhotoPath || '',
+                        emergency: b.emergencyContact || '',
                         name: b.guestName || 'Guest',
                         bed: beds.length ? 'Bed ' + beds.map(x => x.id).join(', ') : '',
                         since: b.bookingContext && (b.bookingContext.joiningDate || b.joiningDate),
@@ -4909,11 +5157,17 @@
                     return `<div class="flex items-center gap-3 p-3 rounded-2xl border-2 bg-white border-slate-200">
                         <div class="w-12 h-12 rounded-full btn-gradient flex items-center justify-center text-white font-black text-lg shrink-0">${initial}</div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-black text-slate-900 text-[14px] truncate">${g.name}</p>
+                            <p class="font-black text-slate-900 text-[14px] truncate">${g.name}${g.walkIn ? ' <span class="text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">WALK-IN</span>' : ''}</p>
                             <p class="text-[11px] font-bold text-slate-400">${g.bed}${leaving ? ' · ' + leaving : ''}</p>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                ${g.idLast4
+                                    ? `<span class="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">🪪 ${g.idType || 'ID'} ····${g.idLast4}</span>`
+                                    : `<span class="text-[9px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded">⚠️ NO ID ON FILE</span>`}
+                                ${g.idPhotoPath ? `<button type="button" onclick="openPrivateFile('${g.idPhotoPath}')" class="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded hover:bg-indigo-600 hover:text-white transition">View photo</button>` : ''}
+                                ${g.emergency ? `<a href="tel:${g.emergency}" onclick="event.stopPropagation()" class="text-[9px] font-black text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded hover:bg-slate-700 hover:text-white transition">🆘 Guardian</a>` : ''}
+                            </div>
                         </div>
-                        <button type="button" onclick="openBookingChat('${g.id}', 'owner')" title="Message this guest"
-                            class="w-11 h-11 rounded-full bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white shrink-0 transition active:scale-95 flex items-center justify-center">💬</button>
+                        ${contactButtonHTML(g.id, g.guestUid, g.guestPhone, 11)}
                     </div>`;
                 }).join('') : '<p class="text-center text-slate-400 font-bold text-sm py-4">No guests staying right now</p>';
 
@@ -5549,6 +5803,24 @@
         // on the SAME floor should mirror its photos and/or rates, and it stays live: editing the
         // reference room's photo or price afterwards updates every linked room automatically.
         let openSyncPanel = null; // { roomIndex, type: 'photo' | 'rate' }
+        // A 22-room floor makes ticking each room by hand exactly the chore this feature exists
+        // to remove. Second press unlinks them all, so it doubles as an undo.
+        window.syncAllOnFloor = function(index, type) {
+            const room = globalDynamicRooms[index];
+            if (!room) return;
+            const others = globalDynamicRooms.filter(r => r.floor === room.floor && r.id !== room.id);
+            if (!others.length) return;
+            const field = type === 'photo' ? 'syncPhotoFrom' : 'syncRateFrom';
+            const allLinked = others.every(r => r[field] === room.id);
+            others.forEach(r => {
+                const idx = globalDynamicRooms.findIndex(g => g.id === r.id);
+                setRoomSyncLink(idx, type, room.id, !allLinked);
+            });
+            showAppToast(allLinked
+                ? `Unlinked ${others.length} rooms`
+                : `✅ Applied to ${others.length} rooms`);
+        };
+
         function toggleSyncPanel(roomIndex, type) {
             openSyncPanel = (openSyncPanel && openSyncPanel.roomIndex === roomIndex && openSyncPanel.type === type) ? null : { roomIndex, type };
             renderBusinessConfig();
@@ -5768,7 +6040,8 @@
 
         window.openBusinessEdit = async function(docId) {
             editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
-            loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || []; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor'; wakeUpAIBackend();
+            loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || [];
+            floorWalkthroughsCache = busData.floorWalkthroughs || {};   // so the plan can show the clip const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor'; wakeUpAIBackend();
             floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
             document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
         }
@@ -6153,6 +6426,7 @@
             if (adminFabricCanvasInstance) { adminFabricCanvasInstance.dispose(); adminFabricCanvasInstance = null; }
             currentAdminDocId = docId; admin2DBlocks = [];
             const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); loadedBusinessData = busData;
+            floorWalkthroughsCache = (busData && busData.floorWalkthroughs) || {};
             if(busData && busData.layout2D && busData.layout2D.length > 0) { admin2DBlocks = busData.layout2D; } else if (busData && busData.roomsAndBeds) { admin2DBlocks = [{ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: 'center', floor: busData.roomsAndBeds[0].floor || 'Ground Floor' }, ...busData.roomsAndBeds.map(r => ({ type: 'room', id: r.id || 'B'+Date.now(), name: r.name, beds: r.beds.map(b => ({id: b.id, price: b.price || 5000})), amenities: r.amenities || ['study_table', 'bathroom'], has_door: r.has_door !== false, floor: r.floor || 'Ground Floor' })) ]; }
             adminLocalCanvasStates = busData.fabricCanvasStates || {};
             adminLayoutSnapshotUrls = busData.layoutSnapshotUrls || {}; // FIX: this was never loaded before — publishing any one floor was silently wiping out every other floor's saved snapshot URL when the update was written back to Firestore
@@ -6557,7 +6831,7 @@
                             htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">🏡 ${fd.bhk || 'Flat/House'}</span> ${bookedBadge} ${fd.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-1">${data.businessName || 'Flat/House'}</h3> <p class="text-sm font-black text-indigo-600 mb-2">₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/month <span class="text-slate-400 font-bold text-xs">· Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></p> </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openFlatHouseView('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">${fd.bookingMode === 'visit' ? 'View & Schedule Visit →' : 'View & Book Now →'}</button> ${whatsappBtn} </div> </div>`;
                             return;
                         }
-                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} ${data.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}${genderBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
+                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} ${data.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}${genderBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="trackPropertyView('${doc.id}','plan'); openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
@@ -7309,6 +7583,9 @@
         }
 
         async function openUser2DLayout(docId) {
+            // Counted here as well as on the button, so a guest arriving from a saved link or
+            // a notification is not missed.
+            try { trackPropertyView(docId, 'plan'); } catch (e) {}
             userAccordionOpenRoomId = null;
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
@@ -7636,6 +7913,59 @@
                 }
             }, true);
 
+            // ---------- MOUSE (desktop) ----------
+            // Only touch was wired up, so on a laptop a 22-room plan simply could not be moved:
+            // the container is overflow:hidden by design (the layer is CSS-scaled, not scrolled),
+            // and without pointer handlers there was nothing to pan or zoom it with.
+            // Everything below is mouse-only and cannot affect the touch path above.
+            let mDown = false, mStartX = 0, mStartY = 0, mStartTx = 0, mStartTy = 0, mTravel = 0;
+
+            vp.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                mDown = true; mTravel = 0;
+                mStartX = e.clientX; mStartY = e.clientY;
+                mStartTx = bedGridTx; mStartTy = bedGridTy;
+                vp.style.cursor = 'grabbing';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!mDown) return;
+                const dx = e.clientX - mStartX, dy = e.clientY - mStartY;
+                mTravel = Math.hypot(dx, dy);
+                if (mTravel > BED_GRID_TAP_SLOP) {
+                    bedGridTx = mStartTx + dx; bedGridTy = mStartTy + dy;
+                    clampBedGridPan(); applyBedGridTransform();
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!mDown) return;
+                mDown = false;
+                vp.style.cursor = '';
+                // Mirror the touch behaviour: a drag must not also count as a click on a bed.
+                if (mTravel > BED_GRID_TAP_SLOP) { movedPastSlop = true; travel = mTravel; }
+            });
+
+            // Wheel = pan vertically (and horizontally with shift); ctrl/⌘ + wheel = zoom, which
+            // is what every map and design tool does, so it needs no explaining.
+            vp.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.ctrlKey || e.metaKey) {
+                    const r = vp.getBoundingClientRect();
+                    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+                    const next = Math.max(bedGridFitScale, Math.min(BED_GRID_MAX_ZOOM,
+                        bedGridScale * (e.deltaY < 0 ? 1.12 : 0.89)));
+                    const k = next / bedGridScale;
+                    bedGridTx = cx - (cx - bedGridTx) * k;
+                    bedGridTy = cy - (cy - bedGridTy) * k;
+                    bedGridScale = next;
+                } else {
+                    bedGridTx -= e.shiftKey ? e.deltaY : (e.deltaX || 0);
+                    bedGridTy -= e.shiftKey ? 0 : e.deltaY;
+                }
+                clampBedGridPan(); applyBedGridTransform();
+            }, { passive: false });
+
             window.addEventListener('resize', () => {
                 if (!document.getElementById('userSimpleBedGrid')?.classList.contains('hidden')) resetBedGridZoom();
             });
@@ -7656,6 +7986,44 @@
             bindBedGridGestures();
             // Wait a frame so offsetHeight reflects the freshly-inserted content before clamping.
             requestAnimationFrame(() => { resetBedGridZoom(); maybeShowBedGridCoach(); });
+        }
+
+        // Records that someone looked. Fire-and-forget: analytics must never delay or block
+        // what the guest is actually trying to do, and a failure here is not worth a message.
+        // No login needed — most viewers are browsing before they ever sign up.
+        function trackPropertyView(propertyId, kind) {
+            if (!propertyId) return;
+            try {
+                fetch(`${BACKEND_URL}/track-view`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ propertyId, kind: kind || 'card' }),
+                    keepalive: true
+                }).catch(() => {});
+            } catch (e) {}
+        }
+
+        // Decides where the walk-through entry point goes for the floor being viewed.
+        // A corridor is the natural place — that IS the route the clip shows. But the AI
+        // often produces no corridor at all, so the same clip falls back to a wide button
+        // above the plan rather than becoming unreachable.
+        function walkthroughForCurrentFloor() {
+            const w = (floorWalkthroughsCache || {})[currentUserFloor];
+            return (w && w.url) ? w : null;
+        }
+
+        function walkthroughChipHTML() {
+            const w = walkthroughForCurrentFloor();
+            if (!w) return '';
+            return `<button type="button" onclick="event.stopPropagation(); openFloorWalkthrough('${w.url}','${w.type || 'video'}')"
+                style="background:#faf5ff; border:2px solid #d8b4fe; color:#7e22ce; font-weight:900; font-size:12px; padding:6px 14px; border-radius:9999px; white-space:nowrap; box-shadow:0 2px 6px rgba(126,34,206,0.15);">🎥 Walk through</button>`;
+        }
+
+        function walkthroughBannerHTML() {
+            const w = walkthroughForCurrentFloor();
+            if (!w) return '';
+            return `<button type="button" onclick="openFloorWalkthrough('${w.url}','${w.type || 'video'}')"
+                style="display:block; width:100%; margin-bottom:14px; background:#faf5ff; border:3px solid #d8b4fe; color:#7e22ce; font-weight:900; font-size:15px; padding:14px; border-radius:16px;">🎥 Walk through this floor</button>`;
         }
 
         function renderUserSimpleBedGrid() {
@@ -7774,14 +8142,18 @@
             if ((effectivePos === 'center' || effectivePos === 'middle') && corridors.length > 0) {
                 const half = Math.ceil(rooms.length / 2);
                 html += renderRoomsBlock(rooms.slice(0, half));
-                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem;">🚶 Walkway</div>`;
+                html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:10px;">🚶 Walkway ${walkthroughChipHTML()}</div>`;
                 html += renderRoomsBlock(rooms.slice(half));
             } else {
-                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem;">🚶 Walkway</div>`;
+                if (corridors.length > 0) html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.8rem; display:flex; align-items:center; justify-content:center; gap:10px;">🚶 Walkway ${walkthroughChipHTML()}</div>`;
                 html += renderRoomsBlock(rooms);
             }
             html += `</div>`;
-            setBedGridHTML(container, html);
+
+            // No corridor on this floor (the AI missed it, or there simply isn't one) — the
+            // clip still has to be reachable, so it becomes a full-width button above the plan.
+            const banner = corridors.length === 0 ? walkthroughBannerHTML() : '';
+            setBedGridHTML(container, banner + html);
         }
 
         window.showBedDetailsInPanel = function(bedId) {
@@ -8330,11 +8702,11 @@
                 photosHTML = `<div class="flex items-center justify-between gap-2 mb-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3"><span class="text-xs font-black text-indigo-600">🔗 Photos linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'photo', null, false); renderRoomEditorPage(${index});" class="text-[10px] font-black text-red-500 bg-white px-2.5 py-1.5 rounded-lg border border-red-100">Unlink</button></div>`;
             } else {
                 photosHTML = ` <div class="flex gap-3 mb-3"> <label class="flex-1 p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 1<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 0, this); renderRoomEditorPage(${index});"></label> <label class="flex-1 p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">📷 Photo 2<input type="file" class="hidden" accept="image/*" onchange="saveRoomImageLocally(${index}, 1, this); renderRoomEditorPage(${index});"></label> </div>`;
-                if (isRefRoom && otherRoomsOnFloor.length > 0) {
+                if (otherRoomsOnFloor.length > 0) {
                     const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'photo';
-                    photosHTML += `<div class="mb-3"><button type="button" onclick="toggleSyncPanel(${index}, 'photo'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                    photosHTML += `<div class="mb-3"><button type="button" onclick="toggleSyncPanel(${index}, 'photo'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Apply these photos to other rooms ${open ? '▲' : '▼'}</button>`;
                     if (open) {
-                        photosHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">` + otherRoomsOnFloor.map(r => {
+                        photosHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"><button type=\"button\" onclick=\"syncAllOnFloor(${index}, 'photo'); renderRoomEditorPage(${index});\" class=\"w-full mb-2 py-2 bg-indigo-600 text-white text-[11px] font-black rounded-lg\">Select all rooms on this floor</button>` + otherRoomsOnFloor.map(r => {
                             const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
                             const checked = r.syncPhotoFrom === room.id;
                             return `<label class="flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'photo', '${room.id}', this.checked); renderRoomEditorPage(${index});"> ${r.name}</label>`;
@@ -8363,11 +8735,11 @@
                 </div>`;
             });
             priceHTML += `</div>`;
-            if (isRefRoom && !rateLocked && otherRoomsOnFloor.length > 0) {
+            if (!rateLocked && otherRoomsOnFloor.length > 0) {
                 const open = openSyncPanel && openSyncPanel.roomIndex === index && openSyncPanel.type === 'rate';
-                priceHTML += `<div class="mt-2"><button type="button" onclick="toggleSyncPanel(${index}, 'rate'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Same as ${room.name} — choose rooms ${open ? '▲' : '▼'}</button>`;
+                priceHTML += `<div class="mt-2"><button type="button" onclick="toggleSyncPanel(${index}, 'rate'); renderRoomEditorPage(${index});" class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-100">🔗 Apply this rate to other rooms ${open ? '▲' : '▼'}</button>`;
                 if (open) {
-                    priceHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">` + otherRoomsOnFloor.map(r => {
+                    priceHTML += `<div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"><button type=\"button\" onclick=\"syncAllOnFloor(${index}, 'rate'); renderRoomEditorPage(${index});\" class=\"w-full mb-2 py-2 bg-indigo-600 text-white text-[11px] font-black rounded-lg\">Select all rooms on this floor</button>` + otherRoomsOnFloor.map(r => {
                         const rIdx = globalDynamicRooms.findIndex(gr => gr.id === r.id);
                         const checked = r.syncRateFrom === room.id;
                         return `<label class="flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" ${checked ? 'checked' : ''} onchange="setRoomSyncLink(${rIdx}, 'rate', '${room.id}', this.checked); renderRoomEditorPage(${index});"> ${r.name}</label>`;
@@ -8518,6 +8890,17 @@
         async function qeToggleBedStatus(blockId, bedId) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
             const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
+
+            // Marking a bed occupied without saying WHO is in it is what produced the
+            // "2 occupied / no guests staying" screen. Offer to record the guest instead —
+            // then occupancy, rent and check-out all work for walk-ins too.
+            if (bed.status !== 'occupied' && currentAdminDocId) {
+                if (confirm('Is a guest moving into this bed?\n\nOK  — add their name and rent (recommended)\nCancel — just mark it blocked, no guest')) {
+                    openWalkInGuest(currentAdminDocId, blockId, bedId, `${block.name || 'Room'} · Bed ${bedId}`);
+                    return;
+                }
+            }
+
             const newStatus = (bed.status === 'occupied') ? 'available' : 'occupied';
             bed.status = newStatus; // reflect immediately in the local edit view
             qeRefreshAll();
@@ -8538,6 +8921,358 @@
                 alert('Status changed here, but could not sync to live users: ' + err.message);
             }
         }
+        // A platform guest has an account, so we can chat. A walk-in does not — but the owner
+        // collected their number in person, so calling them is the natural (and only) option.
+        // One helper so every screen makes the same choice.
+        function contactButtonHTML(bookingId, guestUid, guestPhone, size) {
+            const cls = `w-${size} h-${size} rounded-full shrink-0 transition active:scale-95 flex items-center justify-center`;
+            if (guestUid) {
+                return `<button type="button" onclick="openBookingChat('${bookingId}', 'owner')" title="Message this guest"
+                    class="${cls} bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white">💬</button>`;
+            }
+            if (guestPhone) {
+                return `<a href="https://wa.me/91${String(guestPhone).replace(/\D/g,'')}" target="_blank" rel="noopener" title="WhatsApp this guest"
+                    class="${cls} bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white no-underline">📞</a>`;
+            }
+            return '';
+        }
+
+        // ==========================================================================
+        // WALK-IN GUEST
+        //
+        // Most beds in a small hostel are filled by people who walked in, not through any app.
+        // Before this the owner could mark such a bed occupied, but the app had no idea who was
+        // in it — occupancy said "2 occupied / no guests staying", and rent could not be tracked
+        // for exactly the guests who matter most.
+        //
+        // A walk-in creates a real booking (source: 'walk_in') with guestUid = null. Everything
+        // downstream — occupancy, rent ledger, check-out — works off bookings, so it all just
+        // works. Chat does not, because there is no guest account to deliver it to; the owner
+        // gets call/WhatsApp instead, which is fine — they collected the number themselves.
+        // ==========================================================================
+        // ==========================================================================
+        // MESSAGES LIST
+        //
+        // One screen showing every conversation, newest first, with an unread count. Without
+        // it a message that arrived while the app was closed was only findable by opening each
+        // booking one at a time — so most were simply never answered.
+        // ==========================================================================
+        let messagesBackScreen = 'screenBusinessDashboard';
+
+        // Updates the badge on whichever dashboard is open. Deliberately counts CHATS with
+        // something unread, not messages — "3" meaning three people waiting is more useful
+        // than "17" meaning one person sent a lot.
+        window.refreshMessageBadge = async function() {
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            if (!uid) return;
+            const asGuest = accountMode === 'user';
+            const badge = document.getElementById(asGuest ? 'guestMsgBadge' : 'ownerMsgBadge');
+            if (!badge) return;
+            try {
+                const snap = await getDocs(query(collection(db, 'bookings'),
+                    where(asGuest ? 'guestUid' : 'ownerUid', '==', uid)));
+                let waiting = 0;
+                for (const bd of snap.docs) {
+                    if (!asGuest && !bd.data().guestUid) continue;   // walk-ins have no chat
+                    const msgs = await getDocs(collection(db, 'bookings', bd.id, 'messages'));
+                    if (msgs.size > getChatSeen(bd.id)) waiting++;
+                }
+                if (waiting > 0) { badge.innerText = waiting; badge.classList.remove('hidden'); }
+                else badge.classList.add('hidden');
+            } catch (e) { console.warn('Badge refresh failed', e); }
+        };
+
+        window.openMessages = function(role) {
+            messagesBackScreen = role === 'guest' ? 'screenUserDashboard' : 'screenBusinessDashboard';
+            document.getElementById('messagesList').innerHTML =
+                '<p class="text-center text-slate-400 font-bold text-sm py-8">Loading...</p>';
+            goTo('screenMessages');
+            loadMessagesList(role);
+        };
+
+        window.loadMessagesList = async function(role) {
+            const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            if (!uid) return;
+            const asGuest = role === 'guest' || accountMode === 'user';
+            const box = document.getElementById('messagesList');
+
+            try {
+                const field = asGuest ? 'guestUid' : 'ownerUid';
+                const snap = await getDocs(query(collection(db, 'bookings'), where(field, '==', uid)));
+
+                const rows = [];
+                for (const bd of snap.docs) {
+                    const b = bd.data();
+                    // Walk-ins have no account, so they can never have a chat thread.
+                    if (!asGuest && !b.guestUid) continue;
+                    const msgs = await getDocs(collection(db, 'bookings', bd.id, 'messages'));
+                    if (msgs.empty) continue;
+
+                    let last = null;
+                    msgs.forEach(m => {
+                        const d = m.data();
+                        if (!last || new Date(d.createdAt || 0) > new Date(last.createdAt || 0)) last = d;
+                    });
+
+                    rows.push({
+                        id: bd.id,
+                        name: asGuest ? (b.hostelName || 'Hostel') : (b.guestName || 'Guest'),
+                        bed: ((b.bookingContext && b.bookingContext.beds) || []).map(x => x.id).join(', '),
+                        total: msgs.size,
+                        unread: Math.max(0, msgs.size - getChatSeen(bd.id)),
+                        last: last,
+                    });
+                }
+
+                // Unread first, then most recent — the thing needing a reply should be on top.
+                rows.sort((a, b) => (b.unread > 0) - (a.unread > 0)
+                    || new Date(b.last?.createdAt || 0) - new Date(a.last?.createdAt || 0));
+
+                const totalUnread = rows.reduce((n, r) => n + (r.unread > 0 ? 1 : 0), 0);
+                document.getElementById('messagesSubtitle').innerText =
+                    totalUnread ? `${totalUnread} chat(s) need a reply` : 'All caught up';
+
+                if (!rows.length) {
+                    box.innerHTML = `<div class="text-center py-12">
+                        <div class="text-3xl mb-2">💬</div>
+                        <p class="text-[13px] text-slate-400 font-bold">No conversations yet</p>
+                    </div>`;
+                    return;
+                }
+
+                box.innerHTML = rows.map(r => {
+                    const initial = (String(r.name).trim()[0] || '?').toUpperCase();
+                    const when = r.last?.createdAt ? new Date(r.last.createdAt) : null;
+                    const today = when && when.toDateString() === new Date().toDateString();
+                    const stamp = when ? (today
+                        ? when.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                        : when.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) : '';
+                    const preview = (r.last?.text || '').replace(/</g, '&lt;').slice(0, 46);
+                    return `<div onclick="openBookingChat('${r.id}', '${asGuest ? 'guest' : 'owner'}')"
+                        class="flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition ${r.unread ? 'bg-indigo-50/60 border-indigo-200' : 'bg-white border-slate-200 hover:border-slate-300'}">
+                        <div class="w-12 h-12 rounded-full btn-gradient flex items-center justify-center text-white font-black text-lg shrink-0">${initial}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-900 text-[14px] truncate">${r.name}${r.bed ? ` <span class="text-[10px] font-bold text-slate-400">Bed ${r.bed}</span>` : ''}</p>
+                            <p class="text-[12px] ${r.unread ? 'font-black text-slate-700' : 'font-semibold text-slate-400'} truncate">${preview}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="text-[10px] font-bold text-slate-400">${stamp}</p>
+                            ${r.unread ? `<span class="inline-block mt-1 min-w-[20px] px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] font-black rounded-full text-center">${r.unread}</span>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error('Messages load failed', err);
+                box.innerHTML = '<p class="text-center text-red-500 font-bold text-sm py-8">Could not load. Please try again.</p>';
+            }
+        };
+
+        let _walkInCtx = null;
+
+        window.openWalkInGuest = function(propertyId, blockId, bedId, bedName) {
+            _walkInCtx = { propertyId, blockId, bedId };
+            document.getElementById('walkInBedLabel').innerText = bedName || (bedId ? 'Bed ' + bedId : '');
+            document.getElementById('walkInName').value = '';
+            document.getElementById('walkInPhone').value = '';
+            document.getElementById('walkInRent').value = '';
+            document.getElementById('walkInJoining').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('walkInIdType').value = 'Aadhaar';
+            document.getElementById('walkInIdNumber').value = '';
+            document.getElementById('walkInEmergency').value = '';
+            _walkInIdFile = null;
+            const idBtn = document.getElementById('walkInIdPhotoBtn');
+            idBtn.innerHTML = '📷 ID ki photo lagayein';
+            idBtn.className = 'w-full mt-2 py-3.5 bg-white border-2 border-dashed border-slate-300 rounded-2xl font-black text-[13px] text-slate-500 hover:border-amber-400 hover:text-amber-600 transition';
+            document.getElementById('walkInError').classList.add('hidden');
+            document.getElementById('modalWalkIn').classList.remove('hidden');
+        };
+
+        window.closeWalkIn = function() {
+            document.getElementById('modalWalkIn').classList.add('hidden');
+            _walkInCtx = null;
+            _walkInIdFile = null;
+        };
+
+        // Held in memory until Save. Uploading on pick would leave orphan files in Storage every
+        // time an owner opens the form and changes their mind.
+        let _walkInIdFile = null;
+
+        window.onWalkInIdPicked = function(input) {
+            const f = input.files && input.files[0];
+            const btn = document.getElementById('walkInIdPhotoBtn');
+            if (!f) return;
+            if (f.size > 8 * 1024 * 1024) {
+                showAppToast('Photo bahut badi hai (8MB se kam honi chahiye).');
+                input.value = '';
+                return;
+            }
+            _walkInIdFile = f;
+            btn.innerHTML = '✅ Photo lag gayi — badalne ke liye tap karein';
+            btn.className = 'w-full mt-2 py-3.5 bg-emerald-50 border-2 border-emerald-300 rounded-2xl font-black text-[13px] text-emerald-700 transition';
+        };
+
+        window.saveWalkInGuest = async function() {
+            if (!_walkInCtx) return;
+            const err = document.getElementById('walkInError');
+            const btn = document.getElementById('walkInSaveBtn');
+            const name = (document.getElementById('walkInName').value || '').trim();
+            const phone = (document.getElementById('walkInPhone').value || '').replace(/\D/g, '');
+            const rent = Number(document.getElementById('walkInRent').value);
+            const joining = document.getElementById('walkInJoining').value;
+            const idType = document.getElementById('walkInIdType').value;
+            const idNumber = (document.getElementById('walkInIdNumber').value || '').replace(/\s/g, '').toUpperCase();
+            const emergency = (document.getElementById('walkInEmergency').value || '').replace(/\D/g, '');
+
+            const fail = (m) => { err.innerText = m; err.classList.remove('hidden'); };
+            if (name.length < 2) return fail('Please enter the guest name.');
+            if (phone.length !== 10) return fail('Phone number must be 10 digits.');
+            if (!isFinite(rent) || rent <= 0) return fail('Please enter a valid monthly rent.');
+            if (rent > 100000) return fail('That rent looks unusually high. Please check.');
+            if (!joining) return fail('Please pick a joining date.');
+
+            // ID is not optional. A hostel is legally required to hold identification for every
+            // resident, and walk-ins are most of them — leaving this blank is exactly how an
+            // owner ends up with twenty residents and paperwork for five.
+            if (!idNumber) return fail(idType + ' number bharna zaroori hai.');
+            if (idType === 'Aadhaar' && idNumber.replace(/\D/g, '').length !== 12)
+                return fail('Aadhaar number 12 digit ka hona chahiye.');
+            if (emergency && emergency.length !== 10)
+                return fail('Emergency contact 10 digit ka hona chahiye.');
+            if (!_walkInIdFile && !confirm('ID ki photo nahi lagayi hai.\n\nPolice verification ke waqt photo maangi jaati hai. Bina photo ke aage badhein?'))
+                return;
+            err.classList.add('hidden');
+
+            btn.disabled = true; btn.innerText = 'Saving...';
+            try {
+                const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                const bookingId = 'WI-' + Date.now().toString(36).toUpperCase();
+
+                // Same locked-down folder the app's own KYC uses: Storage rules deny reads, and
+                // only the path is stored — never a download URL, because a download URL carries
+                // a token that bypasses those rules for good.
+                let idPhotoPath = '';
+                if (_walkInIdFile) {
+                    btn.innerText = 'Uploading ID...';
+                    try {
+                        idPhotoPath = await uploadPrivateFileToStorage(
+                            _walkInIdFile,
+                            `guestAadharDocs/${_walkInCtx.propertyId}/${bookingId}_${Date.now()}.jpg`
+                        );
+                    } catch (upErr) {
+                        console.error('Walk-in ID upload failed', upErr);
+                        btn.disabled = false; btn.innerText = 'Add & Occupy Bed';
+                        return fail('ID photo upload nahi hui. Internet check karke dobara try kijiye.');
+                    }
+                    btn.innerText = 'Saving...';
+                }
+
+                const ref = await addDoc(collection(db, 'bookings'), {
+                    bookingId,
+                    source: 'walk_in',
+                    status: 'paid_verified',       // nothing to verify — no money came through us
+                    propertyId: _walkInCtx.propertyId,
+                    ownerUid: uid,
+                    guestUid: null,                // no app account; this is what disables chat
+                    guestName: name,
+                    guestPhone: phone,
+                    // Only the last 4 digits are kept in the database — the same rule the guest
+                    // registration form follows. The full number lives on the photo, behind
+                    // Storage rules, not in a document any signed-in query could reach.
+                    idType,
+                    idLast4: idNumber.slice(-4),
+                    idPhotoPath,
+                    emergencyContact: emergency || null,
+                    amount: 0,                     // no advance was collected by the platform
+                    totalStayAmount: rent,
+                    hostelBalanceDue: 0,
+                    bookingContext: {
+                        beds: [{ id: _walkInCtx.bedId, price: rent }],
+                        joiningDate: joining,
+                        stayType: 'monthly'
+                    },
+                    createdAt: new Date().toISOString()
+                });
+
+                await markBedsOccupiedForBooking(_walkInCtx.propertyId, [_walkInCtx.bedId], bookingId, null);
+
+                closeWalkIn();
+                showAppToast(`✅ ${name} added to ${_walkInCtx.bedId}`);
+                try { if (currentOccPropertyId) loadOccupancy(currentOccPropertyId); } catch (e) {}
+                try { if (currentRentPropertyId) loadRentTracker(currentRentPropertyId); } catch (e) {}
+                try { qeRefreshAll(); } catch (e) {}
+            } catch (e2) {
+                console.error('Walk-in save failed', e2);
+                btn.disabled = false; btn.innerText = 'Add & Occupy Bed';
+                fail('Could not save: ' + e2.message);
+            }
+        };
+
+        // ==========================================================================
+        // FLOOR WALKTHROUGH
+        //
+        // A short clip of the route: gate → corridor → bathroom. Every hostel shows room
+        // photos; none shows the corridor, and the corridor is what actually tells a parent
+        // whether the place is clean, lit and safe.
+        //
+        // Stored against the FLOOR, not against a corridor object, because the AI regularly
+        // gets the corridor wrong or omits it. Display then resolves itself: if a corridor
+        // exists on that floor the chip sits on it, otherwise a button appears above the plan.
+        // Fix the layout later and it moves on its own — nothing to re-upload or re-attach.
+        // ==========================================================================
+        window.uploadFloorWalkthrough = async function(input) {
+            const file = input.files && input.files[0];
+            input.value = '';                      // so picking the same file twice still fires
+            if (!file) return;
+            if (!currentAdminDocId) { alert('Please save the property first.'); return; }
+
+            const floor = currentSelectedFloor || (floorMaps.length ? floorMaps[0].floorName : 'Ground Floor');
+
+            // Video storage is billed, and a 3-minute clip helps nobody — 30 seconds of the
+            // route is the whole point.
+            const MAX_MB = 40;
+            if (file.size > MAX_MB * 1024 * 1024) {
+                alert(`This file is ${(file.size / 1048576).toFixed(0)} MB.\n\nPlease keep the walk-through under ${MAX_MB} MB — about 30 seconds of video is enough.`);
+                return;
+            }
+
+            const btn = document.getElementById('walkthroughBtn');
+            const original = btn.innerText;
+            btn.innerText = '⏳ Uploading...';
+            btn.disabled = true;
+
+            try {
+                const path = `walkthroughs/${currentAdminDocId}/${Date.now()}_${file.name.replace(/[^\w.\-]/g, '_')}`;
+                const sref = window.ref(window.storage, path);
+                await window.uploadBytes(sref, file);
+                const url = await window.getDownloadURL(sref);
+
+                const snap = await getDoc(doc(db, 'businesses', currentAdminDocId));
+                const walk = (snap.exists() && snap.data().floorWalkthroughs) || {};
+                walk[floor] = { url, type: file.type.startsWith('video') ? 'video' : 'image', addedAt: new Date().toISOString() };
+                await updateDoc(doc(db, 'businesses', currentAdminDocId), { floorWalkthroughs: walk });
+
+                floorWalkthroughsCache = walk;
+                showAppToast(`🎥 Walkthrough saved for ${floor}`);
+                try { renderAttractive2DPlan(); } catch (e) {}
+            } catch (e) {
+                console.error('Walkthrough upload failed', e);
+                alert('Upload failed: ' + e.message);
+            } finally {
+                btn.innerText = original;
+                btn.disabled = false;
+            }
+        };
+
+        let floorWalkthroughsCache = {};
+
+        // Opens the clip. Video and 360 image both land here; a plain video just plays.
+        window.openFloorWalkthrough = function(url, type) {
+            if (!url) return;
+            try { trackPropertyView(currentUserViewingPropertyId, 'walkthrough'); } catch (e) {}
+            if (type === 'image') { preview360Panorama(url); return; }
+            window.open(url, '_blank', 'noopener');
+        };
+
         window.openBulkPrice = function() {
             const sel = document.getElementById('bulkPriceScope');
             const rooms = (admin2DBlocks || []).filter(b => b.beds && b.beds.length);
@@ -8789,6 +9524,8 @@
                     const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteBed('${block.id}','${b.id}');" title="Delete this bed" style="position:absolute; top:-10px; right:-10px; background:#ef4444; color:white; border-radius:9999px; width:26px; height:26px; font-size:13px; line-height:26px; text-align:center; cursor:pointer; font-weight:900; box-shadow:0 2px 6px rgba(0,0,0,0.25);">✕</span>` : '';
                     const clickAttr = blueprintEditMode ? ` onclick="event.stopPropagation(); qeEditBedPrice('${block.id}','${b.id}');" style="cursor:pointer;"` : '';
                     const bedCardCls = isOcc ? 'border-2 bg-red-50 border-red-200 rounded-xl p-3 text-center' : 'border-2 bg-slate-50 border-slate-200 rounded-xl p-3 text-center';
+                    // qeToggleBedStatus itself asks whether a guest is moving in and opens the walk-in form,
+                    // so one button covers both cases without cluttering a 108px-wide bed card.
                     const statusToggleBar = blueprintEditMode ? `<button type="button" onclick="event.stopPropagation(); qeToggleBedStatus('${block.id}','${b.id}');" style="margin-top:8px; width:100%; border:none; border-radius:9999px; padding:7px 4px; font-size:10px; font-weight:900; letter-spacing:0.02em; cursor:pointer; color:white; background:${isOcc ? '#10b981' : '#ef4444'};">${isOcc ? '🟢 MARK AVAILABLE' : '🔴 MARK OCCUPIED'}</button>` : '';
                     return `<div class="${bedCardCls}" style="min-width: 108px; position:relative;"${clickAttr}>${delBtn}<span class="text-2xl block mb-1">🛏️</span><span class="block text-sm font-black text-slate-800">₹${b.priceMonthly || b.price || 0}</span>${isOcc ? '<span class="block text-[8px] font-black text-red-500 uppercase">Occupied</span>' : ''}${statusToggleBar}</div>`;
                 }).join('');
