@@ -940,6 +940,87 @@
     </div>
 
     <!-- ADMIN DASHBOARD -->
+    <!-- ==========================================================================
+         SUPPORT DESK
+         A deliberately small screen. A support agent needs to answer "where is my booking?"
+         and nothing more, so this shows exactly that — and none of the KYC, bank details or
+         Verified controls that the admin console carries.
+         ========================================================================== -->
+    <!-- STAFF MANAGER — admin only. Access is granted per-person and switched off with one
+         tap; there is no shared password to leak, and no password to change when someone
+         leaves. -->
+    <div id="screenStaffManager" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
+        <div class="flex items-center gap-3 mb-1">
+            <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 transition">←</button>
+            <div>
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Staff</h2>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kaun kya dekh sakta hai</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mt-5">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Naya staff jodein</p>
+            <input type="text" id="staffNewUid" placeholder="Firebase UID (Authentication se copy karein)"
+                class="w-full p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <input type="text" id="staffNewName" placeholder="Naam"
+                    class="p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+                <select id="staffNewRole" class="p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+                    <option value="support">Support — phone uthane wala</option>
+                    <option value="field">Field — hostel list karne wala</option>
+                    <option value="verifier">Verifier — visit karne wala</option>
+                </select>
+            </div>
+            <button type="button" onclick="saveStaffMember()" class="w-full mt-2 py-3 btn-gradient text-white font-black text-sm rounded-xl shadow-lg">Access dein</button>
+            <p class="text-[10px] font-semibold text-slate-400 mt-2">
+                UID Firebase Console → Authentication → Users se milta hai. Us insaan ka account pehle bana hona chahiye.
+            </p>
+        </div>
+
+        <div id="staffList" class="mt-5 space-y-2"></div>
+
+        <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 mt-5">
+            <p class="text-[11px] font-black text-amber-900 leading-relaxed">
+                🔒 Koi bhi staff Aadhaar, bank details, ya Verified badge tak nahi pahunch sakta —
+                chahe uska role kuch bhi ho. Wo sab sirf aapke paas hai.
+            </p>
+        </div>
+    </div>
+
+    <div id="screenSupportDesk" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
+        <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-lg shadow-lg">🎧</div>
+                <div>
+                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Support Desk</h2>
+                    <p id="supportRoleLabel" class="text-[11px] font-black text-indigo-500 uppercase tracking-widest"></p>
+                </div>
+            </div>
+            <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
+        </div>
+
+        <!-- Search is by PHONE first, because that is what a caller reads out. Nobody
+             remembers their booking ID. -->
+        <div class="mt-5">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone number ya Booking ID</label>
+            <div class="flex gap-2">
+                <input type="text" id="supportSearchInput" placeholder="98261 45890"
+                    onkeydown="if(event.key==='Enter') runSupportSearch()"
+                    class="flex-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-indigo-400 transition">
+                <button type="button" onclick="runSupportSearch()" class="px-6 btn-gradient text-white font-black text-sm rounded-2xl shadow-lg">Search</button>
+            </div>
+            <p class="text-[10px] font-semibold text-slate-400 mt-1.5">Caller ka number daaliye — 10 digit, ya booking ID jaise BK-M3X9K2</p>
+        </div>
+
+        <div id="supportResults" class="mt-5 space-y-3"></div>
+
+        <div id="supportEmpty" class="text-center py-14">
+            <div class="text-4xl mb-3">🔍</div>
+            <p class="text-sm font-black text-slate-400">Number daal ke Search dabaiye</p>
+            <p class="text-[11px] font-semibold text-slate-300 mt-1">Booking, payment aur payout — sab yahin dikhega</p>
+        </div>
+    </div>
+
     <div id="screenAdminDashboard" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
         <div class="flex justify-between items-center border-b border-slate-200/60 pb-6 mb-6">
             <div class="flex items-center gap-4">
@@ -953,6 +1034,7 @@
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 border border-slate-200/60 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm">Logout</button>
                 <button type="button" onclick="openBroadcastComposer()" class="px-5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 font-black rounded-2xl hover:bg-amber-100 transition shadow-sm">📢 Broadcast to All Owners</button>
                 <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
+                <button type="button" onclick="openStaffManager()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">👥 Staff</button>
             </div>
         </div>
 
@@ -3223,6 +3305,233 @@
             } catch (e) {}
         };
 
+        // ==========================================================================
+        // SUPPORT DESK
+        //
+        // The alternative to this screen is giving an employee the admin login — which hands
+        // them every guest's Aadhaar, every owner's bank account, and the Verified badge.
+        // This shows only what is needed to answer a phone call.
+        // ==========================================================================
+        let currentStaffRole = '';
+        let _staffIdleTimer = null;
+
+        // ---------- STAFF MANAGER (admin) ----------
+        window.openStaffManager = async function() {
+            goTo('screenStaffManager');
+            const box = document.getElementById('staffList');
+            box.innerHTML = '<p class="text-center text-slate-400 font-bold text-sm py-6">Loading...</p>';
+            try {
+                const res = await apiFetch('/admin/staff', {
+                    method: 'POST', body: JSON.stringify({ action: 'list' })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed');
+
+                const roleLabel = { support: 'Support', field: 'Field', verifier: 'Verifier' };
+                const rows = (d.staff || []).sort((a, b) => (b.active === true) - (a.active === true));
+
+                box.innerHTML = rows.length ? rows.map(m => `
+                    <div class="flex items-center gap-3 p-3 rounded-2xl border-2 ${m.active ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-200 opacity-60'}">
+                        <div class="w-11 h-11 rounded-full ${m.active ? 'btn-gradient' : 'bg-slate-300'} flex items-center justify-center text-white font-black shrink-0">
+                            ${((m.name || '?').trim()[0] || '?').toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-black text-slate-900 text-[14px] truncate">${m.name || m.uid}</p>
+                            <p class="text-[10px] font-bold text-slate-400 truncate">${roleLabel[m.role] || m.role} · ${m.uid.slice(0, 12)}…</p>
+                        </div>
+                        ${m.active
+                            ? `<button type="button" onclick="disableStaff('${m.uid}')" class="text-[11px] font-black text-red-600 bg-red-50 px-3 py-2 rounded-xl hover:bg-red-600 hover:text-white transition shrink-0">Band karein</button>`
+                            : `<span class="text-[10px] font-black text-slate-400 uppercase shrink-0">Band</span>`}
+                    </div>`).join('')
+                    : '<p class="text-center text-slate-400 font-bold text-sm py-6">Abhi koi staff nahi hai</p>';
+            } catch (e) {
+                box.innerHTML = `<p class="text-center text-red-500 font-bold text-sm py-6">Load nahi hua: ${e.message}</p>`;
+            }
+        };
+
+        window.saveStaffMember = async function() {
+            const uid = (document.getElementById('staffNewUid').value || '').trim();
+            const name = (document.getElementById('staffNewName').value || '').trim();
+            const role = document.getElementById('staffNewRole').value;
+            if (uid.length < 10) { showAppToast('Poora Firebase UID daaliye.'); return; }
+            if (!name) { showAppToast('Naam bhariye.'); return; }
+            try {
+                const res = await apiFetch('/admin/staff', {
+                    method: 'POST', body: JSON.stringify({ action: 'set', uid, name, role })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed');
+                document.getElementById('staffNewUid').value = '';
+                document.getElementById('staffNewName').value = '';
+                showAppToast('✅ Access de diya gaya');
+                openStaffManager();
+            } catch (e) { showAppToast('Nahi hua: ' + e.message); }
+        };
+
+        // Disable, never delete — the audit trail still needs to say who this uid was.
+        window.disableStaff = async function(uid) {
+            if (!confirm('Is staff ka access band kar dein?\n\nWo turant logout ho jayega. Record bana rahega.')) return;
+            try {
+                const res = await apiFetch('/admin/staff', {
+                    method: 'POST', body: JSON.stringify({ action: 'disable', uid })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed');
+                showAppToast('Access band kar diya gaya');
+                openStaffManager();
+            } catch (e) { showAppToast('Nahi hua: ' + e.message); }
+        };
+
+        window.openSupportDesk = function() {
+            const labels = { support: 'Support agent', field: 'Field executive', verifier: 'Verifier' };
+            document.getElementById('supportRoleLabel').innerText = labels[currentStaffRole] || 'Staff';
+            document.getElementById('supportResults').innerHTML = '';
+            document.getElementById('supportEmpty').classList.remove('hidden');
+            document.getElementById('supportSearchInput').value = '';
+            goTo('screenSupportDesk');
+        };
+
+        // Staff often work from home, on a laptop the family also uses. Thirty idle minutes
+        // and the session closes itself.
+        window.startStaffIdleTimer = function() {
+            const reset = () => {
+                clearTimeout(_staffIdleTimer);
+                _staffIdleTimer = setTimeout(() => {
+                    showAppToast('Session timed out — please sign in again.');
+                    staffLogout();
+                }, 30 * 60 * 1000);
+            };
+            ['click', 'keydown', 'touchstart'].forEach(e =>
+                window.addEventListener(e, reset, { passive: true }));
+            reset();
+        };
+
+        window.staffLogout = async function() {
+            clearTimeout(_staffIdleTimer);
+            currentStaffRole = '';
+            try { sessionStorage.removeItem('hoom_staff_role'); } catch (e) {}
+            try { await window.firebaseSignOut(window.auth); } catch (e) {}
+            location.reload();
+        };
+
+        // Numbers are shown masked until the agent taps Reveal, and every reveal is logged
+        // server-side. A support agent leaving with 500 owner numbers is the one theft that
+        // otherwise leaves no trace at all.
+        function maskPhone(p) {
+            const d = String(p || '').replace(/\D/g, '');
+            return d.length === 10 ? `${d.slice(0, 5)} XXXXX` : '—';
+        }
+
+        window.revealSupportPhone = async function(bookingId, btn) {
+            btn.disabled = true; btn.innerText = '...';
+            try {
+                const res = await apiFetch('/staff/reveal-phone', {
+                    method: 'POST',
+                    body: JSON.stringify({ bookingId })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Could not reveal');
+                btn.outerHTML = `<a href="tel:${data.phone}" class="text-[13px] font-black text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg">📞 ${data.phone}</a>`;
+            } catch (e) {
+                btn.disabled = false; btn.innerText = 'Reveal';
+                showAppToast('Could not reveal: ' + e.message);
+            }
+        };
+
+        window.runSupportSearch = async function() {
+            const raw = (document.getElementById('supportSearchInput').value || '').trim();
+            const box = document.getElementById('supportResults');
+            const empty = document.getElementById('supportEmpty');
+            if (!raw) return;
+
+            empty.classList.add('hidden');
+            box.innerHTML = '<p class="text-center text-slate-400 font-bold text-sm py-8">Searching...</p>';
+
+            const digits = raw.replace(/\D/g, '');
+            try {
+                let docs = [];
+                if (digits.length === 10) {
+                    const snap = await getDocs(query(collection(db, 'bookings'),
+                        where('guestPhone', '==', digits), limit(20)));
+                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+                } else {
+                    const snap = await getDocs(query(collection(db, 'bookings'),
+                        where('bookingId', '==', raw.toUpperCase()), limit(10)));
+                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+                }
+
+                if (!docs.length) {
+                    box.innerHTML = `<div class="text-center py-12">
+                        <div class="text-3xl mb-2">🤷</div>
+                        <p class="text-sm font-black text-slate-500">Koi booking nahi mili</p>
+                        <p class="text-[11px] font-semibold text-slate-400 mt-1">Number dobara check kar lijiye</p>
+                    </div>`;
+                    return;
+                }
+
+                docs.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
+                const statusMap = {
+                    pending_payment_confirmation: ['⏳ Payment verify hona baaki', 'bg-amber-50 text-amber-700 border-amber-200'],
+                    paid_verified: ['✅ Paid & Verified', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                    checked_in: ['🏠 Checked in', 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+                    checked_out: ['🚪 Checked out', 'bg-slate-100 text-slate-600 border-slate-200'],
+                    cancellation_requested: ['🔄 Cancellation maangi hai', 'bg-orange-50 text-orange-700 border-orange-200'],
+                    cancelled: ['❌ Cancelled', 'bg-red-50 text-red-700 border-red-200'],
+                    no_show: ['🚫 No-show', 'bg-slate-100 text-slate-600 border-slate-200']
+                };
+
+                box.innerHTML = docs.map(b => {
+                    const [label, cls] = statusMap[b.status] || ['—', 'bg-slate-100 text-slate-600 border-slate-200'];
+                    const beds = ((b.bookingContext && b.bookingContext.beds) || []).map(x => x.id).join(', ');
+                    const joining = (b.bookingContext && b.bookingContext.joiningDate) || '';
+                    return `<div class="p-4 rounded-2xl border-2 border-slate-200 bg-white">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-black text-slate-900 text-[16px] truncate">${b.guestName || 'Guest'}</p>
+                                <p class="text-[11px] font-bold text-slate-400 mt-0.5">${b.hostelName || ''}${beds ? ' · Bed ' + beds : ''}</p>
+                            </div>
+                            <span class="chip border-2 font-black text-[10px] shrink-0 ${cls}">${label}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 text-[12px]">
+                            <div><span class="font-bold text-slate-400">Booking</span><br><span class="font-black text-slate-700">${b.bookingId || b.id}</span></div>
+                            <div><span class="font-bold text-slate-400">Advance</span><br><span class="font-black text-slate-700">₹${(Number(b.amount) || 0).toLocaleString('en-IN')}</span></div>
+                            <div><span class="font-bold text-slate-400">Joining</span><br><span class="font-black text-slate-700">${joining || '—'}</span></div>
+                            <div><span class="font-bold text-slate-400">Booked on</span><br><span class="font-black text-slate-700">${String(b.createdAt || '').slice(0, 10) || '—'}</span></div>
+                        </div>
+
+                        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 flex-wrap">
+                            <span class="text-[13px] font-black text-slate-500">${maskPhone(b.guestPhone)}</span>
+                            <button type="button" onclick="revealSupportPhone('${b.id}', this)"
+                                class="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">Reveal</button>
+                            <button type="button" onclick="openSupportEscalate('${b.id}','${(b.guestName || '').replace(/'/g, '')}')"
+                                class="ml-auto text-[11px] font-black text-white bg-amber-500 px-3 py-1.5 rounded-lg hover:bg-amber-600 transition">⚠️ Admin ko bhejo</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                console.error('Support search failed', e);
+                box.innerHTML = `<p class="text-center text-red-500 font-bold text-sm py-8">Search fail hua: ${e.message}</p>`;
+            }
+        };
+
+        // Refunds, verification and payment confirmation are admin-only by design. Without a
+        // button that hands the case over WITH the booking attached, an agent falls back to
+        // WhatsApp — and then nobody can tell what was raised, or when.
+        window.openSupportEscalate = function(bookingId, guestName) {
+            const reason = prompt(`Admin ko kya bhejna hai?\n\nGuest: ${guestName}\n\nJaise: "Refund maang rahe hain, hostel band mila"`);
+            if (!reason || !reason.trim()) return;
+            apiFetch('/staff/escalate', {
+                method: 'POST',
+                body: JSON.stringify({ bookingId, reason: reason.trim() })
+            }).then(async res => {
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed');
+                showAppToast('✅ Admin ko bhej diya gaya');
+            }).catch(e => showAppToast('Nahi bheja ja saka: ' + e.message));
+        };
+
         async function pushNotification(payload) {
             try {
                 const res = await apiFetch('/notify', {
@@ -4341,13 +4650,36 @@
                 // lets the rules close `list` entirely — previously any signed-in user could
                 // enumerate every admin uid.
                 const adminDoc = await window.getDoc(window.doc(window.db, 'admin', uid));
+
                 if (!adminDoc.exists()) {
-                    await window.firebaseSignOut(window.auth);
-                    errEl.innerText = 'This account is not authorized for admin access.';
-                    errEl.classList.remove('hidden');
+                    // Not an admin — but they may be staff. Staff use this same login box on
+                    // purpose: one door, and what they see behind it depends on their role.
+                    let staffRole = '';
+                    try {
+                        const sd = await window.getDoc(window.doc(window.db, 'staffRoles', uid));
+                        if (sd.exists()) {
+                            const d = sd.data();
+                            if (d.active === true) staffRole = d.role || '';
+                        }
+                    } catch (e) { console.warn('Staff role lookup failed', e); }
+
+                    if (!staffRole) {
+                        await window.firebaseSignOut(window.auth);
+                        errEl.innerText = 'This account is not authorized for admin access.';
+                        errEl.classList.remove('hidden');
+                        return;
+                    }
+
+                    document.getElementById('adminLoginPassword').value = '';
+                    currentStaffRole = staffRole;
+                    try { sessionStorage.setItem('hoom_staff_role', staffRole); } catch (e) {}
+                    startStaffIdleTimer();
+                    openSupportDesk();
                     return;
                 }
+
                 document.getElementById('adminLoginPassword').value = '';
+                currentStaffRole = 'admin';
                 switchAccountMode('admin');
                 await routeToDashboard();
             } catch (err) {
