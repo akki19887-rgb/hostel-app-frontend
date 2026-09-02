@@ -834,7 +834,7 @@
              and ruinous at five thousand: the phone renders them all, and every visitor pays for a
              full-collection read. Picking a city scopes the query at the server. -->
         <div class="flex items-center gap-2 mb-4">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Shehar</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">City</label>
             <select id="guestCitySelect" onchange="onGuestCityChange()"
                 class="flex-1 p-3 border-2 border-indigo-200 rounded-2xl font-black text-sm text-slate-800 bg-white">
                 <option value="">Loading…</option>
@@ -1016,18 +1016,18 @@
             <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
             <div class="flex-1 min-w-0">
                 <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Audit log</h2>
-                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kisne kya dekha</p>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Who viewed what</p>
             </div>
             <button type="button" onclick="openAuditLog()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
         </div>
 
-        <input type="text" id="auditFilter" oninput="renderAuditRows()" placeholder="Naam, action ya booking ID se filter karein"
+        <input type="text" id="auditFilter" oninput="renderAuditRows()" placeholder="Filter by name, action or booking ID"
             class="w-full mt-4 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-indigo-400 transition">
 
         <div id="auditList" class="mt-4 space-y-2"></div>
 
         <p class="text-[10px] font-semibold text-slate-400 mt-4 text-center">
-            Sabse naya sabse upar. Aakhri 100 entry dikhti hain.
+            Newest first. Showing the last 100 entries.
         </p>
     </div>
 
@@ -1548,7 +1548,7 @@
         </div>
         <div id="map" class="flex-1 bg-slate-200 rounded-[2rem] border-4 border-white shadow-inner overflow-hidden"></div>
         <p id="pinCityLabel" class="hidden mt-3 text-sm font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-100 rounded-2xl px-4 py-3 text-center"></p>
-        <p class="text-[11px] font-semibold text-slate-400 text-center mt-2">Map pe apne hostel ki jagah tap ya drag kijiye — shehar apne aap bhar jayega.</p>
+        <p class="text-[11px] font-semibold text-slate-400 text-center mt-2">Tap or drag on the map to mark your hostel — the city fills in automatically.</p>
         <div class="mt-4 flex justify-end"><button type="button" onclick="proceedAfterPinLocation()" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
     </div>
 
@@ -3144,7 +3144,7 @@
                         if (box) {
                             box.innerText = businessCity
                                 ? `📍 ${businessCity}${businessState ? ', ' + businessState : ''}`
-                                : 'Shehar nahi mila — pin thoda aur sahi jagah rakhiye';
+                                : 'City not detected — move the pin a little closer to your hostel';
                             box.classList.remove('hidden');
                         }
                         resolve(!!businessCity);
@@ -3157,12 +3157,12 @@
             // Without this the pin keeps its initial default and the property is silently filed at
             // that default's city, which is how a hostel ends up on the map somewhere it is not.
             if (!ownerMovedPin) {
-                showAppToast('Pehle map pe apne hostel ki jagah pin kijiye');
+                showAppToast('Please mark your hostel location on the map first');
                 return;
             }
             if (!businessCity) await reverseGeocodePin();
             if (!businessCity) {
-                showAppToast('Is jagah ka shehar nahi mil paya — pin thoda hilaakar dobara try kijiye');
+                showAppToast('Could not detect a city for this spot — move the pin slightly and try again');
                 return;
             }
             if (selectedPropertyType === 'House/Flat') { goTo('screenFlatHouseDetails'); }
@@ -3495,7 +3495,7 @@
         window.openAuditLog = async function() {
             goTo('screenAuditLog');
             const list = document.getElementById('auditList');
-            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Load ho raha hai…</p>';
+            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Loading…</p>';
             try {
                 const res = await apiFetch('/admin/audit', {
                     method: 'POST',
@@ -3508,7 +3508,7 @@
                 renderAuditRows();
             } catch (e) {
                 _auditRows = [];
-                list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Nahi khula: ' + escAudit(e.message) + '</p>';
+                list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Could not load: ' + escAudit(e.message) + '</p>';
             }
         };
 
@@ -3521,7 +3521,7 @@
                 : _auditRows;
 
             if (!rows.length) {
-                list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Kuch nahi mila</p>';
+                list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">No matches found</p>';
                 return;
             }
 
@@ -7323,15 +7323,15 @@
                 });
                 const saved = localStorage.getItem('hoom_guest_city') || '';
                 const list = [...cities].sort((a, b) => a.localeCompare(b));
-                let html = '<option value="">Saare shehar</option>';
+                let html = '<option value="">All cities</option>';
                 list.forEach(c => {
                     html += `<option value="${escAudit(c)}"${c === saved ? ' selected' : ''}>${escAudit(c)}</option>`;
                 });
-                if (missing > 0) html += `<option value="__nocity__">Purani listings (shehar nahi bhara) — ${missing}</option>`;
+                if (missing > 0) html += `<option value="__nocity__">Older listings (no city set) — ${missing}</option>`;
                 sel.innerHTML = html;
             } catch (e) {
                 console.warn('City list failed', e);
-                sel.innerHTML = '<option value="">Saare shehar</option>';
+                sel.innerHTML = '<option value="">All cities</option>';
             }
         };
 
@@ -7355,7 +7355,7 @@
             try {
                 // Scoped to one city and capped. Older listings saved before the city field existed
                 // have no `city`, so they would never match this query — loadGuestCities() surfaces
-                // them under an explicit "Purani listings" option rather than hiding them.
+                // them under an explicit "Older listings" option rather than hiding them.
                 const city = (document.getElementById('guestCitySelect') || {}).value || '';
                 const base = [window.collection(window.db, "businesses"), window.where("status", "==", "approved_2d")];
                 const q = city === '__nocity__'
