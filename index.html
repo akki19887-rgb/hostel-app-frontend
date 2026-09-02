@@ -829,6 +829,18 @@
             </div>
         </div>
 
+        <!-- CITY FIRST. The listing query used to fetch every approved property in the country on
+             every app open, with the filtering done in the browser. That is fine at fifty listings
+             and ruinous at five thousand: the phone renders them all, and every visitor pays for a
+             full-collection read. Picking a city scopes the query at the server. -->
+        <div class="flex items-center gap-2 mb-4">
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Shehar</label>
+            <select id="guestCitySelect" onchange="onGuestCityChange()"
+                class="flex-1 p-3 border-2 border-indigo-200 rounded-2xl font-black text-sm text-slate-800 bg-white">
+                <option value="">Loading…</option>
+            </select>
+        </div>
+
         <div class="flex justify-between items-center mb-3">
             <div>
                 <h3 class="display-font text-xl font-black text-slate-800">Map View</h3>
@@ -870,8 +882,16 @@
             </div>
         </div>
 
-        <!-- ADVANCED FILTERS -->
-        <div class="bg-slate-50 border border-slate-200 p-3 rounded-2xl mb-4 shadow-inner space-y-2">
+        <!-- ADVANCED FILTERS — collapsed by default. Open, this block is ~20 chips tall, which on a
+             phone pushed the first property card more than two screens below the fold: a student
+             looking for a hostel had to scroll past the whole filter panel before seeing a single
+             one. The count in the button label is what tells them a filter is still applied once
+             the panel is shut. -->
+        <button type="button" onclick="toggleDiscoverFilters()" id="discoverFilterToggle"
+            class="w-full mb-3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl border-2 border-slate-200 transition flex items-center justify-center gap-2">
+            <span>⚙️ Filters</span><span id="discoverFilterCount" class="hidden text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full"></span>
+        </button>
+        <div id="discoverFilterPanel" class="hidden bg-slate-50 border border-slate-200 p-3 rounded-2xl mb-4 shadow-inner space-y-2">
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Property:</span>
                 <button onclick="setDiscoverFilter('type', 'all')" data-filter="type" data-value="all" class="filter-chip chip chip-primary active-filter">All</button>
@@ -987,6 +1007,30 @@
         </div>
     </div>
 
+    <!-- AUDIT LOG — the server has been recording every phone reveal and staff action all along
+         (auditLog collection, /admin/audit). Until now there was no way to read it, which made the
+         promise in the staff training material unbackable: "kal koi poochhe data leak kaise hua to
+         jawab ho" only holds if someone can actually open the record. -->
+    <div id="screenAuditLog" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-1">
+            <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Audit log</h2>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kisne kya dekha</p>
+            </div>
+            <button type="button" onclick="openAuditLog()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <input type="text" id="auditFilter" oninput="renderAuditRows()" placeholder="Naam, action ya booking ID se filter karein"
+            class="w-full mt-4 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-indigo-400 transition">
+
+        <div id="auditList" class="mt-4 space-y-2"></div>
+
+        <p class="text-[10px] font-semibold text-slate-400 mt-4 text-center">
+            Sabse naya sabse upar. Aakhri 100 entry dikhti hain.
+        </p>
+    </div>
+
     <div id="screenSupportDesk" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
         <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-3">
@@ -1021,7 +1065,7 @@
         </div>
     </div>
 
-    <div id="screenAdminDashboard" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
+    <div id="screenAdminDashboard" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
         <div class="flex justify-between items-center border-b border-slate-200/60 pb-6 mb-6">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-2xl btn-dark flex items-center justify-center text-white text-2xl shadow-lg">⚡</div>
@@ -1035,6 +1079,7 @@
                 <button type="button" onclick="openBroadcastComposer()" class="px-5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 font-black rounded-2xl hover:bg-amber-100 transition shadow-sm">📢 Broadcast to All Owners</button>
                 <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
                 <button type="button" onclick="openStaffManager()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">👥 Staff</button>
+                <button type="button" onclick="openAuditLog()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">📜 Audit log</button>
             </div>
         </div>
 
@@ -1094,7 +1139,7 @@
         <div id="adminBookingsContainer" class="space-y-4"></div>
     </div>
 
-    <div id="screenBusinessDashboard" class="hidden premium-card p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+    <div id="screenBusinessDashboard" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex justify-between items-center pb-6 mb-6 border-b border-slate-200/60">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-2xl btn-dark flex items-center justify-center text-white text-2xl shadow-lg">💼</div>
@@ -1127,7 +1172,7 @@
 
     <!-- MY BOOKINGS (guest's own view) — before this, a guest had no way to see their own past or
          upcoming bookings anywhere in the app after paying. -->
-    <div id="screenMyBookings" class="hidden premium-card p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+    <div id="screenMyBookings" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-2xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
             <div>
@@ -1145,7 +1190,7 @@
     <!-- PROPERTY BOOKINGS — the business owner's own view of who's booked their beds, so they
          finally know who's arriving and when, without needing Admin access. Same Check-in/No-show
          actions as the Admin Console, scoped to just this one property. -->
-    <div id="screenPropertyBookings" class="hidden premium-card p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+    <div id="screenPropertyBookings" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
             <div>
@@ -1363,7 +1408,7 @@
         <div id="occRooms" class="space-y-2"></div>
     </div>
 
-    <div id="screenPayoutsEarnings" class="hidden premium-card p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+    <div id="screenPayoutsEarnings" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-200/60">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">←</button>
             <div>
@@ -1502,7 +1547,9 @@
             <span class="absolute left-4 top-4 text-xl text-slate-400">🔍</span>
         </div>
         <div id="map" class="flex-1 bg-slate-200 rounded-[2rem] border-4 border-white shadow-inner overflow-hidden"></div>
-        <div class="mt-6 flex justify-end"><button type="button" onclick="proceedAfterPinLocation()" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
+        <p id="pinCityLabel" class="hidden mt-3 text-sm font-black text-indigo-700 bg-indigo-50 border-2 border-indigo-100 rounded-2xl px-4 py-3 text-center"></p>
+        <p class="text-[11px] font-semibold text-slate-400 text-center mt-2">Map pe apne hostel ki jagah tap ya drag kijiye — shehar apne aap bhar jayega.</p>
+        <div class="mt-4 flex justify-end"><button type="button" onclick="proceedAfterPinLocation()" class="btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-lg tracking-wider">CONFIRM & NEXT →</button></div>
     </div>
 
     <!-- FLAT/HOUSE DETAILS — completely separate from the hostel bed/room flow, since a flat/house
@@ -1603,7 +1650,7 @@
     </div>
 
     <!-- BUSINESS SECURE FORM -->
-    <div id="screenBusinessSecureForm" class="hidden premium-card p-10 rounded-[2rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto layout-scroll screen-panel">
+    <div id="screenBusinessSecureForm" class="hidden premium-card p-5 md:p-10 rounded-[2rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto layout-scroll screen-panel">
         <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-8">
             <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition shrink-0">←</button>
             <div class="w-12 h-12 rounded-2xl btn-dark flex items-center justify-center text-white text-xl shadow-lg">🔒</div>
@@ -2213,7 +2260,7 @@
     </div>
 
     <!-- PAYMENT STEP — Razorpay integration -->
-    <div id="screenPaymentStep" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
+    <div id="screenPaymentStep" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="flex items-center gap-4 mb-6">
             <button type="button" onclick="goTo('screenUserDashboard')" class="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex justify-center items-center font-bold text-slate-600 transition">←</button>
             <h2 class="display-font text-2xl font-black text-slate-900">Book Now — Pay Advance</h2>
@@ -2853,12 +2900,12 @@
                 bizPinImg.style.width = "42px"; bizPinImg.style.height = "auto"; bizPinImg.style.objectFit = "contain";
                 bizPinImg.style.cursor = "grab"; bizPinImg.style.filter = "drop-shadow(0px 4px 4px rgba(0,0,0,0.3))";
                 googleMarker = new google.maps.marker.AdvancedMarkerElement({ map: googleMap, position: businessCoordinates, gmpDraggable: true, title: "Location", content: bizPinImg });
-                googleMap.addListener("click", (mapsMouseEvent) => { const clickedPos = mapsMouseEvent.latLng; googleMarker.position = clickedPos; businessCoordinates = { lat: clickedPos.lat(), lng: clickedPos.lng() }; });
-                googleMarker.addListener("dragend", () => { const draggedPos = googleMarker.position; businessCoordinates = { lat: typeof draggedPos.lat === 'function' ? draggedPos.lat() : draggedPos.lat, lng: typeof draggedPos.lng === 'function' ? draggedPos.lng() : draggedPos.lng }; });
+                googleMap.addListener("click", (mapsMouseEvent) => { const clickedPos = mapsMouseEvent.latLng; googleMarker.position = clickedPos; businessCoordinates = { lat: clickedPos.lat(), lng: clickedPos.lng() }; ownerMovedPin = true; reverseGeocodePin(); });
+                googleMarker.addListener("dragend", () => { const draggedPos = googleMarker.position; businessCoordinates = { lat: typeof draggedPos.lat === 'function' ? draggedPos.lat() : draggedPos.lat, lng: typeof draggedPos.lng === 'function' ? draggedPos.lng() : draggedPos.lng }; ownerMovedPin = true; reverseGeocodePin(); });
                 const searchInput = document.getElementById("businessMapSearch");
                 if (searchInput) {
                     const searchBox = new google.maps.places.SearchBox(searchInput);
-                    searchBox.addListener("places_changed", () => { const places = searchBox.getPlaces(); if (places.length === 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return; googleMap.setCenter(place.geometry.location); googleMap.setZoom(16); googleMarker.position = place.geometry.location; businessCoordinates = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }; });
+                    searchBox.addListener("places_changed", () => { const places = searchBox.getPlaces(); if (places.length === 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return; googleMap.setCenter(place.geometry.location); googleMap.setZoom(16); googleMarker.position = place.geometry.location; businessCoordinates = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }; ownerMovedPin = true; reverseGeocodePin(); });
                 }
             }
         }
@@ -3006,6 +3053,9 @@
                     coverPhotoUrl: photoUrls[0] || (editingFlatHouseDocId ? undefined : ''),
                     flatDetails,
                     coordinates: (typeof businessCoordinates !== 'undefined') ? businessCoordinates : null,
+                    city: businessCity || '',
+                    state: businessState || '',
+                    pinAddress: businessAddress || '',
                     status: 'pending_approval', // same moderation flow/status string as hostels — admin approves before it's publicly visible
                     ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
                     createdAt: new Date().toISOString()
@@ -3065,7 +3115,56 @@
             goTo('screenFlatHouseDetails');
         }
 
-        function proceedAfterPinLocation() {
+        // Filled by reverse-geocoding whatever point the OWNER pinned — never from the owner's own
+        // device GPS. An owner registers from home or a shop, so device location would record the
+        // wrong place and the guest would be sent somewhere the hostel isn't.
+        let businessCity = '';
+        let businessState = '';
+        let businessAddress = '';
+        let ownerMovedPin = false;
+
+        function reverseGeocodePin() {
+            return new Promise((resolve) => {
+                if (!window.google || !google.maps || !google.maps.Geocoder) { resolve(false); return; }
+                try {
+                    new google.maps.Geocoder().geocode({ location: businessCoordinates }, (results, status) => {
+                        if (status !== 'OK' || !results || !results[0]) { resolve(false); return; }
+                        businessAddress = results[0].formatted_address || '';
+                        let city = '', state = '';
+                        (results[0].address_components || []).forEach(c => {
+                            const t = c.types || [];
+                            if (t.includes('locality')) city = c.long_name;
+                            else if (!city && t.includes('administrative_area_level_3')) city = c.long_name;
+                            else if (!city && t.includes('administrative_area_level_2')) city = c.long_name;
+                            if (t.includes('administrative_area_level_1')) state = c.long_name;
+                        });
+                        businessCity = (city || '').trim();
+                        businessState = (state || '').trim();
+                        const box = document.getElementById('pinCityLabel');
+                        if (box) {
+                            box.innerText = businessCity
+                                ? `📍 ${businessCity}${businessState ? ', ' + businessState : ''}`
+                                : 'Shehar nahi mila — pin thoda aur sahi jagah rakhiye';
+                            box.classList.remove('hidden');
+                        }
+                        resolve(!!businessCity);
+                    });
+                } catch (e) { console.warn('Reverse geocode failed', e); resolve(false); }
+            });
+        }
+
+        async function proceedAfterPinLocation() {
+            // Without this the pin keeps its initial default and the property is silently filed at
+            // that default's city, which is how a hostel ends up on the map somewhere it is not.
+            if (!ownerMovedPin) {
+                showAppToast('Pehle map pe apne hostel ki jagah pin kijiye');
+                return;
+            }
+            if (!businessCity) await reverseGeocodePin();
+            if (!businessCity) {
+                showAppToast('Is jagah ka shehar nahi mil paya — pin thoda hilaakar dobara try kijiye');
+                return;
+            }
             if (selectedPropertyType === 'House/Flat') { goTo('screenFlatHouseDetails'); }
             else { goTo('screenBusinessSecureForm'); }
         }
@@ -3382,6 +3481,66 @@
             } catch (e) { showAppToast('Nahi hua: ' + e.message); }
         };
 
+        let _auditRows = [];
+
+        // The file has no shared escaping helper, and audit rows carry free text (detail, target)
+        // that originates from staff input. Escaping here keeps a crafted booking note from
+        // becoming markup in the admin's own console.
+        function escAudit(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        window.openAuditLog = async function() {
+            goTo('screenAuditLog');
+            const list = document.getElementById('auditList');
+            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Load ho raha hai…</p>';
+            try {
+                const res = await apiFetch('/admin/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ limit: 100 })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed');
+                _auditRows = Array.isArray(d.rows) ? d.rows : [];
+                renderAuditRows();
+            } catch (e) {
+                _auditRows = [];
+                list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Nahi khula: ' + escAudit(e.message) + '</p>';
+            }
+        };
+
+        window.renderAuditRows = function() {
+            const list = document.getElementById('auditList');
+            if (!list) return;
+            const q = (document.getElementById('auditFilter').value || '').trim().toLowerCase();
+            const rows = q
+                ? _auditRows.filter(r => JSON.stringify(r).toLowerCase().includes(q))
+                : _auditRows;
+
+            if (!rows.length) {
+                list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Kuch nahi mila</p>';
+                return;
+            }
+
+            list.innerHTML = rows.map(r => {
+                let when = r.at || '';
+                try { when = new Date(r.at).toLocaleString('en-IN'); } catch (e) {}
+                const role = escAudit(r.actorRole || 'staff');
+                return '<div class="bg-white border-2 border-slate-100 rounded-2xl p-3.5">'
+                    + '<div class="flex items-start justify-between gap-2">'
+                    + '<p class="font-black text-[13px] text-slate-800 break-words">' + escAudit(r.action || '—') + '</p>'
+                    + '<span class="shrink-0 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-slate-100 text-slate-500">' + role + '</span>'
+                    + '</div>'
+                    + (r.target ? '<p class="text-[11px] font-bold text-indigo-600 mt-1 break-words">' + escAudit(r.target) + '</p>' : '')
+                    + (r.detail ? '<p class="text-[11px] font-semibold text-slate-500 mt-1 break-words">' + escAudit(r.detail) + '</p>' : '')
+                    + '<p class="text-[10px] font-semibold text-slate-400 mt-2">' + escAudit(when) + ' · ' + escAudit(r.actorUid || '') + '</p>'
+                    + '</div>';
+            }).join('');
+        };
+
         window.openSupportDesk = function() {
             const labels = { support: 'Support agent', field: 'Field executive', verifier: 'Verifier' };
             document.getElementById('supportRoleLabel').innerText = labels[currentStaffRole] || 'Staff';
@@ -3408,6 +3567,7 @@
 
         window.staffLogout = async function() {
             clearTimeout(_staffIdleTimer);
+            await unregisterPushToken();
             currentStaffRole = '';
             try { sessionStorage.removeItem('hoom_staff_role'); } catch (e) {}
             try { await window.firebaseSignOut(window.auth); } catch (e) {}
@@ -3615,7 +3775,7 @@
 
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
             if(screenId === 'screenUserDashboard') {
-                refreshUserDash();
+                loadGuestCities().then(refreshUserDash);
                 // Map is now off by default and only initializes when the user taps "Toggle Map" —
                 // loading Google Maps + fetching/plotting markers on every dashboard visit was
                 // unnecessary work most users never looked at.
@@ -4852,7 +5012,24 @@
             URL.revokeObjectURL(url);
         }
 
-        function logout() {
+        async function unregisterPushToken() {
+            let token = null;
+            try { token = localStorage.getItem('hoom_push_token'); } catch (e) {}
+            if (!token) return;
+            try {
+                await apiFetch('/push/unregister', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+            } catch (e) { console.warn('Push unregister failed', e); }
+            try { localStorage.removeItem('hoom_push_token'); } catch (e) {}
+        }
+
+        async function logout() {
+            // Must run BEFORE signOut — /push/unregister needs the auth token. Without this the
+            // device keeps receiving pushes for an account nobody is signed into any more.
+            await unregisterPushToken();
             try { if (window.firebaseSignOut && window.auth) { window.firebaseSignOut(window.auth); } } catch(e) {}
             try { localStorage.removeItem('hostelom_user'); } catch(e) {}
             try { localStorage.removeItem('hoom_account_mode'); } catch(e) {}
@@ -5359,27 +5536,19 @@
             loadOccupancy(propertyId);
         };
 
+        // Was reading v.views / v.planOpens — fields the backend never writes. /track-view stores
+        // card / rooms / walkthrough, so this box computed 0 every time and stayed hidden forever.
+        // Going through /property-stats instead fixes the field names, enforces "your property
+        // only" server-side, and costs one request instead of seven Firestore reads.
         async function loadOccupancyInterest(propertyId, uid) {
             const box = document.getElementById('occInterest');
             if (!box) return;
             try {
-                const days = [];
-                for (let i = 0; i < 7; i++) {
-                    const d = new Date(); d.setDate(d.getDate() - i);
-                    days.push(`${propertyId}_${d.toISOString().slice(0, 10)}`);
-                }
-                let views = 0, plans = 0;
-                // One get() per day rather than a query — 7 reads, no index needed, and it keeps
-                // working even if a day has no document at all.
-                const results = await Promise.allSettled(
-                    days.map(id => getDoc(doc(db, 'propertyViews', id)))
-                );
-                results.forEach(r => {
-                    if (r.status !== 'fulfilled' || !r.value.exists()) return;
-                    const v = r.value.data();
-                    views += Number(v.views || 0);
-                    plans += Number(v.planOpens || 0);
-                });
+                const res = await apiFetch('/property-stats?propertyId=' + encodeURIComponent(propertyId));
+                if (!res.ok) { box.classList.add('hidden'); return; }
+                const d = await res.json();
+                const views = Number(d.card || 0);
+                const plans = Number(d.rooms || 0);
 
                 // Hidden entirely when there is nothing to show — "0 people viewed" is worse
                 // than saying nothing at all to an owner who just signed up.
@@ -6338,10 +6507,10 @@
                             const fd = data.flatDetails || {};
                             statusText = data.status === 'pending_approval' ? '⏳ Pending' : (data.flatDetails && data.flatDetails.status === 'booked' ? '🔴 Booked' : '✅ Active');
                             statusChip = data.status === 'pending_approval' ? 'chip chip-warning' : (data.flatDetails && data.flatDetails.status === 'booked' ? 'chip' : 'chip chip-success');
-                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black rounded-xl border border-amber-200 hover:border-amber-500 transition tracking-wide">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                            htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">🏡 ${data.businessName || 'Flat/House'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">${fd.bhk || ''} · ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>💰 Rent: ₹${(fd.monthlyRent || 0).toLocaleString('en-IN')}/mo · Deposit: ₹${(fd.securityDeposit || 0).toLocaleString('en-IN')}</p><p>${fd.bookingMode === 'visit' ? '📅 Schedule Visit mode' : '⚡ Instant Book mode'}</p></div> </div> <button type="button" onclick="openFlatHouseEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT DETAILS</button> <div class="grid grid-cols-2 gap-2 mt-2"><button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black text-xs rounded-xl border border-indigo-200 hover:border-indigo-600 transition">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black text-xs rounded-xl border border-amber-200 hover:border-amber-500 transition">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black text-xs rounded-xl border border-emerald-200 hover:border-emerald-600 transition">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black text-xs rounded-xl border border-emerald-200 hover:border-emerald-600 transition">💰 PAYOUTS</button></div> </div>`;
                             return;
                         }
-                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full mt-2 py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black rounded-xl border border-indigo-200 hover:border-indigo-600 transition tracking-wide">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black rounded-xl border border-amber-200 hover:border-amber-500 transition tracking-wide">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full mt-2 py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black rounded-xl border border-emerald-200 hover:border-emerald-600 transition tracking-wide">💰 PAYOUTS & EARNINGS</button> </div>`;
+                        htmlContent += `<div class="property-card p-6 rounded-3xl shadow-sm hover:shadow-lg flex flex-col justify-between"> <div> <div class="flex justify-between items-start mb-4"> <div> <h4 class="display-font font-black text-xl text-slate-800">${data.propertyType || 'Hostel'}</h4> <span class="text-xs font-bold text-slate-400 mt-1 block tracking-wider">ID: ${doc.id.substring(0,6).toUpperCase()}</span> </div> <span class="${statusChip}">${statusText}</span> </div> <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[10px] font-bold text-slate-500 space-y-1"><p>📤 Uploaded: ${uploadedAtText}</p><p>✏️ Last Edited: ${editedAtText}</p></div> </div> <button type="button" onclick="openBusinessEdit('${doc.id}')" class="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-900 text-slate-600 hover:text-white font-black rounded-xl border border-slate-200 hover:border-slate-900 transition tracking-wide">⚙️ EDIT RATES & LAYOUT</button> <div class="grid grid-cols-2 gap-2 mt-2"><button type="button" id="bookingsBtn-${doc.id}" onclick="openPropertyBookingsScreen('${doc.id}')" class="relative w-full py-3 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white font-black text-xs rounded-xl border border-indigo-200 hover:border-indigo-600 transition">📋 BOOKINGS<span id="bookingsBadge-${doc.id}" class="hidden absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full items-center justify-center shadow-lg"></span></button> <button type="button" onclick="openOccupancy('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full py-3 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white font-black text-xs rounded-xl border border-amber-200 hover:border-amber-500 transition">📊 OCCUPANCY</button> <button type="button" onclick="openRentTracker('${doc.id}', '${(data.businessName || '').replace(/'/g, "\\'")}')" class="w-full py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black text-xs rounded-xl border border-emerald-200 hover:border-emerald-600 transition">💵 RENT</button> <button type="button" onclick="openPayoutsScreen('${doc.id}')" class="w-full py-3 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-black text-xs rounded-xl border border-emerald-200 hover:border-emerald-600 transition">💰 PAYOUTS</button></div> </div>`;
                     });
                     window._myPropertyIds = myIds; // used to scope this business's notification feed too
                     listenBizNotifications(); // re-filter now that we know which properties are "mine"
@@ -6569,7 +6738,7 @@
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
                     currentAdminDocId = newDocId;
-                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
                     alert('Listing submitted for verification!');
                 }
                 editingBusinessDocId = null; goTo('screenBusinessDashboard');
@@ -7072,6 +7241,25 @@
             return min === Infinity ? 0 : min;
         }
 
+        window.toggleDiscoverFilters = function() {
+            const panel = document.getElementById('discoverFilterPanel');
+            if (panel) panel.classList.toggle('hidden');
+        };
+
+        // Keeps the badge on the collapsed Filters button honest about how many filters are on.
+        function updateDiscoverFilterCount() {
+            const badge = document.getElementById('discoverFilterCount');
+            if (!badge) return;
+            let n = 0;
+            if (discoverFilters.type !== 'all') n++;
+            if (discoverFilters.stay !== 'all') n++;
+            if (discoverFilters.gender && discoverFilters.gender !== 'all') n++;
+            if (discoverFilters.budget !== 'all') n++;
+            n += (discoverFilters.features || []).length;
+            if (n > 0) { badge.innerText = n; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+        }
+
         window.setBudgetFilter = function(val) {
             discoverFilters.budget = val;
             document.querySelectorAll('.budget-chip').forEach(b => {
@@ -7083,6 +7271,7 @@
         };
 
         window.applyDiscoverFilters = function() {
+            updateDiscoverFilterCount();
             const search = (document.getElementById('discoverSearchInput')?.value || '').toLowerCase();
             document.querySelectorAll('[id^="prop-card-"]').forEach(card => {
                 const id = card.id.replace('prop-card-', ''); const prop = allApprovedProperties.find(p => p.id === id); if (!prop) return;
@@ -7112,6 +7301,46 @@
             });
         }
 
+        // One page of listings per city. Deliberately small: a guest decides from the first handful,
+        // and an uncapped query is what made the old all-of-India fetch expensive.
+        const GUEST_PAGE_SIZE = 40;
+
+        // The city list is built once from the approved properties themselves, so a new city appears
+        // the moment its first hostel is approved — no hardcoded list to maintain as coverage grows.
+        window.loadGuestCities = async function() {
+            const sel = document.getElementById('guestCitySelect');
+            if (!sel) return;
+            try {
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, "businesses"),
+                    window.where("status", "==", "approved_2d")
+                ));
+                const cities = new Set();
+                let missing = 0;
+                snap.forEach(d => {
+                    const c = (d.data().city || '').trim();
+                    if (c) cities.add(c); else missing++;
+                });
+                const saved = localStorage.getItem('hoom_guest_city') || '';
+                const list = [...cities].sort((a, b) => a.localeCompare(b));
+                let html = '<option value="">Saare shehar</option>';
+                list.forEach(c => {
+                    html += `<option value="${escAudit(c)}"${c === saved ? ' selected' : ''}>${escAudit(c)}</option>`;
+                });
+                if (missing > 0) html += `<option value="__nocity__">Purani listings (shehar nahi bhara) — ${missing}</option>`;
+                sel.innerHTML = html;
+            } catch (e) {
+                console.warn('City list failed', e);
+                sel.innerHTML = '<option value="">Saare shehar</option>';
+            }
+        };
+
+        window.onGuestCityChange = function() {
+            const sel = document.getElementById('guestCitySelect');
+            try { localStorage.setItem('hoom_guest_city', sel ? sel.value : ''); } catch (e) {}
+            refreshUserDash();
+        };
+
         function refreshUserDash() {
             // Wishlist: stored locally in this browser (no login system exists yet), keyed by property ID.
             window.getWishlist = function() { try { return JSON.parse(localStorage.getItem('hostelom_wishlist') || '[]'); } catch (e) { return []; } };
@@ -7124,7 +7353,16 @@
             const container = document.getElementById('userPropertyContainer');
             container.innerHTML = skeletonCards(6, 'h-72');
             try {
-                const q = window.query(window.collection(window.db, "businesses"), window.where("status", "==", "approved_2d"));
+                // Scoped to one city and capped. Older listings saved before the city field existed
+                // have no `city`, so they would never match this query — loadGuestCities() surfaces
+                // them under an explicit "Purani listings" option rather than hiding them.
+                const city = (document.getElementById('guestCitySelect') || {}).value || '';
+                const base = [window.collection(window.db, "businesses"), window.where("status", "==", "approved_2d")];
+                const q = city === '__nocity__'
+                    ? window.query(...base, window.limit(GUEST_PAGE_SIZE))
+                    : (city
+                        ? window.query(...base, window.where("city", "==", city), window.limit(GUEST_PAGE_SIZE))
+                        : window.query(...base, window.limit(GUEST_PAGE_SIZE)));
                 if(userUnsubscribe) userUnsubscribe();
                 userUnsubscribe = window.onSnapshot(q, (querySnapshot) => {
                     allApprovedProperties = [];
