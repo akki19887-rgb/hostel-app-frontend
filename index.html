@@ -6542,6 +6542,21 @@
         window.openBusinessEdit = async function(docId) {
             editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || [];
+
+            // The edit flow skips the map screen, so businessCity/businessCoordinates would still hold
+            // whatever the last "add property" run left behind — and saving would overwrite this
+            // listing's real values with those. Restore them from the document first.
+            if (busData.coordinates) { businessCoordinates = busData.coordinates; ownerMovedPin = true; }
+            businessCity = busData.city || '';
+            businessState = busData.state || '';
+            businessAddress = busData.pinAddress || '';
+
+            // Listings saved before the city field existed have coordinates but no city. Derive it
+            // from the pin they already have, so the owner gets it filled just by opening and saving
+            // instead of re-pinning every old property by hand.
+            if (!businessCity && busData.coordinates) {
+                loadScriptOnce(MAPS_CDN).then(() => reverseGeocodePin()).catch(e => console.warn('City backfill skipped', e));
+            }
             floorWalkthroughsCache = busData.floorWalkthroughs || {};   // so the plan can show the clip
             // These three were sitting after the // above, on the same line — the comment swallowed
             // them, so uniqueFloors was never defined and the next line threw before the editor opened.
