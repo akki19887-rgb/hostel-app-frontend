@@ -11,12 +11,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyDkOxSPD_ZTX_Uy3-YEGOTF83AdNoexohA",
+  apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
   authDomain: "hostel-om.firebaseapp.com",
   projectId: "hostel-om",
   storageBucket: "hostel-om.firebasestorage.app",
-  messagingSenderId: "168701871928",
-  appId: "1:168701871928:web:5cfe15d43b2b45cbb51d4c"
+  messagingSenderId: "111899182724",
+  appId: "1:111899182724:web:88b31e9979750b010624d1"
 });
 
 const messaging = firebase.messaging();
