@@ -6542,7 +6542,12 @@
         window.openBusinessEdit = async function(docId) {
             editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || [];
-            floorWalkthroughsCache = busData.floorWalkthroughs || {};   // so the plan can show the clip const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; currentSelectedFloor = uniqueFloors[0] || 'Ground Floor'; wakeUpAIBackend();
+            floorWalkthroughsCache = busData.floorWalkthroughs || {};   // so the plan can show the clip
+            // These three were sitting after the // above, on the same line — the comment swallowed
+            // them, so uniqueFloors was never defined and the next line threw before the editor opened.
+            const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))];
+            currentSelectedFloor = uniqueFloors[0] || 'Ground Floor';
+            wakeUpAIBackend();
             floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
             document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
         }
