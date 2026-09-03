@@ -507,7 +507,7 @@
                     <h4 class="text-[11px] font-black text-slate-700 uppercase tracking-widest">ID Proof</h4>
                     <span class="text-[9px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full">REQUIRED BY LAW</span>
                 </div>
-                <p class="text-[10px] font-semibold text-slate-400 mb-3">Police verification ke liye zaroori hai.</p>
+                <p class="text-[10px] font-semibold text-slate-400 mb-3">Required for police verification.</p>
 
                 <div class="grid grid-cols-3 gap-2">
                     <select id="walkInIdType"
@@ -535,7 +535,7 @@
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-1">Emergency contact (guardian)</label>
                 <input type="tel" inputmode="numeric" maxlength="10" id="walkInEmergency" placeholder="Ghar ka number"
                     class="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-amber-400 transition">
-                <p class="text-[10px] font-semibold text-slate-400 mt-1">Raat me kuch ho jaye to isi number pe call jayega.</p>
+                <p class="text-[10px] font-semibold text-slate-400 mt-1">If anything happens at night, this is the number we will call.</p>
             </div>
 
             <div class="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-2xl p-3 mt-4">
@@ -5418,7 +5418,7 @@
             const row = rentRowsCache.find(r => r.id === rowId);
             if (!row) return;
             const phone = String(row.guestPhone || '').replace(/\D/g, '');
-            if (!phone) { showAppToast('Is guest ka phone number nahi hai.'); return; }
+            if (!phone) { showAppToast('This guest has no phone number on file.'); return; }
             const amt = (Number(row.amount) || 0).toLocaleString('en-IN');
             const msg = `Namaste ${row.guestName || ''}, aapka rent Rs ${amt} pending hai${row.dueDate ? ' (due ' + row.dueDate + ')' : ''}. Kripya jaldi jama kar dijiye. - ${row.hostelName || 'Hostel'}`;
             window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
@@ -6117,7 +6117,7 @@
         async function addFloorMap() {
             wakeUpAIBackend();
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
-            if(!name || !fileInput.files[0]) { alert("Kripya Floor ka naam aur map ki photo dono dalein!"); return; }
+            if(!name || !fileInput.files[0]) { alert("Please enter the floor name and choose a map photo."); return; }
             const compressedFile = await compressImage(fileInput.files[0], 500); const localPreviewUrl = URL.createObjectURL(compressedFile);
             floorMaps.push({ floorName: name, file: compressedFile, dataUrl: localPreviewUrl });
             if(floorMaps.length === 1) { uploadedMapFile = compressedFile; uploadedMapDataUrl = localPreviewUrl; }
@@ -6132,7 +6132,7 @@
         }
 
         async function simulateAIProcessing() {
-            if(floorMaps.length === 0) { alert("Kam se kam ek Floor ka map upload karein!"); return; }
+            if(floorMaps.length === 0) { alert("Please upload at least one floor map."); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
             globalDynamicRooms = []; admin2DBlocks = [];
             adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {}; adminExistingRoomsAndBeds = []; adminPublishedFloors = []; // fresh property — never inherit another property's canvas/snapshot/room data
@@ -9692,7 +9692,7 @@
             const btn = document.getElementById('walkInIdPhotoBtn');
             if (!f) return;
             if (f.size > 8 * 1024 * 1024) {
-                showAppToast('Photo bahut badi hai (8MB se kam honi chahiye).');
+                showAppToast('That photo is too large — it must be under 8MB.');
                 input.value = '';
                 return;
             }
@@ -9723,11 +9723,11 @@
             // ID is not optional. A hostel is legally required to hold identification for every
             // resident, and walk-ins are most of them — leaving this blank is exactly how an
             // owner ends up with twenty residents and paperwork for five.
-            if (!idNumber) return fail(idType + ' number bharna zaroori hai.');
+            if (!idNumber) return fail(idType + ' number is required.');
             if (idType === 'Aadhaar' && idNumber.replace(/\D/g, '').length !== 12)
-                return fail('Aadhaar number 12 digit ka hona chahiye.');
+                return fail('Aadhaar number must be 12 digits.');
             if (emergency && emergency.length !== 10)
-                return fail('Emergency contact 10 digit ka hona chahiye.');
+                return fail('Emergency contact must be 10 digits.');
             if (!_walkInIdFile && !confirm('ID ki photo nahi lagayi hai.\n\nPolice verification ke waqt photo maangi jaati hai. Bina photo ke aage badhein?'))
                 return;
             err.classList.add('hidden');
@@ -9751,7 +9751,7 @@
                     } catch (upErr) {
                         console.error('Walk-in ID upload failed', upErr);
                         btn.disabled = false; btn.innerText = 'Add & Occupy Bed';
-                        return fail('ID photo upload nahi hui. Internet check karke dobara try kijiye.');
+                        return fail('ID photo did not upload. Check your internet and try again.');
                     }
                     btn.innerText = 'Saving...';
                 }
