@@ -311,7 +311,7 @@
         import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
         import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, doc, updateDoc, deleteDoc, onSnapshot, runTransaction, setDoc, orderBy, limit, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signInWithCustomToken, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, signInWithCustomToken, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyCzZ_oeEtxEYFZw2ZBXymQ1eZYS_0YINFM",
             authDomain: "hostel-om.firebaseapp.com",
@@ -342,6 +342,7 @@
         window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
         window.sendEmailVerification = sendEmailVerification;
+        window.sendPasswordResetEmail = sendPasswordResetEmail;
         window.onAuthStateChanged = onAuthStateChanged;
         window.collection = collection;
         window.addDoc = addDoc;
@@ -657,9 +658,15 @@
             </button>
         </div>
 
-        <!-- Admin (unlabeled globe icon, discreet) — bottom row -->
+        <!-- Staff & admin entry. The icon used to be unlabelled and "discreet", which hid it from
+             the people who actually need it: a new support agent had no way to know this was the
+             way in. It stays visually quiet (small, grey, bottom-right) but now says what it is. -->
         <div class="flex items-center justify-end mt-8">
-            <button type="button" onclick="goTo('screenAdminSecureLogin')" class="corner-btn w-11 h-11 rounded-xl flex items-center justify-center text-lg">🌍</button>
+            <button type="button" onclick="goTo('screenAdminSecureLogin')"
+                class="corner-btn px-4 h-11 rounded-xl flex items-center gap-2 text-slate-400 hover:text-slate-700 transition">
+                <span class="text-lg">🌍</span>
+                <span class="text-[11px] font-black uppercase tracking-widest">Staff &amp; Admin</span>
+            </button>
         </div>
     </div>
 
@@ -698,15 +705,17 @@
     <div id="screenAdminSecureLogin" class="hidden premium-card p-8 rounded-[2rem] max-w-md w-full screen-panel">
         <div class="text-center mb-6">
             <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-white text-3xl shadow-xl mb-4">🔒</div>
-            <h2 class="display-font text-3xl font-black text-slate-900">Admin Access</h2>
-            <p class="text-xs text-slate-500 font-semibold mt-2">Restricted — authorized personnel only</p>
+            <h2 class="display-font text-3xl font-black text-slate-900">Staff &amp; Admin</h2>
+            <p class="text-xs text-slate-500 font-semibold mt-2">Support, field, verifier and admin sign in here</p>
         </div>
         <div class="space-y-4">
-            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Admin ID (Email)</label><input type="email" id="adminLoginEmail" autocomplete="username" placeholder="admin@yourdomain.com" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></div>
+            <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Email</label><input type="email" id="adminLoginEmail" autocomplete="username" placeholder="admin@yourdomain.com" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></div>
             <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Password</label><input type="password" id="adminLoginPassword" autocomplete="current-password" placeholder="••••••••" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70" onkeydown="if(event.key==='Enter') verifyAdminLogin()"></div>
         </div>
         <p id="adminLoginError" class="hidden mt-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl text-center"></p>
+        <p id="adminResetMsg" class="hidden mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl text-center"></p>
         <button type="button" id="btnAdminLogin" onclick="verifyAdminLogin()" class="btn-dark w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">LOGIN</button>
+        <button type="button" onclick="sendAdminPasswordReset()" class="w-full mt-4 text-xs font-bold text-slate-500 hover:text-slate-900 underline text-center block">Forgot password?</button>
         <button type="button" onclick="goTo('screenOptions')" class="w-full mt-4 text-sm font-bold text-slate-400 hover:text-slate-700 text-center block transition">← Back</button>
     </div>
 
@@ -887,10 +896,16 @@
              looking for a hostel had to scroll past the whole filter panel before seeing a single
              one. The count in the button label is what tells them a filter is still applied once
              the panel is shut. -->
+        <div class="flex gap-2 mb-3">
         <button type="button" onclick="toggleDiscoverFilters()" id="discoverFilterToggle"
-            class="w-full mb-3 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl border-2 border-slate-200 transition flex items-center justify-center gap-2">
+            class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl border-2 border-slate-200 transition flex items-center justify-center gap-2">
             <span>⚙️ Filters</span><span id="discoverFilterCount" class="hidden text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full"></span>
         </button>
+        <button type="button" onclick="toggleSavedFilter()" id="savedFilterBtn"
+            class="px-5 py-3 bg-white hover:bg-rose-50 text-rose-600 font-black text-sm rounded-2xl border-2 border-rose-200 transition flex items-center justify-center gap-2">
+            <span>❤️ Saved</span><span id="savedFilterCount" class="hidden text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full"></span>
+        </button>
+        </div>
         <div id="discoverFilterPanel" class="hidden bg-slate-50 border border-slate-200 p-3 rounded-2xl mb-4 shadow-inner space-y-2">
             <div class="flex gap-1.5 flex-wrap items-center">
                 <span class="text-[10px] font-black text-slate-400 uppercase mr-1">Property:</span>
@@ -980,7 +995,7 @@
 
         <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mt-5">
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Naya staff jodein</p>
-            <input type="text" id="staffNewUid" placeholder="Firebase UID (Authentication se copy karein)"
+            <input type="text" id="staffNewUid" placeholder="Paste the ID the staff member sent you"
                 class="w-full p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
             <div class="grid grid-cols-2 gap-2 mt-2">
                 <input type="text" id="staffNewName" placeholder="Naam"
@@ -1031,6 +1046,23 @@
         </p>
     </div>
 
+    <div id="screenMyActivity" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-1">
+            <button type="button" onclick="goTo('screenSupportDesk')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">My activity</h2>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">What you have done</p>
+            </div>
+            <button type="button" onclick="openMyActivity()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+        <p class="text-xs font-semibold text-slate-500 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+            Every number you reveal is recorded here under your name. This is your own record —
+            if anyone ever asks what you looked at, this is the answer.
+        </p>
+        <div id="myActivityList" class="mt-4 space-y-2"></div>
+        <p class="text-[10px] font-semibold text-slate-400 mt-4 text-center">Newest first. Showing your last 50 actions.</p>
+    </div>
+
     <div id="screenSupportDesk" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
         <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-3">
@@ -1040,7 +1072,10 @@
                     <p id="supportRoleLabel" class="text-[11px] font-black text-indigo-500 uppercase tracking-widest"></p>
                 </div>
             </div>
-            <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
+            <div class="flex gap-2">
+                <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 My activity</button>
+                <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
+            </div>
         </div>
 
         <!-- Search is by PHONE first, because that is what a caller reads out. Nobody
@@ -2673,7 +2708,15 @@
         // Admin-only: remove a user's directory entry (their Firebase Auth account itself is untouched
         // — this just removes them from the "Users" list / dashboard visibility).
         async function deleteAdminUser(uid, phone) {
-            if (!confirm(`Delete ${phone || 'this user'} from the dashboard? This can't be undone.`)) return;
+            // The old text said "This can't be undone", which reads as "this person is gone".
+            // It isn't: their Firebase Auth account survives and they can still sign in. Saying so
+            // plainly stops an admin thinking they have removed someone's access when they haven't.
+            if (!confirm(
+                `Remove ${phone || 'this user'} from the Users list?\n\n` +
+                `This only hides them from this dashboard.\n` +
+                `Their login still works and their bookings stay intact.\n\n` +
+                `To block their access, delete the account in Firebase Console → Authentication.`
+            )) return;
             try {
                 await window.deleteDoc(window.doc(window.db, 'users', uid));
                 loadAdminUsers();
@@ -3452,7 +3495,7 @@
             const uid = (document.getElementById('staffNewUid').value || '').trim();
             const name = (document.getElementById('staffNewName').value || '').trim();
             const role = document.getElementById('staffNewRole').value;
-            if (uid.length < 10) { showAppToast('Poora Firebase UID daaliye.'); return; }
+            if (uid.length < 10) { showAppToast('Paste the full ID the staff member sent you.'); return; }
             if (!name) { showAppToast('Naam bhariye.'); return; }
             try {
                 const res = await apiFetch('/admin/staff', {
@@ -3539,6 +3582,45 @@
                     + '<p class="text-[10px] font-semibold text-slate-400 mt-2">' + escAudit(when) + ' · ' + escAudit(r.actorUid || '') + '</p>'
                     + '</div>';
             }).join('');
+        };
+
+        // A staff member's own slice of the audit log. Read straight from Firestore rather than
+        // through /admin/audit, because that route is admin-guarded — and the Firestore rule scopes
+        // this to rows where actorUid is the caller, so nobody can read anyone else's.
+        window.openMyActivity = async function() {
+            goTo('screenMyActivity');
+            const list = document.getElementById('myActivityList');
+            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Loading…</p>';
+            const u = window.auth && window.auth.currentUser;
+            if (!u) { list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Not signed in.</p>'; return; }
+            try {
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'auditLog'),
+                    window.where('actorUid', '==', u.uid),
+                    window.limit(50)
+                ));
+                const rows = [];
+                snap.forEach(d => rows.push(d.data()));
+                // Sorted client-side so this needs no composite index — 50 rows is nothing.
+                rows.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+
+                if (!rows.length) {
+                    list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-10">Nothing recorded yet.</p>';
+                    return;
+                }
+                list.innerHTML = rows.map(r => {
+                    let when = r.at || '';
+                    try { when = new Date(r.at).toLocaleString('en-IN'); } catch (e) {}
+                    return '<div class="bg-white border-2 border-slate-100 rounded-2xl p-3.5">'
+                        + '<p class="font-black text-[13px] text-slate-800 break-words">' + escAudit(r.action || '—') + '</p>'
+                        + (r.target ? '<p class="text-[11px] font-bold text-indigo-600 mt-1 break-words">' + escAudit(r.target) + '</p>' : '')
+                        + (r.detail ? '<p class="text-[11px] font-semibold text-slate-500 mt-1 break-words">' + escAudit(r.detail) + '</p>' : '')
+                        + '<p class="text-[10px] font-semibold text-slate-400 mt-2">' + escAudit(when) + '</p>'
+                        + '</div>';
+                }).join('');
+            } catch (e) {
+                list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Could not load: ' + escAudit(e.message) + '</p>';
+            }
         };
 
         window.openSupportDesk = function() {
@@ -3775,6 +3857,7 @@
 
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
             if(screenId === 'screenUserDashboard') {
+                syncWishlistFromAccount().then(updateSavedCount);
                 loadGuestCities().then(refreshUserDash);
                 // Map is now off by default and only initializes when the user taps "Toggle Map" —
                 // loading Google Maps + fetching/plotting markers on every dashboard visit was
@@ -4336,7 +4419,7 @@
 
 
 
-        function renderBookingCard(b, refreshFnName, hidePhone) {
+        function renderBookingCard(b, refreshFnName, hidePhone, isOwnerView) {
             const beds = (b.bookingContext && b.bookingContext.beds) || [];
             const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : '—';
             const statusMap = {
@@ -4366,7 +4449,17 @@
                 // status 'no_show' and told the admin the advance was non-refundable — while the
                 // Booking & Refund Policy the guest agreed to promises 80% / 50% back depending on
                 // notice. Wrong status, and wrong about the money.
-                actionButtons = `
+                // Refund decisions stay with admin. These buttons used to render on the owner's
+                // Property Bookings screen too, but approveCancellation writes refundDueAmount /
+                // refundDuePercent / refundPaid — fields the Firestore rules only let admin touch.
+                // The owner could press them and nothing happened but a permission error. And it
+                // should not be the owner's call anyway: they are the party the refund comes out of.
+                actionButtons = isOwnerView ? `
+                <div class="shrink-0 text-right">
+                    <span class="chip bg-orange-50 border-2 border-orange-200 text-orange-700 font-black text-[11px]">
+                        Cancellation requested — admin is reviewing
+                    </span>
+                </div>` : `
                 <div class="flex gap-2 shrink-0 flex-wrap justify-end">
                     <button type="button" onclick="rejectCancellation('${b.id}', () => ${refreshFnName}())" class="px-4 py-2.5 bg-slate-50 border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-700 hover:text-white transition">✕ Reject</button>
                     <button type="button" onclick="approveCancellation('${b.id}', () => ${refreshFnName}())" class="px-5 py-2.5 bg-orange-500 text-white font-black rounded-xl text-xs hover:bg-orange-600 transition">✅ Approve &amp; Free Bed</button>
@@ -4793,6 +4886,42 @@
         // admin in the Firebase Console, or ask to set this up). This two-factor gate (something
         // you know + a server-side allowlist Firestore rules can enforce) is far safer than a
         // hardcoded password sitting in the page's source code, which anyone could read.
+        // Admin/staff sign in with email+password, not OTP, so a forgotten password used to mean
+        // opening the Firebase console and sending the reset link by hand. This does it in-app.
+        // Deliberately says the same thing whether or not the address exists — otherwise the form
+        // becomes a way to check which emails have accounts here.
+        window.sendAdminPasswordReset = async function() {
+            const emailEl = document.getElementById('adminLoginEmail');
+            const errEl = document.getElementById('adminLoginError');
+            const okEl = document.getElementById('adminResetMsg');
+            const email = (emailEl && emailEl.value || '').trim();
+            errEl.classList.add('hidden');
+            okEl.classList.add('hidden');
+            if (!email) {
+                errEl.innerText = 'Enter your Admin ID (email) first, then tap Forgot password.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            try {
+                await window.sendPasswordResetEmail(window.auth, email);
+            } catch (e) {
+                console.warn('Password reset failed', e);
+            }
+            okEl.innerText = 'If that email has an account, a reset link is on its way. Check your inbox and spam folder.';
+            okEl.classList.remove('hidden');
+        };
+
+        window.copyMyUid = function(uid) {
+            try {
+                navigator.clipboard.writeText(uid);
+                showAppToast('ID copied. Send it to your admin on WhatsApp.');
+            } catch (e) {
+                // Clipboard is blocked on some in-app browsers; the box is select-all so the
+                // user can still long-press and copy it by hand.
+                showAppToast('Could not copy automatically — tap and hold the ID to copy it.');
+            }
+        };
+
         async function verifyAdminLogin() {
             const errEl = document.getElementById('adminLoginError');
             errEl.classList.add('hidden');
@@ -4824,8 +4953,19 @@
                     } catch (e) { console.warn('Staff role lookup failed', e); }
 
                     if (!staffRole) {
+                        // Granting access needs this account's Firebase UID, and until now the admin
+                        // had to go dig it out of the Firebase console by hand. The person who needs
+                        // it is standing right here, already signed in — so show it to them with a
+                        // copy button and let them send it across. Read the uid BEFORE signing out.
+                        const myUid = (window.auth.currentUser && window.auth.currentUser.uid) || '';
                         await window.firebaseSignOut(window.auth);
-                        errEl.innerText = 'This account is not authorized for admin access.';
+                        errEl.innerHTML =
+                            'This account does not have staff or admin access yet.'
+                            + '<br><span class="font-semibold text-slate-600">Send this ID to your admin:</span>'
+                            + '<br><span id="myUidBox" class="inline-block mt-2 px-3 py-2 bg-white border-2 border-slate-200 '
+                            + 'rounded-lg font-mono text-[11px] text-slate-800 break-all select-all">' + escAudit(myUid) + '</span>'
+                            + '<br><button type="button" onclick="copyMyUid(\'' + escAudit(myUid) + '\')" '
+                            + 'class="mt-2 px-4 py-2 bg-slate-900 text-white font-black rounded-lg text-[11px]">Copy ID</button>';
                         errEl.classList.remove('hidden');
                         return;
                     }
@@ -6617,7 +6757,7 @@
                     if (b.status === 'rejected') {
                         return `<div class="bg-slate-50 p-5 rounded-2xl border-2 border-slate-100 opacity-70"><h4 class="font-black text-lg text-slate-500">${b.guestName || 'Guest'} — ₹${b.amount}</h4><span class="chip bg-slate-100 border-2 border-slate-200 text-slate-500 font-black text-[10px] mt-2 inline-block">❌ Payment Rejected</span></div>`;
                     }
-                    return renderBookingCard(b, 'refreshCurrentPropertyBookings', true);
+                    return renderBookingCard(b, 'refreshCurrentPropertyBookings', true, true);
                 }).join('');
             } catch (err) {
                 console.error('Failed to load property bookings', err);
@@ -6921,7 +7061,29 @@
                         const flatPhotosHtml = (fd.photos && fd.photos.length) ? `<div class="flex gap-2 mb-3 overflow-x-auto">${fd.photos.map(p => `<img src="${p}" class="w-20 h-20 object-cover rounded-xl border border-slate-200 shrink-0">`).join('')}</div>` : '';
                         cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">House/Flat <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${fd.bookingMode === 'visit' ? '📅 VISIT' : '⚡ INSTANT'}</span></div>${bizProfileHtml}${flatSummaryHtml}${flatPhotosHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', 'this flat/house')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3">${data.status === 'pending_approval' ? `<button type="button" onclick="approveFlatHouseListing('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✅ Approve & Publish</button>` : ''}</div></div></div>`;
                     } else {
-                        cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', '${(data.propertyType || 'this property').replace(/'/g, "\\'")}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div></div></div>`;
+                        cardHtml = `<div class="property-card p-6 rounded-3xl shadow-sm mb-4 flex flex-col gap-4"><div class="flex justify-between items-center border-b border-slate-100 pb-4"><div><h3 class="display-font font-black text-lg text-slate-800">${data.propertyType} <span class="text-xs font-bold text-slate-400 block mt-1 tracking-widest">ID: ${doc.id.substring(0,8).toUpperCase()}</span></h3></div><span class="chip chip-primary">${totalBeds} BEDS</span></div>${bizProfileHtml}${govtVerificationHtml}${rulesSummaryHtml}${publishedAtHtml}${pausedBadgeHtml}<div class="flex justify-between items-center gap-3 pt-2 flex-wrap"><div class="flex gap-3"><button type="button" onclick="deleteAdminProperty('${doc.id}', '${(data.propertyType || 'this property').replace(/'/g, "\\'")}')" class="px-4 py-2.5 bg-red-50 border-2 border-red-100 text-red-600 font-bold rounded-xl text-xs hover:bg-red-500 hover:text-white hover:border-red-500 transition">🗑️ Delete</button>${data.status !== 'pending_approval' ? pauseBtnHtml : ''}</div><div class="flex gap-3"><button type="button" onclick="startAdminAIFlow('${doc.id}', '${data.mapImageUrl}', ${totalBeds})" class="px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition">Review Images</button><button type="button" onclick="startAdmin2DFlow('${doc.id}')" class="btn-gradient px-6 py-2.5 text-white font-black tracking-wide rounded-xl text-xs shadow-md">✨ ARCHITECT MODE</button></div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Commission</span>
+                            <input type="number" id="commInput-${doc.id}" value="${typeof data.commissionPercent === 'number' ? data.commissionPercent : 15}"
+                                min="0" max="100" step="0.5"
+                                class="w-20 p-2 bg-white border-2 border-slate-200 rounded-lg font-black text-sm text-center outline-none focus:border-indigo-400">
+                            <span class="text-sm font-black text-slate-600">%</span>
+                            <button type="button" onclick="saveCommission('${doc.id}')"
+                                class="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-lg text-xs transition">Save</button>
+                            <span class="text-[10px] font-semibold text-slate-400">${typeof data.commissionPercent === 'number' ? 'Custom rate' : 'Using default 15%'}</span>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gender policy</span>
+                            <select id="genderSelect-${doc.id}"
+                                class="p-2 bg-white border-2 border-slate-200 rounded-lg font-black text-sm outline-none focus:border-indigo-400">
+                                <option value="Boys"${((data.rules && data.rules.genderType) || 'Co-ed') === 'Boys' ? ' selected' : ''}>Boys only</option>
+                                <option value="Girls"${((data.rules && data.rules.genderType) || 'Co-ed') === 'Girls' ? ' selected' : ''}>Girls only</option>
+                                <option value="Co-ed"${((data.rules && data.rules.genderType) || 'Co-ed') === 'Co-ed' ? ' selected' : ''}>Co-ed</option>
+                            </select>
+                            <button type="button" onclick="saveGenderPolicy('${doc.id}')"
+                                class="px-4 py-2 bg-slate-900 hover:bg-black text-white font-black rounded-lg text-xs transition">Save</button>
+                            <span class="text-[10px] font-semibold text-slate-400">Admin only — changes the safety badge guests see</span>
+                        </div></div></div>`;
                     }
                     if (data.status === 'pending_approval') pendingHtml += cardHtml; else if (data.status === 'approved_2d' || data.status === 'approved' || data.status === 'paused_by_admin') liveHtml += cardHtml;
                 });
@@ -6929,6 +7091,51 @@
                 updateHtmlPreservingScroll(liveContainer, liveHtml || `<p class="text-slate-500 font-black text-center mt-6">No Live Properties Yet</p>`);
             });
         }
+
+        // Per-property commission override. The payouts ledger already reads
+        // businesses/{id}.commissionPercent and falls back to DEFAULT_COMMISSION_PERCENT — this is
+        // just the admin-facing way to set it, instead of editing the field in the Firestore console.
+        // Firestore rules keep this field admin-only, so an owner can never zero out our cut.
+        window.saveCommission = async function(docId) {
+            const el = document.getElementById('commInput-' + docId);
+            if (!el) return;
+            const v = parseFloat(el.value);
+            if (isNaN(v) || v < 0 || v > 100) {
+                showAppToast('Enter a commission between 0 and 100.');
+                return;
+            }
+            try {
+                await window.updateDoc(window.doc(window.db, "businesses", docId), { commissionPercent: v });
+                showAppToast(`✅ Commission set to ${v}% for this property.`);
+            } catch (e) {
+                alert('Could not save commission: ' + (e.message || e));
+            }
+        };
+
+        // Gender policy. Kept next to commission because both are admin-only levers on a live
+        // listing. The whole `rules` object is re-written rather than the one nested key, because
+        // a partial write would drop the amenities stored alongside it.
+        window.saveGenderPolicy = async function(docId) {
+            const el = document.getElementById('genderSelect-' + docId);
+            if (!el) return;
+            const val = el.value;
+            if (!['Boys', 'Girls', 'Co-ed'].includes(val)) return;
+            if (!confirm(
+                `Change this hostel's gender policy to "${val}"?\n\n` +
+                `Guests see this as a safety badge and may have booked because of it. ` +
+                `Only change it if the hostel has genuinely changed.`
+            )) return;
+            try {
+                const snap = await window.getDoc(window.doc(window.db, "businesses", docId));
+                const existingRules = (snap.exists() && snap.data().rules) ? snap.data().rules : {};
+                await window.updateDoc(window.doc(window.db, "businesses", docId), {
+                    rules: { ...existingRules, genderType: val }
+                });
+                showAppToast(`✅ Gender policy set to ${val}.`);
+            } catch (e) {
+                alert('Could not save gender policy: ' + (e.message || e));
+            }
+        };
 
         async function startAdminAIFlow(docId, rawImageUrl, totalBedsFromBusiness) { currentAdminDocId = docId; adminExpectedBeds = totalBedsFromBusiness || 0; aiGeneratedMapUrl = rawImageUrl; document.getElementById('adminToolImage').src = aiGeneratedMapUrl; mappedBedsData = []; bedCounter = 1; document.getElementById('dynamicMappingPublishBtn').onclick = approveAndPublishAdminMap; goTo('screenAdminMappingTool'); renderAdminBeds(); }
         function renderAdminBeds() {
@@ -7296,6 +7503,9 @@
             document.querySelectorAll('[id^="prop-card-"]').forEach(card => {
                 const id = card.id.replace('prop-card-', ''); const prop = allApprovedProperties.find(p => p.id === id); if (!prop) return;
                 let show = true;
+                // "Saved" is a filter over the same cards rather than a separate screen — a guest
+                // comparing three hostels can flip it on, see just those three, and flip it off.
+                if (showOnlySaved && !getWishlist().includes(id)) show = false;
                 if (search && !(prop.propertyType || '').toLowerCase().includes(search) && !(prop.businessProfile?.company || '').toLowerCase().includes(search)) show = false;
                 if (discoverFilters.type !== 'all' && prop.propertyType !== discoverFilters.type) show = false;
                 if (discoverFilters.gender && discoverFilters.gender !== 'all' && (prop.rules?.genderType || 'Co-ed') !== discoverFilters.gender) show = false;
@@ -7361,15 +7571,64 @@
             refreshUserDash();
         };
 
+        // Saved list. The comment here used to say "no login system exists yet" — there is one now,
+        // so a list kept only in localStorage was quietly lost every time someone changed phone or
+        // cleared their browser. It mirrors to users/{uid}.wishlist when signed in (the existing
+        // rule already allows a user to write their own document) and keeps the local copy as the
+        // fast path and the signed-out fallback.
+        window.getWishlist = function() {
+            try { return JSON.parse(localStorage.getItem('hostelom_wishlist') || '[]'); } catch (e) { return []; }
+        };
+
+        // Called once after sign-in: pull whatever the account already had and merge it in, so a
+        // list saved on an old phone shows up on the new one.
+        window.syncWishlistFromAccount = async function() {
+            const u = window.auth && window.auth.currentUser;
+            if (!u) return;
+            try {
+                const snap = await window.getDoc(window.doc(window.db, 'users', u.uid));
+                const remote = (snap.exists() && Array.isArray(snap.data().wishlist)) ? snap.data().wishlist : [];
+                const merged = [...new Set([...getWishlist(), ...remote])];
+                localStorage.setItem('hostelom_wishlist', JSON.stringify(merged));
+            } catch (e) { console.warn('Wishlist sync skipped', e); }
+        };
+
+        window.toggleWishlist = function(propId, btnEl) {
+            let list = getWishlist();
+            if (list.includes(propId)) { list = list.filter(id => id !== propId); if (btnEl) btnEl.innerText = '🤍'; }
+            else { list.push(propId); if (btnEl) btnEl.innerText = '❤️'; }
+            localStorage.setItem('hostelom_wishlist', JSON.stringify(list));
+            updateSavedCount();
+            const u = window.auth && window.auth.currentUser;
+            if (u) {
+                window.setDoc(window.doc(window.db, 'users', u.uid), { wishlist: list }, { merge: true })
+                    .catch(e => console.warn('Could not save wishlist to account', e));
+            }
+            // If the guest is currently filtering by saved, drop the un-hearted card straight away.
+            if (showOnlySaved) refreshUserDash();
+        };
+
+        // Filter state for the "Saved" toggle on the Discover screen.
+        let showOnlySaved = false;
+        window.toggleSavedFilter = function() {
+            showOnlySaved = !showOnlySaved;
+            const btn = document.getElementById('savedFilterBtn');
+            if (btn) {
+                btn.classList.toggle('bg-rose-500', showOnlySaved);
+                btn.classList.toggle('text-white', showOnlySaved);
+                btn.classList.toggle('border-rose-500', showOnlySaved);
+            }
+            refreshUserDash();
+        };
+        function updateSavedCount() {
+            const el = document.getElementById('savedFilterCount');
+            if (!el) return;
+            const n = getWishlist().length;
+            if (n > 0) { el.innerText = n; el.classList.remove('hidden'); }
+            else { el.classList.add('hidden'); }
+        }
+
         function refreshUserDash() {
-            // Wishlist: stored locally in this browser (no login system exists yet), keyed by property ID.
-            window.getWishlist = function() { try { return JSON.parse(localStorage.getItem('hostelom_wishlist') || '[]'); } catch (e) { return []; } };
-            window.toggleWishlist = function(propId, btnEl) {
-                let list = getWishlist();
-                if (list.includes(propId)) { list = list.filter(id => id !== propId); if (btnEl) btnEl.innerText = '🤍'; }
-                else { list.push(propId); if (btnEl) btnEl.innerText = '❤️'; }
-                localStorage.setItem('hostelom_wishlist', JSON.stringify(list));
-            };
             const container = document.getElementById('userPropertyContainer');
             container.innerHTML = skeletonCards(6, 'h-72');
             try {
