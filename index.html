@@ -1026,6 +1026,31 @@
          (auditLog collection, /admin/audit). Until now there was no way to read it, which made the
          promise in the staff training material unbackable: "kal koi poochhe data leak kaise hua to
          jawab ho" only holds if someone can actually open the record. -->
+    <!-- SYSTEM HEALTH — one screen instead of five browser tabs.
+         Everything here comes from the app's own data or a plain call to the backend, so it needs
+         no API keys sitting in the browser. Render logs and Sentry would need tokens, and tokens
+         belong on the server, so those stay out until there is a backend route to fetch them. -->
+    <div id="screenSystemHealth" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-1">
+            <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">System</h2>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Is everything running</p>
+            </div>
+            <button type="button" onclick="openSystemHealth()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
+        </div>
+
+        <div id="shRows" class="mt-5 space-y-2"></div>
+
+        <h3 class="text-sm font-black text-slate-900 mt-6 mb-2">Waiting for you</h3>
+        <div id="shWork" class="space-y-2"></div>
+
+        <p class="text-[10px] font-semibold text-slate-400 mt-5 text-center">
+            Render logs and Sentry errors are not here yet — those need API keys, which have to live
+            on the server, not in this page.
+        </p>
+    </div>
+
     <div id="screenAuditLog" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-1">
             <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
@@ -1061,6 +1086,141 @@
         </p>
         <div id="myActivityList" class="mt-4 space-y-2"></div>
         <p class="text-[10px] font-semibold text-slate-400 mt-4 text-center">Newest first. Showing your last 50 actions.</p>
+    </div>
+
+    <!-- FIELD EXECUTIVE — the person who walks into hostels and gets them listed.
+         Until now all three staff roles landed on the Support Desk, which meant a field
+         executive's actual job had no home in the app at all: no way to log a visit, no way to
+         see who said "come back later", no way to know what they had earned. -->
+    <div id="screenFieldDesk" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-600 flex items-center justify-center text-white text-lg shadow-lg">🏃</div>
+                <div>
+                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Field Desk</h2>
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest" id="fieldNameLabel">Field executive</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
+                <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
+            </div>
+        </div>
+
+        <!-- Today's numbers. Deliberately three plain counts, not a chart: the person reading this
+             is standing on a footpath between two hostels. -->
+        <div class="grid grid-cols-3 gap-2 mt-5">
+            <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-3 text-center">
+                <div class="text-2xl font-black text-slate-900" id="fdVisitsToday">0</div>
+                <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Visits today</div>
+            </div>
+            <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3 text-center">
+                <div class="text-2xl font-black text-emerald-700" id="fdListedToday">0</div>
+                <div class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">Listed today</div>
+            </div>
+            <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3 text-center">
+                <div class="text-2xl font-black text-indigo-700" id="fdListedMonth">0</div>
+                <div class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">This month</div>
+            </div>
+        </div>
+
+        <button type="button" onclick="goTo('screenPropertyTypeSelection')"
+            class="w-full mt-4 py-4 btn-gradient text-white font-black rounded-2xl shadow-lg tracking-wide">
+            ➕ ADD A HOSTEL
+        </button>
+
+        <!-- Log a visit -->
+        <div class="mt-5 bg-white border-2 border-slate-200 rounded-2xl p-4">
+            <h3 class="text-sm font-black text-slate-900 mb-3">Log a visit</h3>
+            <input type="text" id="fdHostelName" placeholder="Hostel name"
+                class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400 mb-2">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="text" id="fdOwnerName" placeholder="Owner name"
+                    class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400">
+                <input type="tel" id="fdOwnerPhone" placeholder="Owner phone" maxlength="10"
+                    class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400">
+            </div>
+            <textarea id="fdNote" rows="2" placeholder="What did they say?"
+                class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-semibold text-sm outline-none focus:border-emerald-400 mb-3"></textarea>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="logFieldVisit('listed')" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs transition">✅ Listing done</button>
+                <button type="button" onclick="logFieldVisit('follow_up')" class="py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition">⏳ Come back later</button>
+                <button type="button" onclick="logFieldVisit('revisit')" class="py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl text-xs transition">🔁 Owner not there</button>
+                <button type="button" onclick="logFieldVisit('refused')" class="py-3 bg-slate-600 hover:bg-slate-700 text-white font-black rounded-xl text-xs transition">✖️ Said no</button>
+            </div>
+        </div>
+
+        <!-- Follow-ups that are due. The whole point of writing down a "no" is this list. -->
+        <div class="mt-5">
+            <h3 class="text-sm font-black text-slate-900 mb-2">📞 Call these back</h3>
+            <div id="fdFollowUps" class="space-y-2"></div>
+        </div>
+
+        <div class="mt-5">
+            <h3 class="text-sm font-black text-slate-900 mb-2">Recent visits</h3>
+            <div id="fdRecent" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- VERIFIER — the person who actually stands in the building before we put a Verified badge
+         on it. They file what they saw; admin decides. A verifier who could grant the badge
+         themselves would be one person able to put an unchecked hostel in front of students. -->
+    <div id="screenVerifierDesk" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-purple-600 flex items-center justify-center text-white text-lg shadow-lg">🔎</div>
+                <div>
+                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Verifier Desk</h2>
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest" id="verifierNameLabel">Verifier</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
+                <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
+            </div>
+        </div>
+
+        <p class="text-xs font-semibold text-slate-500 mt-4 bg-purple-50 border border-purple-200 rounded-xl p-3">
+            You report what you saw. Admin gives the Verified badge.
+            <b>Never accept money to pass a hostel</b> — every report is recorded under your name.
+        </p>
+
+        <h3 class="text-sm font-black text-slate-900 mt-5 mb-2">Waiting to be visited</h3>
+        <div id="vdQueue" class="space-y-2"></div>
+
+        <!-- Report form. Hidden until a hostel is picked from the queue above. -->
+        <div id="vdForm" class="hidden mt-5 bg-white border-2 border-purple-200 rounded-2xl p-4">
+            <h3 class="text-sm font-black text-slate-900 mb-1">Report</h3>
+            <p class="text-[12px] font-bold text-purple-700 mb-3" id="vdFormHostel"></p>
+
+            <div class="space-y-2">
+                <label class="flex items-center gap-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="vdPin" class="w-5 h-5 accent-purple-600">
+                    <span class="text-sm font-bold text-slate-700">Map pin is at the right building</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="vdPhotos" class="w-5 h-5 accent-purple-600">
+                    <span class="text-sm font-bold text-slate-700">Photos match the real rooms</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl cursor-pointer">
+                    <input type="checkbox" id="vdBeds" class="w-5 h-5 accent-purple-600">
+                    <span class="text-sm font-bold text-slate-700">Bed count matches the listing</span>
+                </label>
+            </div>
+
+            <textarea id="vdNote" rows="3" placeholder="Anything else the admin should know?"
+                class="w-full mt-3 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-semibold text-sm outline-none focus:border-purple-400"></textarea>
+
+            <div class="grid grid-cols-3 gap-2 mt-3">
+                <button type="button" onclick="submitVerifierReport('approve')" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs transition">✅ Looks good</button>
+                <button type="button" onclick="submitVerifierReport('needs_fix')" class="py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition">⚠️ Needs fixing</button>
+                <button type="button" onclick="submitVerifierReport('reject')" class="py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl text-xs transition">✖️ Reject</button>
+            </div>
+            <button type="button" onclick="closeVerifierForm()" class="w-full mt-2 py-2 text-xs font-bold text-slate-400 hover:text-slate-700">Cancel</button>
+        </div>
+
+        <h3 class="text-sm font-black text-slate-900 mt-6 mb-2">My recent reports</h3>
+        <div id="vdRecent" class="space-y-2"></div>
     </div>
 
     <div id="screenSupportDesk" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
@@ -1115,6 +1275,7 @@
                 <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
                 <button type="button" onclick="openStaffManager()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">👥 Staff</button>
                 <button type="button" onclick="openAuditLog()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">📜 Audit log</button>
+                <button type="button" onclick="openSystemHealth()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">🩺 System</button>
             </div>
         </div>
 
@@ -3455,6 +3616,7 @@
         // This shows only what is needed to answer a phone call.
         // ==========================================================================
         let currentStaffRole = '';
+        let currentStaffName = '';
         let _staffIdleTimer = null;
 
         // ---------- STAFF MANAGER (admin) ----------
@@ -3534,6 +3696,106 @@
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
+
+        // ---------- SYSTEM HEALTH ----------
+        function shRow(label, state, detail) {
+            const dot = { ok: '🟢', warn: '🟡', bad: '🔴' }[state] || '⚪';
+            const cls = { ok: 'border-emerald-200 bg-emerald-50',
+                          warn: 'border-amber-200 bg-amber-50',
+                          bad: 'border-red-200 bg-red-50' }[state] || 'border-slate-200 bg-slate-50';
+            return `<div class="border-2 ${cls} rounded-2xl p-3 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="font-black text-[13px] text-slate-900">${dot} ${escAudit(label)}</p>
+                    <p class="text-[11px] font-semibold text-slate-600 mt-0.5 break-words">${escAudit(detail)}</p>
+                </div></div>`;
+        }
+
+        window.openSystemHealth = async function() {
+            goTo('screenSystemHealth');
+            const box = document.getElementById('shRows');
+            const work = document.getElementById('shWork');
+            box.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3">Checking…</p>';
+            work.innerHTML = '';
+            const rows = [];
+
+            // 1. Backend. Timed, because a Render free instance that has gone to sleep answers in
+            // 30+ seconds rather than failing — which looks fine in a log and terrible to a guest.
+            const t0 = Date.now();
+            try {
+                const r = await fetch(BACKEND_URL + '/health', { cache: 'no-store' });
+                const ms = Date.now() - t0;
+                if (!r.ok) rows.push(shRow('Backend', 'bad', `Answered ${r.status} in ${ms}ms`));
+                else if (ms > 3000) rows.push(shRow('Backend', 'warn', `Up, but slow — ${ms}ms. It was probably asleep.`));
+                else rows.push(shRow('Backend', 'ok', `Up · ${ms}ms`));
+            } catch (e) {
+                rows.push(shRow('Backend', 'bad', 'Not answering at all. Check Render.'));
+            }
+
+            // 2. Cron. Nothing writes a "last run" marker, so this infers it from the newest
+            // check-in reminder — the only thing the daily job produces. No reminder in three days
+            // means the job is not being called, which is exactly the failure we already hit once.
+            try {
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'notifications'),
+                    window.where('type', '==', 'checkin_reminder'),
+                    window.limit(50)
+                ));
+                let newest = '';
+                snap.forEach(d => {
+                    const t = d.data().createdAt || d.data().at || '';
+                    if (String(t) > newest) newest = String(t);
+                });
+                if (!newest) {
+                    rows.push(shRow('Daily reminders', 'bad', 'Never run. Add the cron job on cron-job.org.'));
+                } else {
+                    const days = Math.floor((Date.now() - new Date(newest).getTime()) / 86400000);
+                    if (days > 3) rows.push(shRow('Daily reminders', 'bad', `Last ran ${days} days ago.`));
+                    else rows.push(shRow('Daily reminders', 'ok', `Last ran ${days === 0 ? 'today' : days + ' day(s) ago'}`));
+                }
+            } catch (e) {
+                rows.push(shRow('Daily reminders', 'warn', 'Could not check.'));
+            }
+
+            // 3. Live listings — an empty shop is the real problem, so it belongs on this screen.
+            try {
+                const live = await window.getDocs(window.query(
+                    window.collection(window.db, 'businesses'),
+                    window.where('status', '==', 'approved_2d'), window.limit(500)));
+                const n = live.size;
+                rows.push(shRow('Live listings', n === 0 ? 'bad' : (n < 20 ? 'warn' : 'ok'),
+                    n === 0 ? 'None live — guests see an empty app'
+                            : `${n} hostel(s) visible to guests` + (n < 20 ? ' — still thin' : '')));
+            } catch (e) {
+                rows.push(shRow('Live listings', 'warn', 'Could not check.'));
+            }
+
+            box.innerHTML = rows.join('');
+
+            // ---- Work waiting for the admin ----
+            const jobs = [];
+            try {
+                const pend = await window.getDocs(window.query(
+                    window.collection(window.db, 'bookings'),
+                    window.where('status', '==', 'pending_payment_confirmation'), window.limit(200)));
+                if (pend.size) jobs.push(['💳', `${pend.size} payment(s) to confirm`]);
+            } catch (e) {}
+            try {
+                const ver = await window.getDocs(window.query(
+                    window.collection(window.db, 'businesses'),
+                    window.where('status', '==', 'pending_approval'), window.limit(200)));
+                if (ver.size) jobs.push(['🏠', `${ver.size} hostel(s) waiting for verification`, null]);
+            } catch (e) {}
+            try {
+                const rep = await window.getDocs(window.query(
+                    window.collection(window.db, 'verifierReports'), window.limit(200)));
+                if (rep.size) jobs.push(['🔎', `${rep.size} verifier report(s) filed`, null]);
+            } catch (e) {}
+
+            work.innerHTML = jobs.length
+                ? jobs.map(([icon, text]) => `<div class="bg-white border-2 border-slate-200 rounded-2xl p-3">
+                       <p class="font-black text-[13px] text-slate-800">${icon} ${escAudit(text)}</p></div>`).join('')
+                : '<div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3"><p class="font-black text-[13px] text-emerald-700">✅ Nothing pending</p></div>';
+        };
 
         window.openAuditLog = async function() {
             goTo('screenAuditLog');
@@ -3623,6 +3885,249 @@
             }
         };
 
+        // ---------- FIELD EXECUTIVE ----------
+        // Everything here is scoped to the signed-in staff member by the Firestore rules, so a
+        // field executive sees their own visits and nobody else's — including their own numbers,
+        // which is the whole reason they will open this screen every evening.
+        window.openFieldDesk = async function() {
+            goTo('screenFieldDesk');
+            const nameEl = document.getElementById('fieldNameLabel');
+            if (nameEl) nameEl.innerText = (currentStaffName || 'Field executive');
+            await refreshFieldDesk();
+        };
+
+        window.logFieldVisit = async function(outcome) {
+            const u = window.auth && window.auth.currentUser;
+            if (!u) { showAppToast('Not signed in.'); return; }
+            const hostel = (document.getElementById('fdHostelName').value || '').trim();
+            if (!hostel) { showAppToast('Enter the hostel name first.'); return; }
+
+            const phone = (document.getElementById('fdOwnerPhone').value || '').replace(/\D/g, '');
+            const row = {
+                staffUid: u.uid,
+                staffName: currentStaffName || '',
+                hostelName: hostel,
+                ownerName: (document.getElementById('fdOwnerName').value || '').trim(),
+                ownerPhone: phone,
+                note: (document.getElementById('fdNote').value || '').trim(),
+                outcome: outcome,
+                visitedAt: new Date().toISOString()
+            };
+            // A "come back later" is only useful if it comes back on its own. Two weeks is what the
+            // field script already tells them to say, so the app holds them to their own promise.
+            if (outcome === 'follow_up' || outcome === 'revisit') {
+                const d = new Date();
+                d.setDate(d.getDate() + (outcome === 'revisit' ? 3 : 15));
+                row.followUpOn = d.toISOString().slice(0, 10);
+                row.followUpDone = false;
+            }
+            try {
+                await window.addDoc(window.collection(window.db, 'staffVisits'), row);
+                document.getElementById('fdHostelName').value = '';
+                document.getElementById('fdOwnerName').value = '';
+                document.getElementById('fdOwnerPhone').value = '';
+                document.getElementById('fdNote').value = '';
+                showAppToast('✅ Visit saved.');
+                await refreshFieldDesk();
+            } catch (e) {
+                alert('Could not save visit: ' + (e.message || e));
+            }
+        };
+
+        window.markFollowUpDone = async function(docId) {
+            try {
+                await window.updateDoc(window.doc(window.db, 'staffVisits', docId), { followUpDone: true });
+                showAppToast('Marked done.');
+                await refreshFieldDesk();
+            } catch (e) { alert('Could not update: ' + (e.message || e)); }
+        };
+
+        async function refreshFieldDesk() {
+            const u = window.auth && window.auth.currentUser;
+            if (!u) return;
+            const followBox = document.getElementById('fdFollowUps');
+            const recentBox = document.getElementById('fdRecent');
+            followBox.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3">Loading…</p>';
+            recentBox.innerHTML = '';
+            try {
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'staffVisits'),
+                    window.where('staffUid', '==', u.uid),
+                    window.limit(200)
+                ));
+                const rows = [];
+                snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+                // Sorted here rather than in the query so this needs no composite index.
+                rows.sort((a, b) => String(b.visitedAt || '').localeCompare(String(a.visitedAt || '')));
+
+                const today = new Date().toISOString().slice(0, 10);
+                const month = today.slice(0, 7);
+                document.getElementById('fdVisitsToday').innerText =
+                    rows.filter(r => String(r.visitedAt || '').slice(0, 10) === today).length;
+                document.getElementById('fdListedToday').innerText =
+                    rows.filter(r => r.outcome === 'listed' && String(r.visitedAt || '').slice(0, 10) === today).length;
+                document.getElementById('fdListedMonth').innerText =
+                    rows.filter(r => r.outcome === 'listed' && String(r.visitedAt || '').slice(0, 7) === month).length;
+
+                const due = rows.filter(r => r.followUpOn && !r.followUpDone && r.followUpOn <= today);
+                followBox.innerHTML = due.length ? due.map(r => `
+                    <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="font-black text-[13px] text-slate-900 break-words">${escAudit(r.hostelName)}</p>
+                                <p class="text-[11px] font-bold text-slate-600">${escAudit(r.ownerName || '')} ${r.ownerPhone ? '· ' + escAudit(r.ownerPhone) : ''}</p>
+                                ${r.note ? `<p class="text-[11px] font-semibold text-slate-500 mt-1 break-words">${escAudit(r.note)}</p>` : ''}
+                            </div>
+                            <div class="flex flex-col gap-1 shrink-0">
+                                ${r.ownerPhone ? `<a href="tel:${escAudit(r.ownerPhone)}" class="px-3 py-2 bg-emerald-600 text-white font-black rounded-lg text-[11px] text-center">📞 Call</a>` : ''}
+                                <button type="button" onclick="markFollowUpDone('${r.id}')" class="px-3 py-2 bg-white border-2 border-slate-200 text-slate-600 font-black rounded-lg text-[11px]">Done</button>
+                            </div>
+                        </div>
+                    </div>`).join('')
+                    : '<p class="text-xs font-bold text-slate-400 py-3">Nothing due today.</p>';
+
+                const badge = { listed: ['Listed', 'bg-emerald-100 text-emerald-700'],
+                                follow_up: ['Come back', 'bg-amber-100 text-amber-700'],
+                                revisit: ['Not there', 'bg-indigo-100 text-indigo-700'],
+                                refused: ['Said no', 'bg-slate-200 text-slate-700'] };
+                recentBox.innerHTML = rows.slice(0, 15).map(r => {
+                    const [lbl, cls] = badge[r.outcome] || ['—', 'bg-slate-100 text-slate-600'];
+                    let when = r.visitedAt || '';
+                    try { when = new Date(r.visitedAt).toLocaleDateString('en-IN'); } catch (e) {}
+                    return `<div class="bg-white border-2 border-slate-100 rounded-xl p-3 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-black text-[13px] text-slate-800 break-words">${escAudit(r.hostelName)}</p>
+                            <p class="text-[10px] font-semibold text-slate-400">${escAudit(when)}</p>
+                        </div>
+                        <span class="chip ${cls} font-black text-[10px] shrink-0">${lbl}</span>
+                    </div>`;
+                }).join('') || '<p class="text-xs font-bold text-slate-400 py-3">No visits logged yet.</p>';
+            } catch (e) {
+                followBox.innerHTML = `<p class="text-xs font-bold text-red-500 py-3">Could not load: ${escAudit(e.message)}</p>`;
+            }
+        }
+
+        // ---------- VERIFIER ----------
+        let vdCurrentProperty = null;
+
+        window.openVerifierDesk = async function() {
+            goTo('screenVerifierDesk');
+            const nameEl = document.getElementById('verifierNameLabel');
+            if (nameEl) nameEl.innerText = (currentStaffName || 'Verifier');
+            closeVerifierForm();
+            await refreshVerifierDesk();
+        };
+
+        window.pickVerifierProperty = function(propId, hostelName) {
+            vdCurrentProperty = { id: propId, name: hostelName };
+            document.getElementById('vdFormHostel').innerText = hostelName;
+            document.getElementById('vdPin').checked = false;
+            document.getElementById('vdPhotos').checked = false;
+            document.getElementById('vdBeds').checked = false;
+            document.getElementById('vdNote').value = '';
+            document.getElementById('vdForm').classList.remove('hidden');
+            document.getElementById('vdForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        window.closeVerifierForm = function() {
+            vdCurrentProperty = null;
+            const f = document.getElementById('vdForm');
+            if (f) f.classList.add('hidden');
+        };
+
+        window.submitVerifierReport = async function(recommend) {
+            const u = window.auth && window.auth.currentUser;
+            if (!u || !vdCurrentProperty) return;
+            const pin = document.getElementById('vdPin').checked;
+            const photos = document.getElementById('vdPhotos').checked;
+            const beds = document.getElementById('vdBeds').checked;
+
+            // Recommending approval with a box unticked is almost always a slip rather than a
+            // judgement, so it asks once rather than silently filing a contradictory report.
+            if (recommend === 'approve' && !(pin && photos && beds)) {
+                if (!confirm('You are recommending approval but not everything is ticked.\n\nAre you sure?')) return;
+            }
+            try {
+                await window.addDoc(window.collection(window.db, 'verifierReports'), {
+                    verifierUid: u.uid,
+                    verifierName: currentStaffName || '',
+                    propertyId: vdCurrentProperty.id,
+                    hostelName: vdCurrentProperty.name,
+                    pinCorrect: pin,
+                    photosMatch: photos,
+                    bedCountMatch: beds,
+                    note: (document.getElementById('vdNote').value || '').trim(),
+                    recommend: recommend,
+                    visitedAt: new Date().toISOString()
+                });
+                showAppToast('✅ Report sent to admin.');
+                closeVerifierForm();
+                await refreshVerifierDesk();
+            } catch (e) {
+                alert('Could not send report: ' + (e.message || e));
+            }
+        };
+
+        async function refreshVerifierDesk() {
+            const u = window.auth && window.auth.currentUser;
+            if (!u) return;
+            const q = document.getElementById('vdQueue');
+            const r = document.getElementById('vdRecent');
+            q.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3">Loading…</p>';
+            r.innerHTML = '';
+            try {
+                // The queue is the public listings collection filtered to what has not gone live —
+                // readable by anyone, so no extra permission is needed here.
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'businesses'),
+                    window.where('status', '==', 'pending_approval'),
+                    window.limit(50)
+                ));
+                const rows = [];
+                snap.forEach(d => {
+                    const b = d.data();
+                    rows.push({ id: d.id, name: (b.businessProfile && b.businessProfile.name) || b.businessName || 'Unnamed hostel',
+                                city: b.city || '', addr: b.pinAddress || '' });
+                });
+                q.innerHTML = rows.length ? rows.map(x => `
+                    <div class="bg-white border-2 border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-black text-[13px] text-slate-900 break-words">${escAudit(x.name)}</p>
+                            <p class="text-[11px] font-semibold text-slate-500 break-words">${escAudit(x.city || x.addr || '')}</p>
+                        </div>
+                        <button type="button" onclick="pickVerifierProperty('${x.id}', '${escAudit(x.name).replace(/'/g, '&#39;')}')"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-lg text-[11px] shrink-0">Report</button>
+                    </div>`).join('')
+                    : '<p class="text-xs font-bold text-slate-400 py-3">Nothing waiting right now.</p>';
+
+                const mine = await window.getDocs(window.query(
+                    window.collection(window.db, 'verifierReports'),
+                    window.where('verifierUid', '==', u.uid),
+                    window.limit(50)
+                ));
+                const mrows = [];
+                mine.forEach(d => mrows.push(d.data()));
+                mrows.sort((a, b) => String(b.visitedAt || '').localeCompare(String(a.visitedAt || '')));
+                const badge = { approve: ['Recommended', 'bg-emerald-100 text-emerald-700'],
+                                needs_fix: ['Needs fixing', 'bg-amber-100 text-amber-700'],
+                                reject: ['Rejected', 'bg-red-100 text-red-700'] };
+                r.innerHTML = mrows.slice(0, 12).map(x => {
+                    const [lbl, cls] = badge[x.recommend] || ['—', 'bg-slate-100 text-slate-600'];
+                    let when = x.visitedAt || '';
+                    try { when = new Date(x.visitedAt).toLocaleDateString('en-IN'); } catch (e) {}
+                    return `<div class="bg-white border-2 border-slate-100 rounded-xl p-3 flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-black text-[13px] text-slate-800 break-words">${escAudit(x.hostelName || '')}</p>
+                            <p class="text-[10px] font-semibold text-slate-400">${escAudit(when)}</p>
+                        </div>
+                        <span class="chip ${cls} font-black text-[10px] shrink-0">${lbl}</span>
+                    </div>`;
+                }).join('') || '<p class="text-xs font-bold text-slate-400 py-3">No reports yet.</p>';
+            } catch (e) {
+                q.innerHTML = `<p class="text-xs font-bold text-red-500 py-3">Could not load: ${escAudit(e.message)}</p>`;
+            }
+        }
+
         window.openSupportDesk = function() {
             const labels = { support: 'Support agent', field: 'Field executive', verifier: 'Verifier' };
             document.getElementById('supportRoleLabel').innerText = labels[currentStaffRole] || 'Staff';
@@ -3651,7 +4156,11 @@
             clearTimeout(_staffIdleTimer);
             await unregisterPushToken();
             currentStaffRole = '';
-            try { sessionStorage.removeItem('hoom_staff_role'); } catch (e) {}
+            currentStaffName = '';
+            try {
+                sessionStorage.removeItem('hoom_staff_role');
+                sessionStorage.removeItem('hoom_staff_name');
+            } catch (e) {}
             try { await window.firebaseSignOut(window.auth); } catch (e) {}
             location.reload();
         };
@@ -4944,11 +5453,12 @@
                     // Not an admin — but they may be staff. Staff use this same login box on
                     // purpose: one door, and what they see behind it depends on their role.
                     let staffRole = '';
+                    let staffName = '';
                     try {
                         const sd = await window.getDoc(window.doc(window.db, 'staffRoles', uid));
                         if (sd.exists()) {
                             const d = sd.data();
-                            if (d.active === true) staffRole = d.role || '';
+                            if (d.active === true) { staffRole = d.role || ''; staffName = d.name || ''; }
                         }
                     } catch (e) { console.warn('Staff role lookup failed', e); }
 
@@ -4972,9 +5482,18 @@
 
                     document.getElementById('adminLoginPassword').value = '';
                     currentStaffRole = staffRole;
-                    try { sessionStorage.setItem('hoom_staff_role', staffRole); } catch (e) {}
+                    currentStaffName = staffName;
+                    try {
+                        sessionStorage.setItem('hoom_staff_role', staffRole);
+                        sessionStorage.setItem('hoom_staff_name', staffName);
+                    } catch (e) {}
                     startStaffIdleTimer();
-                    openSupportDesk();
+                    // Each role gets its own desk. Before this, a field executive and a verifier
+                    // both landed on the Support Desk and could only search bookings — the job
+                    // they were actually hired to do had no screen.
+                    if (staffRole === 'field') openFieldDesk();
+                    else if (staffRole === 'verifier') openVerifierDesk();
+                    else openSupportDesk();
                     return;
                 }
 
