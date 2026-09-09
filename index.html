@@ -1045,10 +1045,7 @@
         <h3 class="text-sm font-black text-slate-900 mt-6 mb-2">Waiting for you</h3>
         <div id="shWork" class="space-y-2"></div>
 
-        <p class="text-[10px] font-semibold text-slate-400 mt-5 text-center">
-            Render logs and Sentry errors are not here yet — those need API keys, which have to live
-            on the server, not in this page.
-        </p>
+        <div id="liveServicesBox" class="mt-4 space-y-2"></div>
     </div>
 
     <div id="screenLeadsDesk" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
@@ -3864,6 +3861,13 @@
                         <span class="chip ${cls} border shrink-0 text-[10px]">${txt}</span>
                     </div>
                     ${l.facilities ? `<p class="text-[11px] text-slate-400 mb-2">${esc(l.facilities)}</p>` : ''}
+                    ${(l.ownerPhone || l.businessId || l.ownerUid) ? `
+                    <div class="text-[11px] bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 mb-2 space-y-0.5">
+                        ${l.ownerPhone ? `<p><span class="font-black text-slate-500">Malik ka login number:</span> ${esc(l.ownerPhone)}</p>` : ''}
+                        ${l.ownerName ? `<p><span class="font-black text-slate-500">Malik:</span> ${esc(l.ownerName)}</p>` : ''}
+                        ${l.businessId ? `<p><span class="font-black text-slate-500">Listing ID:</span> <span class="font-mono">${esc(l.businessId)}</span></p>` : ''}
+                        ${l.ownerUid ? `<p><span class="font-black text-slate-500">Malik ki UID:</span> <span class="font-mono">${esc(String(l.ownerUid).slice(0,12))}…</span></p>` : ''}
+                    </div>` : ''}
                     ${last ? `<p class="text-[11px] text-slate-600 bg-slate-50 rounded-lg px-2 py-1 mb-2"><b>Aakhri baat:</b> ${esc(last.note || '')}</p>` : ''}
                     <div class="flex flex-wrap gap-2">
                         ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
@@ -3871,7 +3875,7 @@
                         <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="linkLead('${l.id}','${esc(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
-                            : ''}
+                            : `<button type="button" onclick="changeOwnerPhone('${l.ownerUid || ''}','${esc(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`}
                     </div>
                 </div>`;
             }).join('');
@@ -3912,7 +3916,28 @@
                 });
                 const j = await r.json();
                 if (!r.ok) { alert((j.error || 'Nahi jud paya') + (j.hint ? '\n\n' + j.hint : '')); return; }
-                alert('Jud gaya!\n\nListing ban gayi. Ab field officer photo, naksha aur rate bhar sakta hai.');
+                alert('Jud gaya!\n\nListing ID: ' + (j.businessId || '-') + '\nMalik ki UID: ' + (j.ownerUid || '-') + '\n\nAb malik apne dashboard me is listing ko kholkar photo, naksha aur rate bhar sakta hai.');
+                await refreshLeads();
+            } catch (e) { alert('Nahi ho paya: ' + e.message); }
+        }
+
+
+        // Malik ka login number badalna — UID wahi rehti hai, isliye uski listing,
+        // booking aur rent kuch nahi tootta. Naye number se alag se login karwane par
+        // Firebase nayi UID bana deta, aur malik ko lagta ki sab kho gaya.
+        async function changeOwnerPhone(uid, name) {
+            if (!uid) { alert('Is lead se koi malik juda nahi hai.'); return; }
+            const np = prompt('Naya login number (10 ank)\n\nHostel: ' + name + '\n\nUID wahi rahegi — listing, booking, rent sab jude rahenge.');
+            if (!np) return;
+            try {
+                const r = await apiFetch('/admin/change-owner-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: uid, newPhone: np })
+                });
+                const j = await r.json();
+                if (!r.ok) { alert((j.error || 'Nahi badla') + (j.hint ? '\n\n' + j.hint : '')); return; }
+                alert('Ho gaya.\n\nPurana: ' + (j.oldPhone || '-') + '\nNaya: ' + (j.newPhone || '-') + '\n\n' + (j.note || ''));
                 await refreshLeads();
             } catch (e) { alert('Nahi ho paya: ' + e.message); }
         }
@@ -3965,8 +3990,45 @@
             }
         }
 
+
+        // ============================================================
+        //  RENDER · SENTRY · GITHUB  —  seedha System screen me
+        //  Teenon ke token server pe hain, browser me nahi. Isliye ek hi
+        //  backend call (/admin/system-health) se teenon ka haal aata hai.
+        // ============================================================
+        async function loadLiveServices() {
+            const box = document.getElementById('liveServicesBox');
+            if (!box) return;
+            box.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3 text-center">Render, Sentry, GitHub dekh rahe hain…</p>';
+            try {
+                const r = await apiFetch('/admin/system-health');
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Nahi mila');
+                const look = {
+                    green:  ['bg-green-50 border-green-200',  '#16a34a'],
+                    yellow: ['bg-amber-50 border-amber-200',  '#d97706'],
+                    red:    ['bg-red-50 border-red-200',      '#dc2626'],
+                    grey:   ['bg-slate-50 border-slate-200',  '#94a3b8']
+                };
+                box.innerHTML = (j.cards || []).map(c => {
+                    const [cls, dot] = look[c.state] || look.grey;
+                    const det = (c.detail || []).map(d =>
+                        '<p class="text-[11px] text-slate-500 mt-1 break-words">• ' + esc(d) + '</p>').join('');
+                    return '<div class="p-3 rounded-2xl border ' + cls + '">'
+                        + '<p class="font-black text-sm text-slate-800">'
+                        + '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + dot + ';margin-right:7px"></span>'
+                        + esc(c.title) + '</p>'
+                        + '<p class="text-[11px] text-slate-600 mt-0.5 break-words">' + esc(c.line) + '</p>'
+                        + det + '</div>';
+                }).join('');
+            } catch (e) {
+                box.innerHTML = '<p class="text-xs font-bold text-red-500 py-3 text-center">Nahi aa paya: ' + esc(e.message) + '</p>';
+            }
+        }
+
         window.openSystemHealth = async function() {
             goTo('screenSystemHealth');
+            loadLiveServices();
             const box = document.getElementById('shRows');
             const work = document.getElementById('shWork');
             box.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3">Checking…</p>';
