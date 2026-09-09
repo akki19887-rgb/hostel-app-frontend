@@ -3786,10 +3786,14 @@
 
         async function openLeadsDesk() {
             goTo('screenLeadsDesk');
-            // Import aur maintenance sirf admin ko — staff ko nahi
-            const isAdmin = (typeof currentStaffRole !== 'undefined' && currentStaffRole === 'admin');
-            document.getElementById('leadsImportBox').classList.toggle('hidden', !isAdmin);
-            document.getElementById('leadsMaintBox').classList.toggle('hidden', !isAdmin);
+            // Import aur maintenance ke dabbe hamesha dikhte hain.
+            // Pehle inhe `currentStaffRole === 'admin'` se chhupaya jata tha, par wo variable
+            // sirf login ke waqt bharta hai — page refresh hote hi khaali ho jata tha aur
+            // admin ko bhi dabba dikhna band ho jata tha.
+            // Asli rok backend pe hai: /admin/leads/import aur maintenance routes @require_admin
+            // se surakshit hain, to staff dabayega bhi to server saaf mana kar dega.
+            document.getElementById('leadsImportBox').classList.remove('hidden');
+            document.getElementById('leadsMaintBox').classList.remove('hidden');
             await refreshLeads();
         }
 
