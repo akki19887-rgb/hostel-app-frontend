@@ -3925,8 +3925,8 @@
                 if (!all.length) throw new Error('File me koi lead nahi mila');
                 let added = 0, skipped = 0;
                 // 500 ki hadd hai, isliye tukdon me
-                for (let i = 0; i < all.length; i += 400) {
-                    const part = all.slice(i, i + 400);
+                for (let i = 0; i < all.length; i += 150) {
+                    const part = all.slice(i, i + 150);
                     const r = await apiFetch('/admin/leads/import', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3940,7 +3940,7 @@
                 msg.className = 'text-xs font-bold mt-2 text-green-600';
                 await refreshLeads();
             } catch (e) {
-                msg.textContent = 'Nahi chadha: ' + e.message;
+                msg.textContent = 'Nahi chadha: ' + e.message + ' (network toota ho to dobara Import dabaiye — jo chadh chuke hain wo dobara nahi banenge)';
                 msg.className = 'text-xs font-bold mt-2 text-red-500';
             }
         }
