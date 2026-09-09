@@ -3787,7 +3787,7 @@
         async function openLeadsDesk() {
             goTo('screenLeadsDesk');
             // Import aur maintenance sirf admin ko — staff ko nahi
-            const isAdmin = !!(window.isAdminUser || (window.currentStaffRole === 'admin'));
+            const isAdmin = (typeof currentStaffRole !== 'undefined' && currentStaffRole === 'admin');
             document.getElementById('leadsImportBox').classList.toggle('hidden', !isAdmin);
             document.getElementById('leadsMaintBox').classList.toggle('hidden', !isAdmin);
             await refreshLeads();
