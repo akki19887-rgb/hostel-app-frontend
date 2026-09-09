@@ -1051,6 +1051,67 @@
         </p>
     </div>
 
+    <div id="screenLeadsDesk" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
+        <div class="flex items-center gap-3 mb-1">
+            <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">&larr;</button>
+            <div class="flex-1 min-w-0">
+                <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Leads</h2>
+                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hostel jo abhi hamare hain</p>
+            </div>
+            <button type="button" onclick="refreshLeads()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-600 hover:bg-slate-200 shrink-0 transition" title="Refresh">&#8635;</button>
+        </div>
+
+        <div id="leadsStatsBox" class="grid grid-cols-2 md:grid-cols-4 gap-3 my-4"></div>
+
+        <div class="flex flex-wrap gap-2 items-center mb-4 p-3 bg-slate-50 rounded-2xl">
+            <select id="leadFilterDistrict" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+                <option value="">Sabhi jile</option>
+                <option value="Raipur">Raipur</option>
+                <option value="Durg-Bhilai">Durg-Bhilai</option>
+            </select>
+            <select id="leadFilterGender" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+                <option value="">Girls + Boys + Co-ed</option>
+                <option value="Female">Sirf Girls</option>
+                <option value="Male">Sirf Boys</option>
+                <option value="Co-ed">Sirf Co-ed</option>
+            </select>
+            <select id="leadFilterStatus" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+                <option value="">Sab halat</option>
+                <option value="new">Naya — chhua nahi</option>
+                <option value="contacted">Phone kiya</option>
+                <option value="agreed">Raazi ho gaya</option>
+                <option value="refused">Mana kar diya</option>
+                <option value="converted">Listing ban gayi</option>
+            </select>
+            <input id="leadSearchBox" oninput="renderLeads()" type="text" placeholder="Naam ya ilaake se dhoondhiye"
+                   class="flex-1 min-w-[180px] px-3 py-2 rounded-xl border border-slate-200 text-sm">
+        </div>
+
+        <div id="leadsListBox" class="space-y-3"></div>
+
+        <!-- Import — sirf admin ko dikhega -->
+        <div id="leadsImportBox" class="hidden mt-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+            <p class="font-black text-slate-800 text-sm mb-1">Nayi list chadhaiye</p>
+            <p class="text-xs text-slate-500 mb-3">JSON file chuniye. Jo hostel pehle se hain wo dobara nahi banenge.</p>
+            <div class="flex flex-wrap gap-2 items-center">
+                <input type="file" id="leadsImportFile" accept="application/json,.json" class="text-xs">
+                <button type="button" onclick="importLeadsFile()" class="btn-gradient px-5 py-2.5 text-white font-black rounded-xl text-xs shadow-md">Import</button>
+            </div>
+            <p id="leadsImportMsg" class="text-xs font-bold mt-2"></p>
+        </div>
+
+        <!-- Maintenance — teen route jinke button kahin nahi the -->
+        <div id="leadsMaintBox" class="hidden mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <p class="font-black text-slate-800 text-sm mb-2">Rakh-rakhaav</p>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="runMaint('/admin/hide-owner-phones','Malik ke phone chhupane')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Malik ke phone chhupao</button>
+                <button type="button" onclick="runMaint('/admin/cleanup-locks','Atke hue bed chhodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Atke hue bed chhodo</button>
+                <button type="button" onclick="runMaint('/admin/backfill-owner-uid','Purani booking jodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Purani booking jodo</button>
+            </div>
+            <p id="leadsMaintMsg" class="text-xs font-bold mt-2"></p>
+        </div>
+    </div>
+
     <div id="screenAuditLog" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-1">
             <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
@@ -1276,6 +1337,7 @@
                 <button type="button" onclick="openStaffManager()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">👥 Staff</button>
                 <button type="button" onclick="openAuditLog()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">📜 Audit log</button>
                 <button type="button" onclick="openSystemHealth()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">🩺 System</button>
+<button type="button" onclick="openLeadsDesk()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">&#128204; Leads</button>
             </div>
         </div>
 
@@ -3710,6 +3772,195 @@
                 </div></div>`;
         }
 
+
+
+        // ============================================================
+        //  LEADS DESK
+        //  Lead wo hostel hai jo abhi hamara hai, malik ka nahi.
+        //  Ye `leads` collection me rehte hain — `businesses` me NAHI,
+        //  kyunki businesses par rules me `allow read: if true` hai
+        //  (listing dikhani padti hai), aur wahan daal dete to 292 hostel ka
+        //  naam-pata-phone duniya ke liye khul jata. Yahan sirf staff aur admin.
+        // ============================================================
+        let leadsCache = [];
+
+        async function openLeadsDesk() {
+            goTo('screenLeadsDesk');
+            // Import aur maintenance sirf admin ko — staff ko nahi
+            const isAdmin = !!(window.isAdminUser || (window.currentStaffRole === 'admin'));
+            document.getElementById('leadsImportBox').classList.toggle('hidden', !isAdmin);
+            document.getElementById('leadsMaintBox').classList.toggle('hidden', !isAdmin);
+            await refreshLeads();
+        }
+
+        async function refreshLeads() {
+            const box = document.getElementById('leadsListBox');
+            box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Laa rahe hain…</p>';
+            const q = new URLSearchParams();
+            const d = document.getElementById('leadFilterDistrict').value;
+            const g = document.getElementById('leadFilterGender').value;
+            const s = document.getElementById('leadFilterStatus').value;
+            if (d) q.set('district', d);
+            if (g) q.set('gender', g);
+            if (s) q.set('status', s);
+            q.set('limit', '500');
+            try {
+                const r = await apiFetch('/admin/leads?' + q.toString());
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Nahi mila');
+                leadsCache = j.leads || [];
+                renderLeads();
+            } catch (e) {
+                box.innerHTML = '<p class="text-center text-red-500 text-sm py-8 font-bold">Nahi khul paya: ' + e.message + '</p>';
+            }
+        }
+
+        function renderLeads() {
+            const box = document.getElementById('leadsListBox');
+            const term = (document.getElementById('leadSearchBox').value || '').toLowerCase().trim();
+            const rows = term
+                ? leadsCache.filter(l => ((l.name||'') + ' ' + (l.landmark||'') + ' ' + (l.address||'')).toLowerCase().includes(term))
+                : leadsCache;
+
+            // Upar ki ginti
+            const c = { new:0, contacted:0, agreed:0, converted:0 };
+            leadsCache.forEach(l => { if (c[l.status] !== undefined) c[l.status]++; });
+            const stat = (n, label, cls) =>
+                `<div class="p-3 rounded-2xl ${cls} text-center"><p class="text-2xl font-black">${n}</p><p class="text-[10px] font-black uppercase tracking-widest opacity-70">${label}</p></div>`;
+            document.getElementById('leadsStatsBox').innerHTML =
+                stat(c.new, 'Chhua nahi', 'bg-slate-100 text-slate-700') +
+                stat(c.contacted, 'Phone kiya', 'bg-blue-50 text-blue-700') +
+                stat(c.agreed, 'Raazi', 'bg-amber-50 text-amber-700') +
+                stat(c.converted, 'Listing bani', 'bg-green-50 text-green-700');
+
+            if (!rows.length) {
+                box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Is chhaant me koi lead nahi.</p>';
+                return;
+            }
+
+            const chip = {
+                new:       ['Chhua nahi', 'bg-slate-100 text-slate-600 border-slate-200'],
+                contacted: ['Phone kiya',  'bg-blue-50 text-blue-700 border-blue-200'],
+                agreed:    ['Raazi',       'bg-amber-50 text-amber-700 border-amber-200'],
+                refused:   ['Mana kiya',   'bg-red-50 text-red-600 border-red-200'],
+                converted: ['Listing bani','bg-green-50 text-green-700 border-green-200']
+            };
+
+            box.innerHTML = rows.map(l => {
+                const [txt, cls] = chip[l.status] || chip.new;
+                const ph = (l.phone || '').trim();
+                const last = (l.contactLog && l.contactLog.length) ? l.contactLog[l.contactLog.length - 1] : null;
+                return `
+                <div class="p-4 bg-white border border-slate-200 rounded-2xl">
+                    <div class="flex justify-between items-start gap-3 mb-2">
+                        <div class="min-w-0">
+                            <h4 class="font-black text-slate-800 leading-tight">${esc(l.name)}</h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${esc(l.landmark || l.address || '')}</p>
+                        </div>
+                        <span class="chip ${cls} border shrink-0 text-[10px]">${txt}</span>
+                    </div>
+                    ${l.facilities ? `<p class="text-[11px] text-slate-400 mb-2">${esc(l.facilities)}</p>` : ''}
+                    ${last ? `<p class="text-[11px] text-slate-600 bg-slate-50 rounded-lg px-2 py-1 mb-2"><b>Aakhri baat:</b> ${esc(last.note || '')}</p>` : ''}
+                    <div class="flex flex-wrap gap-2">
+                        ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
+                        ${ph ? `<a href="https://wa.me/91${ph}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</a>` : ''}
+                        <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
+                        ${l.status !== 'converted'
+                            ? `<button type="button" onclick="linkLead('${l.id}','${esc(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
+                            : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function esc(s) {
+            return String(s || '').replace(/[&<>"']/g, m =>
+                ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+        }
+
+        async function noteLead(leadId) {
+            const note = prompt('Kya baat hui?');
+            if (note === null) return;
+            const st = prompt('Ab kya halat hai?\n\ncontacted = phone kiya\nagreed = raazi ho gaya\nrefused = mana kar diya\n\n(khaali chhod dein to halat wahi rahegi)', 'contacted');
+            if (st === null) return;
+            try {
+                const body = { leadId: leadId, note: note };
+                if (st.trim()) body.status = st.trim();
+                const r = await apiFetch('/admin/leads/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Save nahi hua');
+                await refreshLeads();
+            } catch (e) { alert('Nahi ho paya: ' + e.message); }
+        }
+
+        async function linkLead(leadId, name) {
+            const phone = prompt('Malik ka phone number (10 ank)\n\nDHYAN: malik ko PEHLE app me OTP se ek baar login karna hoga,\ntabhi uski pehchan banti hai.\n\nHostel: ' + name);
+            if (!phone) return;
+            try {
+                const r = await apiFetch('/admin/leads/link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: leadId, phone: phone })
+                });
+                const j = await r.json();
+                if (!r.ok) { alert((j.error || 'Nahi jud paya') + (j.hint ? '\n\n' + j.hint : '')); return; }
+                alert('Jud gaya!\n\nListing ban gayi. Ab field officer photo, naksha aur rate bhar sakta hai.');
+                await refreshLeads();
+            } catch (e) { alert('Nahi ho paya: ' + e.message); }
+        }
+
+        async function importLeadsFile() {
+            const f = document.getElementById('leadsImportFile').files[0];
+            const msg = document.getElementById('leadsImportMsg');
+            if (!f) { msg.textContent = 'Pehle file chuniye.'; msg.className = 'text-xs font-bold mt-2 text-red-500'; return; }
+            msg.textContent = 'Chadh rahi hai…'; msg.className = 'text-xs font-bold mt-2 text-slate-500';
+            try {
+                const text = await f.text();
+                const data = JSON.parse(text);
+                const all = Array.isArray(data) ? data : (data.leads || []);
+                if (!all.length) throw new Error('File me koi lead nahi mila');
+                let added = 0, skipped = 0;
+                // 500 ki hadd hai, isliye tukdon me
+                for (let i = 0; i < all.length; i += 400) {
+                    const part = all.slice(i, i + 400);
+                    const r = await apiFetch('/admin/leads/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ leads: part })
+                    });
+                    const j = await r.json();
+                    if (!r.ok) throw new Error(j.error || 'Import fail');
+                    added += (j.added || 0); skipped += (j.skipped || 0);
+                }
+                msg.textContent = added + ' naye chadhe, ' + skipped + ' pehle se the.';
+                msg.className = 'text-xs font-bold mt-2 text-green-600';
+                await refreshLeads();
+            } catch (e) {
+                msg.textContent = 'Nahi chadha: ' + e.message;
+                msg.className = 'text-xs font-bold mt-2 text-red-500';
+            }
+        }
+
+        async function runMaint(path, label) {
+            if (!confirm(label + ' ka kaam chalaayein?')) return;
+            const msg = document.getElementById('leadsMaintMsg');
+            msg.textContent = 'Chal raha hai…'; msg.className = 'text-xs font-bold mt-2 text-slate-500';
+            try {
+                const r = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Fail');
+                msg.textContent = 'Ho gaya. ' + JSON.stringify(j.report || j);
+                msg.className = 'text-xs font-bold mt-2 text-green-600';
+            } catch (e) {
+                msg.textContent = 'Nahi hua: ' + e.message;
+                msg.className = 'text-xs font-bold mt-2 text-red-500';
+            }
+        }
+
         window.openSystemHealth = async function() {
             goTo('screenSystemHealth');
             const box = document.getElementById('shRows');
@@ -5706,8 +5957,8 @@
         // earnings ledger already works off the 'bookings' collection regardless of how the money
         // came in.
         const PAYMENT_MODE = 'upi_manual'; // 'upi_manual' | 'razorpay'
-        const PLATFORM_UPI_ID = 'yourupi@bank';   // ⚠️ REPLACE with your real UPI ID before going live
-        const SUPPORT_WHATSAPP_NUMBER = '919999999999'; // ⚠️ REPLACE with your real support number (with country code, no + or spaces)
+        const PLATFORM_UPI_ID = 'dewangan.ankit@okhdfcbank';   // ⚠️ REPLACE with your real UPI ID before going live
+        const SUPPORT_WHATSAPP_NUMBER = '917697763683'; // ⚠️ REPLACE with your real support number (with country code, no + or spaces)
         const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
         // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
         // amount is HostelOM's booking fee/commission (100% of it, always non-refundable — see
