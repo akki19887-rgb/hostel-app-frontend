@@ -1415,7 +1415,7 @@
         </div>
         <div id="bizNotifPanel" class="hidden bg-white border border-slate-200 rounded-2xl p-4 mb-6 max-h-64 overflow-y-auto layout-scroll"></div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div onclick="startNewProperty()" class="p-6 btn-gradient text-white rounded-[2rem] cursor-pointer flex flex-col justify-between min-h-[180px] relative overflow-hidden group">
+            <div id="ownerAddPropertyBtn" onclick="startNewProperty()" class="p-6 btn-gradient text-white rounded-[2rem] cursor-pointer flex flex-col justify-between min-h-[180px] relative overflow-hidden group">
                 <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                 <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl backdrop-blur-sm shadow-lg">➕</div>
                 <div class="relative">
@@ -2574,7 +2574,7 @@
             <div class="mb-4">
                 <label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">UPI Transaction Ref / UTR Number</label>
                 <input type="text" id="payUtrInput" placeholder="12-digit number from your UPI app" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
-                <p class="text-[9px] text-slate-400 font-semibold mt-1">Find this in your UPI app's transaction history / payment success screen.</p>
+                <p class="text-[9px] text-slate-400 font-semibold mt-1">Open Google Pay / PhonePe / Paytm → tap the payment you just made → you'll see <b>UPI transaction ID</b> or <b>UTR</b>. Long-press to copy it and paste here. <br>Many UPI apps block screenshots — that's fine, the screenshot is optional. The UTR alone is enough for us to verify.</p>
             </div>
             <div class="mb-4">
                 <label id="payUtrScreenshotSlot" class="block p-4 border-2 border-dashed border-slate-200 text-center rounded-2xl bg-slate-50 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-[10px] font-black text-slate-500 uppercase tracking-widest">📷 Upload Payment Screenshot (optional, speeds up verification)<input type="file" accept="image/*" class="hidden" onchange="handleUtrScreenshotSelect(this)"></label>
@@ -2983,7 +2983,10 @@
         function zoomBlueprintContainer() {
             const blueprintGridHtml = document.getElementById('blueprintGrid').innerHTML;
             const modalContainer = document.createElement('div'); modalContainer.id = 'blueprintZoomModal'; modalContainer.className = 'zoom-modal'; modalContainer.onclick = () => modalContainer.remove();
-            modalContainer.innerHTML = `<span class="zoom-close">✕</span><div class="bg-white p-8 rounded-2xl max-w-4xl max-h-[85vh] overflow-auto layout-scroll" onclick="event.stopPropagation()">${blueprintGridHtml}</div>`;
+            // Popup pehle max-w-4xl (896px) me bandha tha — naksha usse chaura hota hai, isliye
+            // dayen kinare se kat jata tha aur left-right scroll bhi nahi milta tha.
+            // Ab popup lagbhag poori screen leta hai aur dono taraf scroll karta hai.
+            modalContainer.innerHTML = `<span class="zoom-close">✕</span><div class="bg-white p-6 rounded-2xl overflow-auto layout-scroll" style="width:96vw; height:92vh; max-width:none;" onclick="event.stopPropagation()">${blueprintGridHtml}</div>`;
             document.body.appendChild(modalContainer);
         }
 
@@ -4865,6 +4868,12 @@
         })();
 
         function goTo(screenId) {
+            // "?" ka madad button sirf dono dashboard par dikhe — baaki screen par nahi,
+            // warna wo booking ke button ke upar aa jata hai.
+            setTimeout(() => {
+                const hb = document.getElementById('tourHelpBtn');
+                if (hb) hb.style.display = (screenId === 'screenUserDashboard' || screenId === 'screenBusinessDashboard') ? 'block' : 'none';
+            }, 60);
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
             if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
@@ -6097,6 +6106,7 @@
                 // instead of dumping them on the dashboard.
                 if (resumePendingBooking()) return;
                 goTo('screenUserDashboard');
+                setTimeout(() => startTour('guest'), 900);   // pehli baar ka tour
             }
             else if (accountMode === 'business') {
                 // Already-registered business user: skip "Welcome Aboard" and go to their dashboard.
@@ -6119,6 +6129,7 @@
                             globalBizProfile = owned.docs[0].data().businessProfile || globalBizProfile;
                             try { localStorage.setItem('hostelom_business_profile', JSON.stringify(globalBizProfile)); } catch(e) {}
                             goTo('screenBusinessDashboard'); return;
+                setTimeout(() => startTour('owner'), 900);   // pehli baar ka tour
                         }
                     }
                 } catch(e) { console.warn('Owner profile lookup failed', e); }
@@ -7102,7 +7113,17 @@
                     await pushNotification({
                         type: 'upi_payment_pending', audience: 'admin',
                         propertyId: pending.propertyId || null,
-                        message: `💳 UPI payment submitted by ${pending.guestName || 'a guest'} for ₹${pending.amount} (${pending.hostelName || ''}) — needs verification.`
+                        // Pehle sandesh me sirf guest ka naam, rakam aur hostel ka naam tha.
+                        // Verify karte waqt admin ko Booking ID, bed aur UTR dhoondhne ke liye
+                        // app kholna padta tha — aur bank app me UTR milane ke liye wahi teen
+                        // cheezein sabse zaroori hoti hain. Ab poora hisaab sandesh me hi.
+                        message: `💳 NAYA PAYMENT — verify karna hai\n\n`
+                               + `Booking ID: ${bookingId}\n`
+                               + `Guest: ${pending.guestName || '-'}  ·  ${pending.guestPhone || '-'}\n`
+                               + `Hostel: ${pending.hostelName || '-'}\n`
+                               + `Bed: ${pending.bedId || pending.bedLabel || '-'}\n`
+                               + `Advance: ₹${pending.amount}  ·  Hostel pe dena: ₹${pending.hostelBalance || 0}\n`
+                               + `UTR: ${utr}`
                     });
                     // Owner: this was missing entirely. A guest would pay, and the person who
                     // actually has to keep the bed free heard nothing until they opened the app.
@@ -7111,7 +7132,12 @@
                         type: 'new_payment', audience: 'owner',
                         propertyId: pending.propertyId || null,
                         title: 'New booking payment',
-                        message: `💳 ${pending.guestName || 'A guest'} paid ₹${pending.amount} advance. Verification pending — we'll confirm shortly.`
+                        // Malik ko bhi Booking ID aur bed chahiye — warna wo apne register me
+                        // milaa nahi sakta ki kaunsa bed kiske liye roka gaya hai.
+                        message: `💳 ${pending.guestName || 'A guest'} ne ₹${pending.amount} advance bhara.\n`
+                               + `Booking ID: ${bookingId}  ·  Bed: ${pending.bedId || pending.bedLabel || '-'}\n`
+                               + `Check-in: ${pending.checkInDate || '-'}\n`
+                               + `Verify hote hi pakka ho jayega.`
                     });
                 } catch (e) {}
 
@@ -7946,7 +7972,41 @@
                 let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
                 if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
                 let cleanRoomsData = [];
-                for (let room of globalDynamicRooms) { let cleanRoom = { ...room }; let finalPhotos = [...(cleanRoom.photos || [])]; if (cleanRoom.rawFiles) { for (let i = 0; i < 2; i++) { if (cleanRoom.rawFiles[i]) { let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`; finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path); } } } cleanRoom.photos = finalPhotos; delete cleanRoom.rawFiles; if (cleanRoom.raw360File) { const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`; cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360); delete cleanRoom.raw360File; } cleanRoomsData.push(cleanRoom); }
+                for (let room of globalDynamicRooms) {
+                    let cleanRoom = { ...room };
+                    let finalPhotos = [...(cleanRoom.photos || [])];
+
+                    // DO PURANI GALTIYAN yahan theek ki gayi hain:
+                    //
+                    // 1) Loop `i < 2` tha — har room me TEEN photo ki jagah hoti hai,
+                    //    par sirf pehli DO hi upload hoti thi. Teesri kabhi Storage
+                    //    tak pahunchti hi nahi thi.
+                    //
+                    // 2) Jab photo chuni jaati hai to screen par dikhane ke liye
+                    //    `URL.createObjectURL(file)` ka `blob:` link banta hai aur
+                    //    wahi photos[] me bhi rakh diya jata tha. Agar wo upload na
+                    //    ho payi, to blob: link Firestore me chala jata tha — aur
+                    //    blob: link us browser tab ke band hote hi mar jata hai.
+                    //    Isliye baad me kholne par gallery me tootee tasveer aati thi.
+                    //    Ab: blob: aur data: se shuru hone wale link kabhi save nahi
+                    //    hote — upload nahi hua to wo jagah khaali chhod di jaati hai.
+                    if (cleanRoom.rawFiles) {
+                        for (let i = 0; i < finalPhotos.length || i < cleanRoom.rawFiles.length; i++) {
+                            if (cleanRoom.rawFiles[i]) {
+                                let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`;
+                                try {
+                                    finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path);
+                                } catch (upErr) {
+                                    console.warn('Room photo upload fail:', cleanRoom.id, i, upErr);
+                                    finalPhotos[i] = '';
+                                }
+                            }
+                        }
+                    }
+                    finalPhotos = finalPhotos.map(u =>
+                        (typeof u === 'string' && (u.startsWith('blob:') || u.startsWith('data:'))) ? '' : (u || ''));
+                    cleanRoom.photos = finalPhotos;
+                    delete cleanRoom.rawFiles; if (cleanRoom.raw360File) { const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`; cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360); delete cleanRoom.raw360File; } cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
                 if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
                 if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); }
@@ -9347,7 +9407,11 @@
                         try {
                             await apiFetch(`/send-registration-email`, {
                                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ guestName: formData.fullName, hostelName: formData.hostelName, pdfUrl })
+                                body: JSON.stringify({ guestName: formData.fullName, hostelName: formData.hostelName, pdfUrl,
+                                    // Email me bhi wahi hisaab, taaki phone na khole to bhi kaam chal jaye
+                                    bookingId: (window._pendingPayment && window._pendingPayment.bookingId) || formData.bookingId || '',
+                                    guestPhone: formData.mobile || formData.phone || '',
+                                    bedId: formData.bedId || '', checkInDate: formData.checkInDate || '' })
                             });
                         } catch (emailErr) { console.warn('Email notification failed (continuing):', emailErr); }
                     } catch (dbErr) { console.warn('Could not save registration to Firestore (continuing):', dbErr); }
@@ -9516,6 +9580,107 @@
         //  me Google saada naksha khol dega. Isliye button ka naam "Street
         //  View" hai, "hostel ki photo" nahi — taaki guest ko galat na lage.
         // ============================================================
+
+        // ============================================================
+        //  PEHLI BAAR KA TOUR  —  guest aur malik dono ke liye
+        //
+        //  Naya banda app kholta hai to use pata hi nahi chalta ki shuru kahan
+        //  se kare. Guest seedha listing dekhta hai aur shahar chunna bhool
+        //  jata hai; malik Business Portal kholta hai aur "Add Property" par
+        //  nazar hi nahi padti.
+        //
+        //  Isliye chhote card, ek-ek karke, us cheez ke paas hi. Har card par
+        //  Aage aur Skip. Ek baar poora ya skip ho gaya to DOBARA NAHI aayega —
+        //  wapas dekhna ho to "?" wale button se.
+        //
+        //  Kuch ROKA nahi jata: guest chahe to pehle hi tap se skip karke
+        //  seedha kaam kar sakta hai.
+        // ============================================================
+        const TOUR_STEPS = {
+            guest: [
+                { el: 'guestCitySelect',     title: 'Sabse pehle shahar',   body: 'Raipur, Bhilai ya Bilaspur — jahan chahiye wo chuniye. Isse sirf usi shahar ke hostel dikhenge.' },
+                { el: 'discoverSearchInput', title: 'Ilaaka ya landmark',   body: 'Jaise "Pandri", "NIT ke paas", "Shankar Nagar". College ka naam bhi likh sakte hain.' },
+                { el: 'userCheckInDate',     title: 'Kab se chahiye?',      body: 'Apni tareekh daaliye — us din jo bed khaali honge, wahi dikhenge.' },
+                { el: null,                  title: 'Ab hostel chuniye',    body: 'Kisi bhi hostel par tap kariye. Andar naksha khulega — usme apna bed chunkar booking kar sakte hain.' }
+            ],
+            owner: [
+                { el: 'ownerAddPropertyBtn', title: 'Yahan se shuru',       body: 'Apna hostel jodne ke liye yahi dabaiye. Naam, pata, rate aur kamre — sab yahin bharenge.' },
+                { el: null,                  title: 'Photo zaroor lagaiye', body: 'Guest sabse pehle photo dekhta hai. Har kamre ki 2-3 saaf photo lagaiye — din ki roshni me khinchi hui.' },
+                { el: null,                  title: 'Publish dabana zaroori', body: 'Bharne ke baad Publish dabaiye. Uske baad hamari team jaanch karegi, aur 1-2 din me aapka hostel guest ko dikhne lagega.' }
+            ]
+        };
+
+        let tourQueue = [], tourIdx = 0, tourKind = '';
+
+        function tourAlreadySeen(kind) {
+            try { return localStorage.getItem('hostelomTour_' + kind) === 'done'; }
+            catch (e) { return false; }   // private mode me localStorage band ho sakta hai
+        }
+        function tourMarkSeen(kind) {
+            try { localStorage.setItem('hostelomTour_' + kind, 'done'); } catch (e) {}
+        }
+
+        function startTour(kind, force) {
+            if (!TOUR_STEPS[kind]) return;
+            if (!force && tourAlreadySeen(kind)) return;
+            tourKind = kind; tourQueue = TOUR_STEPS[kind]; tourIdx = 0;
+            showTourStep();
+        }
+
+        function showTourStep() {
+            closeTourCard();
+            if (tourIdx >= tourQueue.length) { tourMarkSeen(tourKind); return; }
+            const step = tourQueue[tourIdx];
+            const target = step.el ? document.getElementById(step.el) : null;
+
+            const box = document.createElement('div');
+            box.id = 'hostelomTourCard';
+            box.style.cssText = 'position:fixed; z-index:99999; max-width:300px; background:#1F3864; color:#fff;'
+                + 'border-radius:16px; padding:14px 16px; box-shadow:0 10px 30px rgba(0,0,0,.3); font-size:13px; line-height:1.5;';
+            box.innerHTML =
+                '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">'
+              + '<span style="font-weight:900; font-size:14px;">' + esc(step.title) + '</span>'
+              + '<span onclick="skipTour()" style="font-size:11px; opacity:.75; cursor:pointer; text-decoration:underline; white-space:nowrap;">Skip</span>'
+              + '</div>'
+              + '<div style="opacity:.92; margin-bottom:12px;">' + esc(step.body) + '</div>'
+              + '<div style="display:flex; justify-content:space-between; align-items:center;">'
+              + '<span style="font-size:11px; opacity:.6;">' + (tourIdx + 1) + ' / ' + tourQueue.length + '</span>'
+              + '<button type="button" onclick="nextTourStep()" style="background:#fff; color:#1F3864; border:0; border-radius:10px; padding:7px 16px; font-weight:900; font-size:12px; cursor:pointer;">'
+              + (tourIdx === tourQueue.length - 1 ? 'Samajh gaya' : 'Aage \u2192') + '</button>'
+              + '</div>';
+            document.body.appendChild(box);
+
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.style.outline = '3px solid #2E75B6';
+                target.style.outlineOffset = '3px';
+                target.style.borderRadius = '12px';
+                box.dataset.hl = step.el;
+                const r = target.getBoundingClientRect();
+                const top = (r.bottom + 12 + 180 > window.innerHeight) ? Math.max(12, r.top - 190) : r.bottom + 12;
+                box.style.top = top + 'px';
+                box.style.left = Math.max(12, Math.min(r.left, window.innerWidth - 316)) + 'px';
+            } else {
+                box.style.bottom = '24px';
+                box.style.left = '50%';
+                box.style.transform = 'translateX(-50%)';
+            }
+        }
+
+        function closeTourCard() {
+            const old = document.getElementById('hostelomTourCard');
+            if (old) {
+                if (old.dataset.hl) {
+                    const t = document.getElementById(old.dataset.hl);
+                    if (t) { t.style.outline = ''; t.style.outlineOffset = ''; }
+                }
+                old.remove();
+            }
+        }
+
+        function nextTourStep() { tourIdx++; showTourStep(); }
+        function skipTour() { closeTourCard(); tourMarkSeen(tourKind); }
+
         function openStreetView(lat, lng, name) {
             if (!lat || !lng) {
                 showAppToast('Location not available for this property.');
@@ -11560,7 +11725,7 @@
                 const addTableBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','table');" class="border-2 border-dashed border-amber-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-amber-50 transition" style="min-width: 88px; color:#d97706; font-weight:900; font-size:11px;">📚 +Table</div>` : '';
                 const isArchSelected = block.id === architectSelectedRoomId;
                 const roomCardStyle = isArchSelected ? 'width:100%; padding: 14px; box-shadow: 0 0 0 3px #6366f1; cursor:pointer;' : 'width:100%; padding: 14px; cursor:pointer;';
-                roomsHtml += `<div class="blueprint-room" style="${roomCardStyle} position:relative;" onclick="selectArchitectRoom('${block.id}')">${doorNotchHtml}${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
+                roomsHtml += `<div class="blueprint-room" style="${roomCardStyle} position:relative;" onclick="selectArchitectRoom('${block.id}')">${doorNotchHtml}${headerHtml}<div style="display:flex; flex-wrap:wrap; gap: 12px; justify-content:center; overflow-x:auto; max-width:100%;">${bedsHtml}${iconsHtml}${addBedBtnHtml}${addBathBtnHtml}${addTableBtnHtml}</div></div>`;
             });
             return roomsHtml + `</div>`;
         }
@@ -11592,5 +11757,11 @@
         });
       }
     </script>
+
+    <!-- Tour dobara dekhne ka button. Ek baar tour dekh lene ke baad wo apne aap nahi
+         aata; kabhi bhool jayein to yahan se dobara chala sakte hain. -->
+    <button type="button" id="tourHelpBtn" onclick="startTour(document.getElementById('screenBusinessDashboard') && !document.getElementById('screenBusinessDashboard').classList.contains('hidden') ? 'owner' : 'guest', true)"
+        title="App kaise chalayein"
+        style="position:fixed; right:16px; bottom:16px; z-index:9998; width:44px; height:44px; border-radius:50%; border:0; background:#1F3864; color:#fff; font-weight:900; font-size:18px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.25); display:none;">?</button>
 </body>
 </html>
