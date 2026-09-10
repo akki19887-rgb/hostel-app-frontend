@@ -2163,7 +2163,7 @@
     </div>
 
     <div id="screenAdmin2DEditor" class="hidden premium-card pt-4 pb-0 rounded-[2rem] max-w-7xl w-full relative h-[95vh] flex flex-col overflow-hidden screen-panel">
-        <div class="bg-white/90 backdrop-blur px-6 py-4 border-b border-slate-200/60 shadow-sm z-10 flex justify-between items-center rounded-t-[2rem] flex-wrap gap-4">
+        <div id="admin2DTopBar" class="bg-white/90 backdrop-blur px-6 py-4 border-b border-slate-200/60 shadow-sm z-10 flex justify-between items-center rounded-t-[2rem] flex-wrap gap-4">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">✨</div>
                 <div>
@@ -7938,12 +7938,20 @@
             const mapPanel = document.getElementById('adminFloorPlanPanel');
             const btn = document.getElementById('btnExpandCanvas');
             const isMobile = window.innerWidth < 1024;
+            // Expand pehle sirf CHAUDAI badhata tha (bayen ka floor-plan panel chhupa kar).
+            // Asli kami OONCHAI ki thi — upar ka toolbar bar aadhi screen le leta hai, aur
+            // naksha ke liye ek patli si patti bachti hai. Ab Expand upar ka bar bhi
+            // chhupa deta hai, to poori oonchai naksha ko mil jaati hai. Wapas dabate hi
+            // sab lautt aata hai.
+            const topBar = document.getElementById('admin2DTopBar');
             if (canvasExpanded) {
                 // On mobile the CSS already hides #adminFloorPlanPanel; on desktop we hide it via .hidden.
                 if (!isMobile) mapPanel.classList.add('hidden');
-                btn.innerText = '⛶ Show Map';
+                if (topBar) topBar.classList.add('hidden');
+                btn.innerText = '⛶ Chhota karo';
             } else {
                 if (!isMobile) mapPanel.classList.remove('hidden');
+                if (topBar) topBar.classList.remove('hidden');
                 btn.innerText = '⛶ Expand';
             }
             setTimeout(fitFabricCanvas, 120);
@@ -8702,10 +8710,10 @@
                             const fd = data.flatDetails || {};
                             const isBooked = fd.status === 'booked';
                             const bookedBadge = isBooked ? `<span class="absolute top-4 right-4 chip bg-slate-700 text-white border-slate-800 shadow-lg">🔴 Booked</span>` : '';
-                            htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">🏡 ${fd.bhk || 'Flat/House'}</span> ${bookedBadge} ${fd.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-1">${data.businessName || 'Flat/House'}</h3> <p class="text-sm font-black text-indigo-600 mb-2">₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/month <span class="text-slate-400 font-bold text-xs">· Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></p> </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openFlatHouseView('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">${fd.bookingMode === 'visit' ? 'View & Schedule Visit →' : 'View & Book Now →'}</button> ${whatsappBtn} </div> </div>`;
+                            htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> ${(data.coordinates && data.coordinates.lat && data.coordinates.lng) ? `<button type="button" onclick="event.stopPropagation(); openStreetView(${data.coordinates.lat},${data.coordinates.lng},'${(data.businessName || '').replace(/'/g, "")}');" title="See the street outside this property" style="position:absolute; top:12px; left:12px; z-index:5; background:rgba(255,255,255,.94); border:1px solid #e2e8f0; border-radius:999px; padding:5px 11px; font-size:11px; font-weight:800; color:#1F3864; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);">&#128205; Street View</button>` : ''} <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">🏡 ${fd.bhk || 'Flat/House'}</span> ${bookedBadge} ${fd.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <h3 class="display-font text-xl font-black text-slate-800 mb-1">${data.businessName || 'Flat/House'}</h3> <p class="text-sm font-black text-indigo-600 mb-2">₹${(fd.monthlyRent||0).toLocaleString('en-IN')}/month <span class="text-slate-400 font-bold text-xs">· Deposit ₹${(fd.securityDeposit||0).toLocaleString('en-IN')}</span></p> </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="openFlatHouseView('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">${fd.bookingMode === 'visit' ? 'View & Schedule Visit →' : 'View & Book Now →'}</button> ${whatsappBtn} </div> </div>`;
                             return;
                         }
-                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} ${data.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}${genderBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="trackPropertyView('${doc.id}','plan'); openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
+                        htmlContent += ` <div id="prop-card-${doc.id}" class="property-card rounded-[2rem] overflow-hidden group flex flex-col justify-between bg-white relative"> ${(data.coordinates && data.coordinates.lat && data.coordinates.lng) ? `<button type="button" onclick="event.stopPropagation(); openStreetView(${data.coordinates.lat},${data.coordinates.lng},'${(data.businessName || '').replace(/'/g, "")}');" title="See the street outside this property" style="position:absolute; top:12px; left:12px; z-index:5; background:rgba(255,255,255,.94); border:1px solid #e2e8f0; border-radius:999px; padding:5px 11px; font-size:11px; font-weight:800; color:#1F3864; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12);">&#128205; Street View</button>` : ''} <div> <div class="h-44 bg-slate-200 relative overflow-hidden"> <img src="${imgUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover"> <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent pointer-events-none"></div> <span class="absolute top-4 left-4 chip chip-primary bg-white/90">${data.propertyType || 'Premium'}</span> ${urgencyBadge} ${data.verifiedByAdmin === true ? '<span class=\'absolute bottom-4 right-4 chip chip-success bg-emerald-500 text-white border-emerald-600 shadow-lg\'>✓ VERIFIED</span>' : '<span class=\'absolute bottom-4 right-4 chip bg-white/90 text-slate-500 border-slate-300 shadow\'>Not yet verified</span>'} <button type="button" onclick="event.stopPropagation(); toggleWishlist('${doc.id}', this);" class="absolute bottom-4 left-4 w-9 h-9 flex items-center justify-center bg-white/90 rounded-full text-lg shadow-md hover:scale-110 transition" title="Save to wishlist">${isWishlisted ? '❤️' : '🤍'}</button> </div> <div class="p-4"> <div class="flex items-center gap-2 mb-2 flex-wrap">${newBadge}${genderBadge}</div> <h3 class="display-font text-xl font-black text-slate-800 mb-2">${data.businessProfile?.company || data.propertyType}</h3> ${occupancyHtml} </div> </div> <div class="p-4 pt-0 flex gap-2"> <button type="button" onclick="trackPropertyView('${doc.id}','plan'); openUser2DLayout('${doc.id}')" class="btn-gradient flex-1 py-3 text-white font-black rounded-xl shadow-md tracking-wide cursor-pointer text-sm">View Rooms & Book →</button> ${whatsappBtn} </div> </div>`;
                     });
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
@@ -9407,12 +9415,13 @@
                 return { id: block.id, name: block.name, floor: block.floor, type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : '1-Seater', beds: block.beds || [], amenities: block.amenities || [], has_door: block.has_door !== false, photos: existing ? existing.photos : ['', ''] };
             });
             isPreviewingAsUser = true;
-            // Guest ki screen aur admin ka editor EK HI code se bante hain.
-            // blueprintEditMode chalu reh jata tha, isliye preview me guest ko
-            // Delete, pencil aur laal X dikhne lag jate the — jo wahan hone hi
-            // nahi chahiye. Preview me use band kar dete hain, aur wapas aane
-            // par phir chalu (neeche closePreview me).
-            blueprintEditMode = false;
+            // Preview HAMESHA saaf guest-view se khule.
+            // Pichhli baar jo `testViewEditModeActive` chalu chhoda tha, wo yaad
+            // reh jata tha — isliye Preview kholte hi guest wali screen par
+            // Delete, pencil aur laal X dikhne lag jate the, aur samajh nahi
+            // aata tha ki edit kahan ho raha hai. Admin ko edit chahiye to wo
+            // preview ke andar ka button khud daba sakta hai.
+            testViewEditModeActive = false;
             window.currentPropertyData = {
                 id: currentAdminDocId || 'preview',
                 businessName: (loadedBusinessData && (loadedBusinessData.businessName || (loadedBusinessData.businessProfile && loadedBusinessData.businessProfile.company))) || 'Preview',
@@ -9460,6 +9469,29 @@
         function exitUser2DLayout() {
             if (isPreviewingAsUser) { isPreviewingAsUser = false; blueprintEditMode = true; goTo('screenAdmin2DEditor'); }
             else { goTo('screenUserDashboard'); }
+        }
+
+
+        // ============================================================
+        //  STREET VIEW
+        //  Guest ko sabse zyada ye jaanna hota hai ki MOHALLA kaisa hai —
+        //  sadak saaf hai ya nahi, aas-paas kya hai, raat me surakshit lagta
+        //  hai ya nahi. Ladkiyon ke hostel me ye baat sabse zyada matter
+        //  karti hai, aur hostel ki andar ki photo se ye kabhi pata nahi chalta.
+        //
+        //  Ye Google ka apna link hai — koi API key nahi, koi kharcha nahi.
+        //  Har jagah Street View hota nahi (tang galiyan, nayi colony), aise
+        //  me Google saada naksha khol dega. Isliye button ka naam "Street
+        //  View" hai, "hostel ki photo" nahi — taaki guest ko galat na lage.
+        // ============================================================
+        function openStreetView(lat, lng, name) {
+            if (!lat || !lng) {
+                showAppToast('Location not available for this property.');
+                return;
+            }
+            const url = 'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + ',' + lng;
+            window.open(url, '_blank', 'noopener');
+            try { trackPropertyView(name || '', 'streetview'); } catch (e) {}
         }
 
         async function openUser2DLayout(docId) {
@@ -11413,8 +11445,23 @@
                 let html = toolbarHtml + `<div class="blueprint-container" style="display:flex; flex-direction:${flexDir}; align-items:stretch; gap:18px; padding: 16px;">`;
                 // corridor "center" = split left/right; "middle" = split top/bottom (rooms both sides, horizontal corridor)
                 if ((pos === 'center' || pos === 'middle') && corridors.length > 0) {
-                    const half = Math.ceil(rooms.length / 2);
-                    const leftRooms = rooms.slice(0, half); const rightRooms = rooms.slice(half);
+                    // Pehle rooms sirf GINTI se bantte the — pehle aadhe bayen, baaki dayen.
+                    // Isliye ◀ ▶ dabane par kuch nahi hota tha (wo sirf darwaza badalta tha),
+                    // aur asli naksha se milane ka koi tareeka hi nahi tha.
+                    // Ab: jis room par ◀ ya ▶ chuna gaya hai wo wahin jata hai. Jin par kuch
+                    // nahi chuna, wo purane tareeke se bant jaate hain — to purani listing
+                    // jaisi thi waisi hi dikhegi.
+                    const picked = rooms.filter(r => r.side === 'left' || r.side === 'right');
+                    let leftRooms, rightRooms;
+                    if (picked.length > 0) {
+                        leftRooms = rooms.filter(r => r.side === 'left');
+                        rightRooms = rooms.filter(r => r.side === 'right');
+                        const rest = rooms.filter(r => r.side !== 'left' && r.side !== 'right');
+                        rest.forEach((r, i) => (i % 2 === 0 ? leftRooms : rightRooms).push(r));
+                    } else {
+                        const half = Math.ceil(rooms.length / 2);
+                        leftRooms = rooms.slice(0, half); rightRooms = rooms.slice(half);
+                    }
                     html += renderRoomsGrid(leftRooms);
                     html += `<div class="blueprint-corridor rounded shadow-sm" style="${corridorStyle} font-size:0.75rem;">🚶 Walkway</div>`;
                     html += renderRoomsGrid(rightRooms);
