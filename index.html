@@ -9407,6 +9407,12 @@
                 return { id: block.id, name: block.name, floor: block.floor, type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : '1-Seater', beds: block.beds || [], amenities: block.amenities || [], has_door: block.has_door !== false, photos: existing ? existing.photos : ['', ''] };
             });
             isPreviewingAsUser = true;
+            // Guest ki screen aur admin ka editor EK HI code se bante hain.
+            // blueprintEditMode chalu reh jata tha, isliye preview me guest ko
+            // Delete, pencil aur laal X dikhne lag jate the — jo wahan hone hi
+            // nahi chahiye. Preview me use band kar dete hain, aur wapas aane
+            // par phir chalu (neeche closePreview me).
+            blueprintEditMode = false;
             window.currentPropertyData = {
                 id: currentAdminDocId || 'preview',
                 businessName: (loadedBusinessData && (loadedBusinessData.businessName || (loadedBusinessData.businessProfile && loadedBusinessData.businessProfile.company))) || 'Preview',
@@ -9452,7 +9458,7 @@
         }
 
         function exitUser2DLayout() {
-            if (isPreviewingAsUser) { isPreviewingAsUser = false; goTo('screenAdmin2DEditor'); }
+            if (isPreviewingAsUser) { isPreviewingAsUser = false; blueprintEditMode = true; goTo('screenAdmin2DEditor'); }
             else { goTo('screenUserDashboard'); }
         }
 
@@ -9466,6 +9472,7 @@
             else { alert("Property not found!"); return; }
             // SAFETY: this is the REAL booking flow for an actual customer — make absolutely sure no
             // admin-only editing state or controls can leak in from a previous Preview & Test session.
+            blueprintEditMode = true;
             isPreviewingAsUser = false;
             testViewEditModeActive = false;
             const editBtnReal = document.getElementById('btnTestViewEditMode');
@@ -11313,6 +11320,46 @@
             filteredCorridors.forEach(c => { c.rotation = deg; });
             qeRefreshAll();
         }
+
+        // ============================================================
+        //  ROOM KO IDHAR-UDHAR KHISKANA
+        //  Pehle sirf NW/NE/SW/SE (Mid-Cor) aur top/middle/bottom (H-Cor) tha.
+        //  Wo dono khaas shakl par hi kaam karte the — seedhe corridor (V-Cor)
+        //  par kuch nahi hota tha, aur button phir bhi dikhte the. Isse lagta
+        //  tha ki app toota hua hai.
+        //  Ye chaar button har shakl par chalte hain: upar/neeche kram badalte
+        //  hain, aur bayen/dayen corridor ka paala badalta hai.
+        // ============================================================
+        function qeMoveRoom(blockId, dir) {
+            const idx = admin2DBlocks.findIndex(b => b.id === blockId);
+            if (idx < 0) return;
+            const block = admin2DBlocks[idx];
+
+            if (dir === 'left' || dir === 'right') {
+                block.side = dir;              // corridor ke kis taraf
+                qeRefreshAll();
+                return;
+            }
+
+            // upar / neeche — usi paale ke room ke beech kram badalna
+            const sameGroup = admin2DBlocks
+                .map((b, i) => ({ b, i }))
+                .filter(x => x.b.type === 'room'
+                          && (x.b.floor || 'Ground Floor') === (block.floor || 'Ground Floor')
+                          && (x.b.side || '') === (block.side || '')
+                          && (x.b.quadrant || 'NW') === (block.quadrant || 'NW'));
+
+            const pos = sameGroup.findIndex(x => x.b.id === blockId);
+            const swapWith = dir === 'up' ? pos - 1 : pos + 1;
+            if (swapWith < 0 || swapWith >= sameGroup.length) return;   // pehle se sabse upar/neeche
+
+            const a = sameGroup[pos].i, b2 = sameGroup[swapWith].i;
+            const t = admin2DBlocks[a];
+            admin2DBlocks[a] = admin2DBlocks[b2];
+            admin2DBlocks[b2] = t;
+            qeRefreshAll();
+        }
+
         function qeSetQuadrant(blockId, quadrant) {
             const block = admin2DBlocks.find(b => b.id === blockId); if (!block) return;
             block.quadrant = quadrant;
@@ -11408,6 +11455,13 @@
                     const delBtn = blueprintEditMode ? `<span onclick="event.stopPropagation(); qeDeleteIcon('${block.id}',${idx});" style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border-radius:9999px; width:18px; height:18px; font-size:10px; line-height:18px; text-align:center; cursor:pointer; font-weight:900;">✕</span>` : '';
                     return `<div class="border-2 rounded-xl p-3 text-center" style="min-width: 88px; position:relative; background:${icon.type === 'bath' ? '#eff6ff' : '#fef3c7'}; border-color:${icon.type === 'bath' ? '#93c5fd' : '#fcd34d'};">${delBtn}<span class="text-2xl block mb-1">${emoji}</span><span class="block text-[9px] font-black text-slate-600 uppercase">${icon.label || ''}</span></div>`;
                 }).join('');
+                const movePicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:6px; justify-content:center; align-items:center;">
+                    <span onclick="event.stopPropagation(); qeMoveRoom('${block.id}','up');" title="Upar khiskao" style="font-size:11px; font-weight:900; padding:2px 7px; border-radius:6px; cursor:pointer; background:#eef2ff; color:#4338ca;">&#9650;</span>
+                    <span onclick="event.stopPropagation(); qeMoveRoom('${block.id}','down');" title="Neeche khiskao" style="font-size:11px; font-weight:900; padding:2px 7px; border-radius:6px; cursor:pointer; background:#eef2ff; color:#4338ca;">&#9660;</span>
+                    <span style="width:6px"></span>
+                    <span onclick="event.stopPropagation(); qeMoveRoom('${block.id}','left');" title="Corridor ke bayen" style="font-size:11px; font-weight:900; padding:2px 7px; border-radius:6px; cursor:pointer; ${block.side === 'left' ? 'background:#6366f1;color:#fff;' : 'background:#f1f5f9;color:#64748b;'}">&#9664;</span>
+                    <span onclick="event.stopPropagation(); qeMoveRoom('${block.id}','right');" title="Corridor ke dayen" style="font-size:11px; font-weight:900; padding:2px 7px; border-radius:6px; cursor:pointer; ${block.side === 'right' ? 'background:#6366f1;color:#fff;' : 'background:#f1f5f9;color:#64748b;'}">&#9654;</span>
+                </div>` : '';
                 const quadrantPicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:6px; justify-content:center;">${['NW','NE','SW','SE'].map(q => `<span onclick="event.stopPropagation(); qeSetQuadrant('${block.id}','${q}');" style="font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px; cursor:pointer; ${((block.quadrant || 'NW') === q) ? 'background:#6366f1;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${q}</span>`).join('')}</div>` : '';
                 // Door indicator: a small 🚪 notch on whichever edge of the room card faces the
                 // corridor (based on the same left/right `side` field used for H-shape placement).
@@ -11420,7 +11474,7 @@
                 // the NW/NE/SW/SE picker above but for this different layout topology.
                 const rowSidePicker = blueprintEditMode ? `<div style="display:flex; gap:4px; margin-top:4px; justify-content:center; flex-wrap:wrap;">${['top','middle','bottom'].map(r => `<span onclick="event.stopPropagation(); qeSetRowSide('${block.id}','row','${r}');" style="font-size:8px; font-weight:900; padding:2px 5px; border-radius:6px; cursor:pointer; ${((block.row || 'top') === r) ? 'background:#059669;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${r}</span>`).join('')}${['left','right'].map(s => `<span onclick="event.stopPropagation(); qeSetRowSide('${block.id}','side','${s}');" style="font-size:8px; font-weight:900; padding:2px 5px; border-radius:6px; cursor:pointer; ${((block.side || 'left') === s) ? 'background:#059669;color:white;' : 'background:#f1f5f9;color:#64748b;'}">${s}</span>`).join('')}</div>` : '';
                 const headerHtml = blueprintEditMode
-                    ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div>${quadrantPicker}${rowSidePicker}</div>`
+                    ? `<div class="border-b border-slate-100 pb-2 mb-3"><div class="flex items-center justify-between gap-2"><span onclick="event.stopPropagation(); qeRenameRoom('${block.id}');" class="text-base font-black text-slate-800 uppercase tracking-widest cursor-pointer hover:text-indigo-600">${block.name} ✏️</span><span onclick="event.stopPropagation(); qeDeleteRoom('${block.id}');" class="text-[10px] bg-red-50 text-red-500 font-black px-2 py-1 rounded-lg cursor-pointer hover:bg-red-100">🗑️ Delete</span></div>${movePicker}${quadrantPicker}${rowSidePicker}</div>`
                     : `<div class="border-b border-slate-100 pb-2 mb-3 text-center text-base font-black text-slate-800 uppercase tracking-widest">${block.name}</div>`;
                 const addBedBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddBed('${block.id}');" class="border-2 border-dashed border-indigo-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-indigo-50 transition" style="min-width: 88px; color:#6366f1; font-weight:900; font-size:11px;">➕ Bed</div>` : '';
                 const addBathBtnHtml = blueprintEditMode ? `<div onclick="event.stopPropagation(); qeAddIcon('${block.id}','bath');" class="border-2 border-dashed border-blue-200 rounded-xl p-3 text-center flex items-center justify-center cursor-pointer hover:bg-blue-50 transition" style="min-width: 88px; color:#3b82f6; font-weight:900; font-size:11px;">🚿 +Bath</div>` : '';
