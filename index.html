@@ -1050,7 +1050,7 @@
 
     <div id="screenLeadsDesk" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-1">
-            <button type="button" onclick="goTo('screenAdminDashboard')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">&larr;</button>
+            <button type="button" onclick="leadsGoBack()" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">&larr;</button>
             <div class="flex-1 min-w-0">
                 <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Leads</h2>
                 <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hostel jo abhi hamare hain</p>
@@ -1163,6 +1163,7 @@
                 </div>
             </div>
             <div class="flex gap-2">
+                <button type="button" onclick="openMyLeads()" class="px-4 py-2.5 btn-gradient text-white font-black text-xs rounded-xl shadow transition">📌 Mere kaam</button>
                 <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
                 <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
             </div>
@@ -3784,7 +3785,27 @@
         // ============================================================
         let leadsCache = [];
 
+
+        // Field officer ka apna darwaza. Leads screen wahi hai, bas "Mere kaam"
+        // pehle se tick — usko 292 me se apne 8 dhoondhne na padein.
+        let leadsCameFrom = 'screenAdminDashboard';
+
+        async function openMyLeads() {
+            leadsCameFrom = 'screenFieldDesk';
+            goTo('screenLeadsDesk');
+            document.getElementById('leadsImportBox').classList.add('hidden');
+            document.getElementById('leadsMaintBox').classList.add('hidden');
+            const mine = document.getElementById('leadOnlyMine');
+            if (mine) mine.checked = true;
+            await refreshLeads();
+        }
+
+        function leadsGoBack() {
+            goTo(leadsCameFrom || 'screenAdminDashboard');
+        }
+
         async function openLeadsDesk() {
+            leadsCameFrom = 'screenAdminDashboard';
             goTo('screenLeadsDesk');
             // Import aur maintenance ke dabbe hamesha dikhte hain.
             // Pehle inhe `currentStaffRole === 'admin'` se chhupaya jata tha, par wo variable
@@ -3794,6 +3815,8 @@
             // se surakshit hain, to staff dabayega bhi to server saaf mana kar dega.
             document.getElementById('leadsImportBox').classList.remove('hidden');
             document.getElementById('leadsMaintBox').classList.remove('hidden');
+            const mineBox = document.getElementById('leadOnlyMine');
+            if (mineBox) mineBox.checked = false;
             await refreshLeads();
         }
 
