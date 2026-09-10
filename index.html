@@ -1080,6 +1080,9 @@
                 <option value="refused">Mana kar diya</option>
                 <option value="converted">Listing ban gayi</option>
             </select>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold cursor-pointer bg-white">
+                <input type="checkbox" id="leadOnlyMine" onchange="refreshLeads()"> Mere kaam
+            </label>
             <input id="leadSearchBox" oninput="renderLeads()" type="text" placeholder="Naam ya ilaake se dhoondhiye"
                    class="flex-1 min-w-[180px] px-3 py-2 rounded-xl border border-slate-200 text-sm">
         </div>
@@ -3804,6 +3807,8 @@
             if (d) q.set('district', d);
             if (g) q.set('gender', g);
             if (s) q.set('status', s);
+            const mine = document.getElementById('leadOnlyMine');
+            if (mine && mine.checked) q.set('assignedTo', 'me');
             q.set('limit', '500');
             try {
                 const r = await apiFetch('/admin/leads?' + q.toString());
@@ -3861,6 +3866,9 @@
                         <span class="chip ${cls} border shrink-0 text-[10px]">${txt}</span>
                     </div>
                     ${l.facilities ? `<p class="text-[11px] text-slate-400 mb-2">${esc(l.facilities)}</p>` : ''}
+                    ${(l.tasks && l.tasks.length) ? `<p class="text-[11px] mb-2">${l.tasks.map(t => `<span class="inline-block bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 mr-1 mb-1">${esc(t)}</span>`).join('')}</p>` : ''}
+                    ${l.assignedName ? `<p class="text-[11px] text-slate-600 mb-2">👤 <b>${esc(l.assignedName)}</b> ko diya gaya</p>` : ''}
+                    ${l.consent ? `<p class="text-[11px] text-green-700 mb-2">✅ Malik ki ijazat li ja chuki hai</p>` : ''}
                     ${(l.ownerPhone || l.businessId || l.ownerUid) ? `
                     <div class="text-[11px] bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 mb-2 space-y-0.5">
                         ${l.ownerPhone ? `<p><span class="font-black text-slate-500">Malik ka login number:</span> ${esc(l.ownerPhone)}</p>` : ''}
@@ -3873,6 +3881,10 @@
                         ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
                         ${ph ? `<a href="https://wa.me/91${ph}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</a>` : ''}
                         <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
+                        ${l.status !== 'converted'
+                            ? `<button type="button" onclick="buildHostelFromLead('${l.id}')" class="px-3 py-1.5 btn-gradient text-white font-black rounded-lg text-xs shadow">Hostel banao</button>`
+                            : ''}
+                        <button type="button" onclick="openLeadTasks('${l.id}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Kaam &amp; staff</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="linkLead('${l.id}','${esc(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
                             : `<button type="button" onclick="changeOwnerPhone('${l.ownerUid || ''}','${esc(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`}
@@ -3925,6 +3937,158 @@
         // Malik ka login number badalna — UID wahi rehti hai, isliye uski listing,
         // booking aur rent kuch nahi tootta. Naye number se alag se login karwane par
         // Firebase nayi UID bana deta, aur malik ko lagta ki sab kho gaya.
+
+        // ============================================================
+        //  LEAD SE HOSTEL BANANA
+        //
+        //  Soch: field officer ke saamne malik baitha hai aur haan keh chuka hai.
+        //  Us waqt sabse mehngi cheez uska SAMAY hai. Naam, pata, shahar, gender
+        //  aur naksha ka pin — ye paanch cheezein lead me pehle se hain, to inhe
+        //  dobara type karwana malik ko bhi bore karta hai aur galti bhi karwata hai.
+        //  Isliye wahi purana Add-Hostel form khulta hai, bas bhara hua.
+        //  Har khaana badla ja sakta hai — kuch bhi taala nahi gaya.
+        //
+        //  Ijazat pehle: bina malik ki haan ke form khulta hi nahi, aur haan ka
+        //  record (kisne, kab) lead me likh diya jata hai.
+        // ============================================================
+        let leadBeingBuilt = null;   // form khatam hone par isi lead se listing judegi
+
+        async function buildHostelFromLead(leadId) {
+            const l = leadsCache.find(x => x.id === leadId);
+            if (!l) { alert('Lead nahi mila. Refresh kariye.'); return; }
+
+            const ok = confirm(
+                'MALIK KI IJAZAT\n\n' + l.name + '\n\n' +
+                'Kya malik ne apna hostel HostelOM par daalne ki haan kah di hai?\n\n' +
+                'OK dabane par aapka naam aur samay record ho jayega.\n' +
+                'Bina haan ke Cancel dabaiye.'
+            );
+            if (!ok) return;
+
+            // ijazat darj — status bhi agreed ho jata hai
+            try {
+                await apiFetch('/admin/leads/update', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: leadId, consent: true, status: 'agreed',
+                                           note: 'Malik ne ijazat di — hostel banana shuru' })
+                });
+            } catch (e) { /* record na bhi bane to kaam rukna nahi chahiye */ }
+
+            // --- purana form, bhara hua ---
+            startNewProperty();                 // sab purana kachra saaf
+            leadBeingBuilt = { id: l.id, name: l.name };
+
+            globalBizProfile = Object.assign({}, globalBizProfile, {
+                company:   l.name || '',
+                firstName: l.ownerName || '',
+                phone:     l.ownerPhone || l.phone || ''
+            });
+
+            businessCity    = l.city || '';
+            businessState   = l.state || 'Chhattisgarh';
+            businessAddress = l.address || '';
+            const c = l.coordinates || {};
+            if (c.lat && c.lng) businessCoordinates = { lat: Number(c.lat), lng: Number(c.lng) };
+
+            const typeMap = { 'Female': 'Girls Hostel', 'Male': 'Boys Hostel' };
+            const t = typeMap[l.gender];
+
+            showLeadBanner(l);
+
+            if (t) {
+                // gender pata hai — seedha naksha wali screen, pin lagi hui
+                selectedPropertyType = t;
+                goTo('screenGoogleMap');
+            } else {
+                // Co-ed ya pata nahi — khud chunne dijiye
+                goTo('screenPropertyTypeSelection');
+            }
+        }
+
+        // Poore form ke dauraan upar ek patti — kis lead ka kaam chal raha hai.
+        // Bina iske field officer ko pata hi nahi chalta ki kaunsa hostel bhar raha hai.
+        function showLeadBanner(l) {
+            let b = document.getElementById('leadBuildBanner');
+            if (!b) {
+                b = document.createElement('div');
+                b.id = 'leadBuildBanner';
+                b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#1F3864;color:#fff;'
+                    + 'padding:7px 12px;font-size:12px;font-weight:800;display:flex;gap:10px;align-items:center;justify-content:center';
+                document.body.appendChild(b);
+            }
+            b.innerHTML = '📌 Lead se bhara ja raha hai: ' + esc(l.name)
+                + ' <span style="opacity:.7;font-weight:600">(sab kuch badla ja sakta hai)</span>'
+                + ' <button onclick="clearLeadBanner(true)" style="background:rgba(255,255,255,.2);border:0;color:#fff;'
+                + 'border-radius:8px;padding:3px 9px;font-weight:800;cursor:pointer">Chhodo</button>';
+            b.style.display = 'flex';
+        }
+
+        function clearLeadBanner(alsoForget) {
+            const b = document.getElementById('leadBuildBanner');
+            if (b) b.style.display = 'none';
+            if (alsoForget) leadBeingBuilt = null;
+        }
+
+        // Listing ban jaane ke baad usko lead se jod do.
+        // submitToAdmin ke andar se bulaya jata hai.
+        async function attachBuiltListingToLead(businessId) {
+            if (!leadBeingBuilt || !businessId) return;
+            try {
+                await apiFetch('/admin/leads/attach-business', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: leadBeingBuilt.id, businessId: businessId })
+                });
+            } catch (e) { console.warn('lead se jod nahi paye', e); }
+            clearLeadBanner(true);
+        }
+
+        // ============================================================
+        //  KAAM AUR STAFF
+        //  Field officer ko pata hona chahiye ki us hostel par karna kya hai.
+        //  Isliye tick-list, aur kis staff ko diya — dono lead par hi.
+        // ============================================================
+        const LEAD_TASKS = ['Phone karna', 'Jaakar milna', 'Photo khinchna',
+                            'Rate lena', 'Floor naksha lena', 'Malik ka OTP login',
+                            'Licence/GST lena', 'Dobara jaana'];
+
+        async function openLeadTasks(leadId) {
+            const l = leadsCache.find(x => x.id === leadId);
+            if (!l) return;
+            const cur = l.tasks || [];
+            const list = LEAD_TASKS.map((t, i) => (i + 1) + '. ' + t + (cur.includes(t) ? '  ✓' : '')).join('\n');
+            const pick = prompt(
+                'KYA-KYA KARNA HAI — ' + l.name + '\n\n' + list +
+                '\n\nNumber likhiye, comma se alag (jaise: 2,3,4)\nKhaali chhod kar OK = sab hata do',
+                cur.map(t => LEAD_TASKS.indexOf(t) + 1).filter(n => n > 0).join(',')
+            );
+            if (pick === null) return;
+            const tasks = pick.split(',').map(x => LEAD_TASKS[parseInt(x.trim(), 10) - 1]).filter(Boolean);
+
+            const who = prompt(
+                'KISKO DENA HAI?\n\nStaff ki UID chipkaiye.\n' +
+                'Khaali chhod kar OK = kisi ko nahi (saunp wapas)\n\n' +
+                'UID Staff Manager me har staff ke saamne likhi hoti hai.',
+                l.assignedTo || ''
+            );
+            if (who === null) return;
+            let name = l.assignedName || '';
+            if (who.trim() && who.trim() !== (l.assignedTo || '')) {
+                name = (prompt('Us staff ka naam? (sirf dikhane ke liye)', '') || '').trim();
+            }
+            if (!who.trim()) name = '';
+
+            try {
+                const r = await apiFetch('/admin/leads/update', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leadId: leadId, tasks: tasks,
+                                           assignedTo: who.trim(), assignedName: name })
+                });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Save nahi hua');
+                await refreshLeads();
+            } catch (e) { alert('Nahi ho paya: ' + e.message); }
+        }
+
         async function changeOwnerPhone(uid, name) {
             if (!uid) { alert('Is lead se koi malik juda nahi hai.'); return; }
             const np = prompt('Naya login number (10 ank)\n\nHostel: ' + name + '\n\nUID wahi rahegi — listing, booking, rent sab jude rahenge.');
@@ -7735,6 +7899,8 @@
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
                     currentAdminDocId = newDocId;
                     await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+                    // Lead se bana ho to usi lead se jod do — status 'converted'
+                    if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
                     alert('Listing submitted for verification!');
                 }
                 editingBusinessDocId = null; goTo('screenBusinessDashboard');
