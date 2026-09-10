@@ -2183,6 +2183,9 @@
                 <button onclick="addBusinessCorridor('vertical')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↕️ V-Cor</button>
                 <button onclick="addBusinessCorridor('horizontal')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition">↔️ H-Cor</button>
                 <button onclick="addBusinessCorridor('middle')" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Rooms on both sides, corridor running horizontally between them">⬍ Mid-Cor</button>
+                <button onclick="addBusinessLCorridor()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition" title="L shape ka corridor — ek mod">&#8735; L-Cor</button>
+                <button onclick="addBusinessTCorridor()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition" title="T shape ka corridor">&#8869; T-Cor</button>
+                <button onclick="openStreetViewForCurrentProperty()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-4 py-2 rounded-xl shadow-sm hover:border-indigo-500 transition" title="Is property ki gali ka nazara">&#128205; Street View</button>
                 <div class="w-px bg-slate-300 mx-1"></div>
                 <button onclick="architectAddBath()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">🚿 Bath</button>
                 <button onclick="architectAddTable()" class="text-xs bg-white border border-slate-200 text-slate-700 font-black px-3 py-2 rounded-xl shadow-sm hover:border-indigo-500 hover:text-indigo-600 transition" title="Tap a room below first to select it">📚 Table</button>
@@ -7426,6 +7429,35 @@
             admin2DBlocks.push({ type: 'corridor', id: 'C' + Date.now(), name: 'Corridor Walkway', position: pos, floor: defaultFloor });
             renderAttractive2DPlan();
         }
+
+        // L aur T shape ke corridor.
+        // Do corridor block milkar ek mod (junction) banate hain — bilkul waise
+        // hi jaise H-Cor do samanantar corridor banata hai. Render dono shakl
+        // pehle se jaanta hai; sirf banane ka button nahi tha.
+        function addBusinessShapedCorridor(shapeTag) {
+            const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
+            if (!currentSelectedFloor) currentSelectedFloor = defaultFloor;
+            const t = Date.now();
+            admin2DBlocks.push({ type: 'corridor', id: 'C' + t + '-1', name: 'Corridor Walkway', position: 'center', shape: shapeTag, floor: defaultFloor });
+            admin2DBlocks.push({ type: 'corridor', id: 'C' + t + '-2', name: 'Corridor Walkway', position: 'middle', shape: shapeTag, floor: defaultFloor });
+            renderAttractive2DPlan();
+        }
+        function addBusinessLCorridor() { addBusinessShapedCorridor('L'); }
+        function addBusinessTCorridor() { addBusinessShapedCorridor('T'); }
+
+        // Editor se hi gali ka nazara — field officer ko hostel pe jaane se pehle
+        // pata chal jata hai ki mohalla kaisa hai, aur pin sahi jagah lagi hai ya nahi.
+        function openStreetViewForCurrentProperty() {
+            const c = (loadedBusinessData && loadedBusinessData.coordinates)
+                   || (window.currentPropertyData && window.currentPropertyData.coordinates)
+                   || (typeof businessCoordinates !== 'undefined' ? businessCoordinates : null);
+            if (!c || !c.lat || !c.lng) {
+                alert('Is property ka naksha pin abhi nahi laga hai.\n\nPehle Google Map wale step me pin laga dijiye, phir Street View khulega.');
+                return;
+            }
+            window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + c.lat + ',' + c.lng, '_blank', 'noopener');
+        }
+
         function addBusinessHCorridor() {
             const defaultFloor = currentSelectedFloor || (floorMaps.length > 0 ? floorMaps[0].floorName : 'Ground Floor');
             if (!currentSelectedFloor) currentSelectedFloor = defaultFloor; // same fix as addBusinessCorridor above
