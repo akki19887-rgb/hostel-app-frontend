@@ -2516,7 +2516,7 @@
 
         <div class="flex justify-between items-center mt-8 pt-4 border-t border-slate-100">
             <button type="button" id="grfBackBtn" onclick="grfPrevStep()" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">← Back</button>
-            <button type="button" onclick="grfNextStep()" id="grfNextBtn" class="btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Next →</button>
+            <button type="button" onclick="grfSkipToShortForm()" id="grfSkipBtn" class="px-6 py-3.5 bg-white border-2 border-slate-200 text-slate-600 font-black rounded-2xl hover:border-indigo-400 transition mr-2">Skip &raquo;</button><button type="button" onclick="grfNextStep()" id="grfNextBtn" class="btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Next →</button>
             <button type="button" onclick="submitGuestRegistrationForm()" id="grfSubmitBtn" class="hidden btn-gradient px-8 py-3.5 text-white font-black rounded-2xl shadow-xl tracking-wider">Save & Proceed to Pay →</button>
         </div>
     </div>
@@ -9100,12 +9100,93 @@
             return true;
         }
 
+
+        // ============================================================
+        //  "ABHI NAHI" — chhota form
+        //
+        //  Poora form (Aadhaar ki do photo, passport photo, maa-baap ka naam,
+        //  college, blood group) bharna guest ko bhaari padta hai — aur yahi wo
+        //  jagah hai jahan sabse zyada log booking chhod dete hain.
+        //
+        //  Aur kanoonan wo sab HUME chahiye bhi nahi: guest ka ID check-in par
+        //  hostel malik ko dekhna hota hai (police ka niyam uspar lagta hai,
+        //  hum par nahi). Hum beech me aakar ek aur jagah ID rakhwa rahe the.
+        //
+        //  Isliye: sirf wahi chaar cheezein jo booking ke liye sach me chahiye —
+        //  naam, janm tareekh, joining date aur (marzi se) email.
+        //  Baaki sab hostel par.
+        //
+        //  Janm tareekh isliye maangte hain kyunki (a) kai hostel ki umar seema
+        //  hoti hai, aur (b) 18 se kam par guardian ki jaankari chahiye hoti hai.
+        // ============================================================
+        let grfSkipMode = false;
+
+        // Jo khaane skip me chhup jate hain
+        const GRF_HEAVY_FIELDS = ['grfAadharPhotoFront', 'grfAadharPhotoBack', 'grfAadharNumber',
+                                  'grfPassportPhoto', 'grfFatherName', 'grfMotherName',
+                                  'grfCollegeName', 'grfCourseYear', 'grfBloodGroup',
+                                  'grfOccupationType'];
+
+        function grfSkipToShortForm() {
+            if (!confirm('SKIP FOR NOW\n\n'
+                + 'You only need three things now — your name, date of birth and joining date.\n\n'
+                + 'The rest, including your ID, has to be given AT THE HOSTEL when you check in.\n'
+                + 'Hostels do not allow check-in without an ID.\n\n'
+                + 'Continue?')) return;
+
+            grfSkipMode = true;
+
+            // Bhaari khaane chhupa do — aur unki "required" hatao, warna form atka rahega
+            GRF_HEAVY_FIELDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.removeAttribute('required');
+                if (el.tagName === 'INPUT' || el.tagName === 'SELECT') el.value = '';
+                const wrap = el.closest('div');
+                if (wrap) wrap.style.display = 'none';
+            });
+
+            // Guest ko saaf dikh jaye ki kya baaki hai
+            let note = document.getElementById('grfSkipNote');
+            if (!note) {
+                note = document.createElement('div');
+                note.id = 'grfSkipNote';
+                note.style.cssText = 'background:#EEF2FF; border:1px solid #C7D2FE; border-radius:14px; '
+                    + 'padding:12px 14px; margin-bottom:14px; font-size:13px; line-height:1.6; color:#3730A3; font-weight:600;';
+                note.innerHTML = 'The rest of your details and your ID have to be given <b>at the hostel</b> when you check in. '
+                    + 'Just fill these in for now \u2014 your booking will be confirmed.';
+                const form = document.getElementById('screenGuestRegistrationForm');
+                const label = document.getElementById('grfStepLabel');
+                if (label && label.parentElement) label.parentElement.insertBefore(note, label.nextSibling);
+                else if (form) form.insertBefore(note, form.firstChild);
+            }
+            note.style.display = 'block';
+
+            const sb = document.getElementById('grfSkipBtn');
+            if (sb) sb.style.display = 'none';
+
+            // Aakhri step par le jao — wahin joining date aur submit hai
+            grfCurrentStep = GRF_TOTAL_STEPS;
+            grfRenderStepUI();
+        }
+
         function grfNextStep() {
-            if (!grfValidateStep(grfCurrentStep)) return;
+            // Skip mode me bhaari khaane chhupe hue hain — unki jaanch nahi karni
+            if (!grfSkipMode && !grfValidateStep(grfCurrentStep)) return;
             if (grfCurrentStep < GRF_TOTAL_STEPS) { grfCurrentStep++; grfRenderStepUI(); }
         }
         function grfPrevStep() { if (grfCurrentStep > 1) { grfCurrentStep--; grfRenderStepUI(); } }
-        function grfResetSteps() { grfCurrentStep = 1; grfRenderStepUI(); }
+        function grfResetSteps() {
+            // Nayi booking = saaf shuruaat. Pichhli baar ka skip yaad nahi rakhna.
+            grfSkipMode = false;
+            const n = document.getElementById('grfSkipNote'); if (n) n.style.display = 'none';
+            const sb = document.getElementById('grfSkipBtn'); if (sb) sb.style.display = '';
+            GRF_HEAVY_FIELDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { const w = el.closest('div'); if (w) w.style.display = ''; }
+            });
+            grfCurrentStep = 1; grfRenderStepUI();
+        }
 
         // Asks for the browser's location permission and returns { lat, lng, accuracy } if granted,
         // or null if denied / unavailable / times out — booking always continues either way, this
