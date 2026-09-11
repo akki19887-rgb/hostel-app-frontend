@@ -1063,8 +1063,6 @@
         <div class="flex flex-wrap gap-2 items-center mb-4 p-3 bg-slate-50 rounded-2xl">
             <select id="leadFilterDistrict" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Sabhi jile</option>
-                <option value="Raipur">Raipur</option>
-                <option value="Durg-Bhilai">Durg-Bhilai</option>
             </select>
             <select id="leadFilterGender" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Girls + Boys + Co-ed</option>
@@ -3853,6 +3851,22 @@
         }
 
         function renderLeads() {
+            // Jile ki list HAATH SE nahi likhi jaati — jo lead aaye, unhi se ban jaati hai.
+            // Pehle 'Raipur' aur 'Durg-Bhilai' code me likhe the, isliye Bilaspur, Rajnandgaon
+            // aur Ambikapur chhaante hi nahi ja sakte the. Ab naya jila aane par kuch nahi karna.
+            (function fillDistricts() {
+                const sel = document.getElementById('leadFilterDistrict');
+                if (!sel) return;
+                const found = [...new Set(leadsCache.map(l => (l.district || '').trim()).filter(Boolean))].sort();
+                const have = [...sel.options].map(o => o.value).filter(Boolean);
+                if (found.length && found.join('|') !== have.join('|')) {
+                    const keep = sel.value;
+                    sel.innerHTML = '<option value="">Sabhi jile</option>'
+                        + found.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+                    if (found.includes(keep)) sel.value = keep;
+                }
+            })();
+
             const box = document.getElementById('leadsListBox');
             const term = (document.getElementById('leadSearchBox').value || '').toLowerCase().trim();
             const rows = term
