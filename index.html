@@ -392,7 +392,19 @@
                     <button type="button" id="tncBtnEn" onclick="setTnCLang('en')" class="text-[11px] font-black px-3 py-1.5 rounded-lg transition">EN</button>
                     <button type="button" id="tncBtnHi" onclick="setTnCLang('hi')" class="text-[11px] font-black px-3 py-1.5 rounded-lg transition">हिं</button>
                 </div>
-            </div>
+            
+                <!-- Grievance Officer — IT Rules 2021 ke tehat har online platform ko ye
+                     dikhana hota hai. Wakeel ke draft me yahi maanga gaya tha. -->
+                <div style="margin-top:18px; padding:14px 16px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:14px;">
+                    <p style="font-size:12px; font-weight:900; color:#1F3864; margin-bottom:6px;">GRIEVANCE REDRESSAL</p>
+                    <p style="font-size:12px; line-height:1.7; color:#475569;">
+                        Any complaint about a booking, a listing or your data can be sent to our Grievance Officer.<br>
+                        <b>Email:</b> <a href="mailto:grievance@ho-om.in" style="color:#2E75B6;">grievance@ho-om.in</a><br>
+                        <b>General support:</b> <a href="mailto:support@ho-om.in" style="color:#2E75B6;">support@ho-om.in</a><br>
+                        <b>HOSTEL OM-F</b>, Raipur, Chhattisgarh
+                    </p>
+                </div>
+</div>
             <div id="tncContentEn" class="text-sm text-slate-600 space-y-4 font-medium hidden">
                 <p><b class="text-slate-800">1. Booking Confirmation:</b> Your booking is confirmed only once full payment or the required advance amount has been paid.</p>
                 <p><b class="text-slate-800">2. Cancellation Charges:</b><br>- 3+ days before check-in: 80% refund.<br>- 1 day before check-in: 50% refund.<br>- On check-in day or 'No-Show': 0% refund.</p>
@@ -3844,10 +3856,26 @@
                 const j = await r.json();
                 if (!r.ok) throw new Error(j.error || 'Nahi mila');
                 leadsCache = j.leads || [];
+                fillDistrictOptions();
                 renderLeads();
             } catch (e) {
                 box.innerHTML = '<p class="text-center text-red-500 text-sm py-8 font-bold">Nahi khul paya: ' + e.message + '</p>';
             }
+        }
+
+
+        // Jile ki list HAATH SE nahi likhi jaati — jo lead aaye hain unhi se ban jaati hai.
+        // Pehle dropdown me jile code me likhe hue the, isliye naya jila import karne par
+        // wo list me aata hi nahi tha aur us jile ke lead chhaante nahi ja sakte the.
+        // Ab naya jila chadhte hi apne aap list me aa jayega. (jileAutoFill)
+        function fillDistrictOptions() {
+            const sel = document.getElementById('leadFilterDistrict');
+            if (!sel) return;
+            const chuna = sel.value;
+            const jile = [...new Set(leadsCache.map(l => (l.district || '').trim()).filter(Boolean))].sort();
+            sel.innerHTML = '<option value="">Sabhi jile</option>'
+                + jile.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
+            if (chuna && jile.includes(chuna)) sel.value = chuna;
         }
 
         function renderLeads() {
