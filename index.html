@@ -1107,6 +1107,8 @@
                 <button type="button" onclick="runMaint('/admin/hide-owner-phones','Malik ke phone chhupane')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Malik ke phone chhupao</button>
                 <button type="button" onclick="runMaint('/admin/cleanup-locks','Atke hue bed chhodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Atke hue bed chhodo</button>
                 <button type="button" onclick="runMaint('/admin/backfill-owner-uid','Purani booking jodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Purani booking jodo</button>
+                <button type="button" onclick="repairOwnerLinks(true)" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Pehle dekho (kuch badlega nahi)</button>
+                <button type="button" onclick="repairOwnerLinks(false)" class="px-4 py-2 btn-gradient text-white font-black rounded-xl text-xs shadow">Malik apne aap jodo</button>
             </div>
             <p id="leadsMaintMsg" class="text-xs font-bold mt-2"></p>
         </div>
@@ -4163,6 +4165,47 @@
                 await refreshLeads();
             } catch (e) {
                 msg.textContent = 'Nahi chadha: ' + e.message + ' (network toota ho to dobara Import dabaiye — jo chadh chuke hain wo dobara nahi banenge)';
+                msg.className = 'text-xs font-bold mt-2 text-red-500';
+            }
+        }
+
+
+        // Har listing ka malik apne aap jodna.
+        // Haath se: har listing ka phone dhoondho, Authentication me UID dhoondho,
+        // phir Firestore me chipkao — 50 listing par kai din. Ye wahi kaam ek
+        // click me karta hai, aur jo na jud paayein unke naam bata deta hai.
+        async function repairOwnerLinks(dryRun) {
+            const msg = document.getElementById('leadsMaintMsg');
+            if (!dryRun && !confirm('Har listing ka malik apne aap joda jayega.\n\nPehle "Pehle dekho" chala kar dekh lena behtar hai.\n\nAage badhein?')) return;
+            msg.textContent = dryRun ? 'Dekh rahe hain…' : 'Jod rahe hain…';
+            msg.className = 'text-xs font-bold mt-2 text-slate-500';
+            try {
+                const r = await apiFetch('/admin/repair-owner-links', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dryRun: !!dryRun })
+                });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Nahi ho paya');
+
+                let html = `<b>${dryRun ? 'Jud sakti hain' : 'Jud gayin'}: ${j.fixed}</b> &nbsp;·&nbsp; pehle se judi: ${j.alreadyLinked}`;
+                if ((j.phoneHasNoAccount || []).length) {
+                    html += `<br><br><b>Malik ne abhi tak login nahi kiya (${j.phoneHasNoAccount.length}):</b><br>`
+                          + j.phoneHasNoAccount.map(x => '• ' + esc(x.name) + ' — ' + esc(x.phone)).join('<br>')
+                          + '<br><i>Inko ek baar OTP login karwa dijiye, phir dobara ye button dabaiye.</i>';
+                }
+                if ((j.noPhone || []).length) {
+                    html += `<br><br><b>Inka phone hi nahi mila (${j.noPhone.length}):</b><br>`
+                          + j.noPhone.map(x => '• ' + esc(x.name)).join('<br>')
+                          + '<br><i>Inme phone bharna padega — Leads me "Malik jodo" se ya field officer se.</i>';
+                }
+                if ((j.failed || []).length) {
+                    html += `<br><br><b>Nahi jud paayin (${j.failed.length}):</b><br>`
+                          + j.failed.map(x => '• ' + esc(x.name) + ' — ' + esc(x.error)).join('<br>');
+                }
+                msg.innerHTML = html;
+                msg.className = 'text-xs font-bold mt-2 text-slate-700 leading-relaxed';
+            } catch (e) {
+                msg.textContent = 'Nahi ho paya: ' + e.message;
                 msg.className = 'text-xs font-bold mt-2 text-red-500';
             }
         }
