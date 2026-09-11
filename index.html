@@ -3911,6 +3911,8 @@
                     <div class="flex flex-wrap gap-2">
                         ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
                         ${ph ? `<a href="https://wa.me/91${ph}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</a>` : ''}
+                        ${l.placeId ? `<a href="https://www.google.com/maps/place/?q=place_id:${l.placeId}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Map</a>` : ''}
+                        ${(l.coordinates && l.coordinates.lat && l.coordinates.lng) ? `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${l.coordinates.lat},${l.coordinates.lng}" target="_blank" rel="noopener" title="Gali ka nazara — mohalla kaisa hai" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">&#128205; Street View</a>` : ''}
                         <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="buildHostelFromLead('${l.id}')" class="px-3 py-1.5 btn-gradient text-white font-black rounded-lg text-xs shadow">Hostel banao</button>`
@@ -8056,6 +8058,20 @@
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
                     currentAdminDocId = newDocId;
+                    // Naam KHAALI nahi ja sakta.
+                    // Onboarding poora kiye bina koi seedha "Add Property" par chala jaye to
+                    // globalBizProfile khaali reh jata hai — aur listing bina naam ke ban jati
+                    // hai. Guest ko "bina naam ka hostel" dikhta hai aur koi book nahi karta.
+                    // (Firestore me aisi ek listing mili thi: businessName: "", company: "".)
+                    if (!globalBizProfile.company || !globalBizProfile.company.trim()) {
+                        const askedName = prompt('Hostel ka naam?\n\nGuest ko yahi dikhega, isliye khaali nahi chhod sakte.\n\nJaise: Nikky Girls Hostel');
+                        if (!askedName || !askedName.trim()) {
+                            alert('Hostel ka naam zaroori hai. Publish nahi ho paya.');
+                            if (btn) { btn.disabled = false; btn.innerText = 'VERIFY & PUBLISH'; }
+                            return;
+                        }
+                        globalBizProfile.company = askedName.trim();
+                    }
                     await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
                     // Lead se bana ho to usi lead se jod do — status 'converted'
                     if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
