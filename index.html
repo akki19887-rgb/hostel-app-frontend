@@ -401,6 +401,7 @@
                         Any complaint about a booking, a listing or your data can be sent to our Grievance Officer.<br>
                         <b>Email:</b> <a href="mailto:grievance@ho-om.in" style="color:#2E75B6;">grievance@ho-om.in</a><br>
                         <b>General support:</b> <a href="mailto:support@ho-om.in" style="color:#2E75B6;">support@ho-om.in</a><br>
+                        <b>Helpline (WhatsApp):</b> <a href="https://wa.me/919183206742" target="_blank" rel="noopener" style="color:#2E75B6;">+91 91832 06742</a><br>
                         <b>HOSTEL OM-F</b>, Raipur, Chhattisgarh
                     </p>
                 </div>
@@ -1425,6 +1426,7 @@
             <div class="flex items-center gap-3">
                 <button type="button" onclick="openMessages('owner')" title="Messages" class="relative w-11 h-11 bg-white/70 rounded-2xl flex items-center justify-center hover:bg-white transition shadow-sm border border-slate-200/60">💬<span id="ownerMsgBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
                 <button type="button" onclick="toggleBizNotifications()" class="relative w-11 h-11 bg-white/70 rounded-2xl flex items-center justify-center hover:bg-white transition shadow-sm border border-slate-200/60">🔔<span id="bizNotifBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">0</span></button>
+                <a id="ownerSupportLink" href="#" target="_blank" rel="noopener" title="Apne field officer se WhatsApp par baat kijiye" class="px-5 py-2.5 bg-emerald-50 text-emerald-700 font-bold rounded-2xl hover:bg-emerald-100 transition shadow-sm border border-emerald-200">🆘 Help</a>
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
         </div>
@@ -5201,7 +5203,9 @@
             const container = document.getElementById('myBookingsContainer');
             if (!container) return;
             const supportLink = document.getElementById('myBookingsSupportLink');
-            if (supportLink) supportLink.href = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi, I need help with my HostelOM booking.')}`;
+            // Fallback, used only if the bookings fail to load — it is replaced below with the
+            // guest's actual booking details as soon as we have them.
+            if (supportLink) supportLink.href = supportWaLink(SUPPORT_WHATSAPP_NUMBER, ['Hello HostelOM Support,']);
             const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
             if (!uid) {
                 container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">🔒</span><p class="font-bold text-sm">Please sign in to see your bookings.</p></div>`;
@@ -5217,6 +5221,17 @@
                     return;
                 }
                 rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                // Pre-fill the footer Help button with the most recent booking. A guest should
+                // never have to hunt for their own booking ID — it is the first thing support
+                // would ask for, and the one thing a worried guest is least able to find.
+                if (supportLink && rows[0]) {
+                    supportLink.href = supportWaLink(SUPPORT_WHATSAPP_NUMBER, [
+                        'Hello HostelOM Support,',
+                        rows[0].guestName  ? `Name: ${rows[0].guestName}` : '',
+                        rows[0].bookingId  ? `Booking ID: ${rows[0].bookingId}` : '',
+                        rows[0].hostelName ? `Hostel: ${rows[0].hostelName}` : ''
+                    ]);
+                }
                 const statusMap = {
                     pending_payment_confirmation: ['⏳ Verifying your payment', 'bg-amber-50 border-amber-200 text-amber-700'],
                     paid_verified: ['✅ Confirmed', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
@@ -5239,13 +5254,21 @@
                     // matches the agreed scope: no messaging before a real booking exists.
                     const canChat = b.status === 'paid_verified' || b.status === 'checked_in';
                     const chatBtn = canChat ? `<button type="button" onclick="openBookingChat('${b.id}', 'guest')" class="mt-2 ml-3 text-[10px] font-black text-indigo-600 underline">💬 Message Host</button>` : '';
+                    // Per-booking Help. The footer button carries the newest booking; a guest with
+                    // two stays needs to be able to ask about the older one without explaining which.
+                    const helpBtn = `<a href="${supportWaLink(SUPPORT_WHATSAPP_NUMBER, [
+                        'Hello HostelOM Support,',
+                        b.guestName  ? `Name: ${b.guestName}` : '',
+                        b.bookingId  ? `Booking ID: ${b.bookingId}` : '',
+                        b.hostelName ? `Hostel: ${b.hostelName}` : ''
+                    ])}" target="_blank" rel="noopener" class="mt-2 ml-3 text-[10px] font-black text-emerald-600 underline">🆘 Help</a>`;
                     return `<div class="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm">
                         <div class="flex justify-between items-start gap-4 flex-wrap">
                             <div>
                                 <h4 class="font-black text-lg text-slate-800">${b.hostelName || 'Booking'}</h4>
                                 <p class="text-xs font-bold text-slate-500 mt-0.5">Bed ${bedLabel} · Booking ID: ${b.bookingId || '—'}</p>
                                 <span class="chip border-2 font-black text-[10px] mt-2 inline-block ${cls}">${label}</span>
-                                <div>${cancelBtn}${chatBtn}</div>
+                                <div>${cancelBtn}${chatBtn}${helpBtn}</div>
                             </div>
                             <div class="text-right text-xs font-bold text-slate-600 space-y-0.5">
                                 <p>Paid: <span class="text-emerald-600">₹${b.amount}</span></p>
@@ -6383,7 +6406,20 @@
         // came in.
         const PAYMENT_MODE = 'upi_manual'; // 'upi_manual' | 'razorpay'
         const PLATFORM_UPI_ID = 'dewangan.ankit@okhdfcbank';   // ⚠️ REPLACE with your real UPI ID before going live
-        const SUPPORT_WHATSAPP_NUMBER = '917697763683'; // ⚠️ REPLACE with your real support number (with country code, no + or spaces)
+        // Guest customer care. Country code + number, no '+' and no spaces.
+        const SUPPORT_WHATSAPP_NUMBER = '919183206742';
+        // Hostel owners do NOT go to the guest helpline — they reach their own field officer,
+        // who already knows their property. Keeping the two apart is the whole point: a guest
+        // asking about a refund and an owner asking why their listing is not live are different
+        // jobs, and one number for both means neither gets answered properly.
+        const OWNER_SUPPORT_WHATSAPP = '917869310431';
+
+        // Builds a wa.me link with the message already typed, so support never has to open with
+        // "who is this?". Empty lines are dropped, so a missing field leaves no blank gap.
+        function supportWaLink(number, lines) {
+            const body = (lines || []).filter(Boolean).concat(['Issue: ']).join('\n');
+            return `https://wa.me/${number}?text=${encodeURIComponent(body)}`;
+        }
         const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
         // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
         // amount is HostelOM's booking fee/commission (100% of it, always non-refundable — see
@@ -7866,6 +7902,11 @@
 
         async function refreshBusinessDash() {
             listenBizNotifications();
+            // Fallback until the listings arrive — the property name is added below.
+            {
+                const ownerHelpEl = document.getElementById('ownerSupportLink');
+                if (ownerHelpEl) ownerHelpEl.href = supportWaLink(OWNER_SUPPORT_WHATSAPP, ['Hello HostelOM,']);
+            }
             const container = document.getElementById('businessExistingProperties'); container.innerHTML = skeletonCards(2, 'h-56');
             try {
                 if(businessUnsubscribe) businessUnsubscribe();
@@ -7874,6 +7915,20 @@
                     ? window.query(window.collection(window.db, "businesses"), window.where('ownerId', '==', myUid))
                     : window.collection(window.db, "businesses"); // not signed in (e.g. Quick Test Login) — fall back to showing everything, better than showing nothing
                 businessUnsubscribe = window.onSnapshot(businessesQuery, (querySnapshot) => {
+                    // Name the property in the Help message. The field officer handles many
+                    // hostels; without this they open with "aap kaun?", which is exactly the
+                    // friction that stops an owner asking for help a second time.
+                    try {
+                        const firstBiz = querySnapshot.docs && querySnapshot.docs[0] ? querySnapshot.docs[0].data() : null;
+                        const bizName = firstBiz ? (firstBiz.businessName || (firstBiz.businessProfile && firstBiz.businessProfile.company) || '') : '';
+                        const ownerEmail = (window.auth && window.auth.currentUser) ? (window.auth.currentUser.email || '') : '';
+                        const ownerHelpEl2 = document.getElementById('ownerSupportLink');
+                        if (ownerHelpEl2) ownerHelpEl2.href = supportWaLink(OWNER_SUPPORT_WHATSAPP, [
+                            'Hello HostelOM,',
+                            bizName ? `Property: ${bizName}` : '',
+                            ownerEmail ? `Owner: ${ownerEmail}` : ''
+                        ]);
+                    } catch (e) { /* Help link stays on the fallback — never block the dashboard */ }
                     if (querySnapshot.empty) { container.innerHTML = `<p class="text-sm text-slate-400 font-semibold col-span-2 text-center py-8">No properties yet — add your first one above.</p>`; window._myPropertyIds = []; return; } let htmlContent = ''; const myIds = [];
                     querySnapshot.forEach((doc) => {
                         myIds.push(doc.id);
@@ -9882,10 +9937,10 @@
         // ============================================================
         const TOUR_STEPS = {
             guest: [
-                { el: 'guestCitySelect',     title: 'Sabse pehle shahar',   body: 'Raipur, Bhilai ya Bilaspur — jahan chahiye wo chuniye. Isse sirf usi shahar ke hostel dikhenge.' },
-                { el: 'discoverSearchInput', title: 'Ilaaka ya landmark',   body: 'Jaise "Pandri", "NIT ke paas", "Shankar Nagar". College ka naam bhi likh sakte hain.' },
-                { el: 'userCheckInDate',     title: 'Kab se chahiye?',      body: 'Apni tareekh daaliye — us din jo bed khaali honge, wahi dikhenge.' },
-                { el: null,                  title: 'Ab hostel chuniye',    body: 'Kisi bhi hostel par tap kariye. Andar naksha khulega — usme apna bed chunkar booking kar sakte hain.' }
+                { el: 'guestCitySelect',     title: 'Start with your city', body: 'Raipur, Bhilai or Bilaspur — pick where you need a bed. Only hostels in that city will show.' },
+                { el: 'discoverSearchInput', title: 'Area or landmark',     body: 'Try "Pandri", "near NIT", "Shankar Nagar". Your college name works too.' },
+                { el: 'userCheckInDate',     title: 'From which date?',     body: 'Enter your date — you will only see beds that are free from that day.' },
+                { el: null,                  title: 'Now pick a hostel',    body: 'Tap any hostel. The floor plan opens inside — choose your bed there and book.' }
             ],
             owner: [
                 { el: 'ownerAddPropertyBtn', title: 'Yahan se shuru',       body: 'Apna hostel jodne ke liye yahi dabaiye. Naam, pata, rate aur kamre — sab yahin bharenge.' },
@@ -9924,13 +9979,16 @@
             box.innerHTML =
                 '<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">'
               + '<span style="font-weight:900; font-size:14px;">' + esc(step.title) + '</span>'
-              + '<span onclick="skipTour()" style="font-size:11px; opacity:.75; cursor:pointer; text-decoration:underline; white-space:nowrap;">Skip</span>'
+              + '<span onclick="skipTour()" style="font-size:11px; opacity:.75; cursor:pointer; text-decoration:underline; white-space:nowrap;">'
+              + (tourKind === 'guest' ? 'Skip' : 'Skip') + '</span>'
               + '</div>'
               + '<div style="opacity:.92; margin-bottom:12px;">' + esc(step.body) + '</div>'
               + '<div style="display:flex; justify-content:space-between; align-items:center;">'
               + '<span style="font-size:11px; opacity:.6;">' + (tourIdx + 1) + ' / ' + tourQueue.length + '</span>'
               + '<button type="button" onclick="nextTourStep()" style="background:#fff; color:#1F3864; border:0; border-radius:10px; padding:7px 16px; font-weight:900; font-size:12px; cursor:pointer;">'
-              + (tourIdx === tourQueue.length - 1 ? 'Samajh gaya' : 'Aage \u2192') + '</button>'
+              + (tourKind === 'guest'
+                    ? (tourIdx === tourQueue.length - 1 ? 'Got it' : 'Next \u2192')
+                    : (tourIdx === tourQueue.length - 1 ? 'Samajh gaya' : 'Aage \u2192')) + '</button>'
               + '</div>';
             document.body.appendChild(box);
 
