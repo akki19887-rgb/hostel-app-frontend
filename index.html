@@ -1073,6 +1073,9 @@
         <div id="leadsStatsBox" class="grid grid-cols-2 md:grid-cols-4 gap-3 my-4"></div>
 
         <div class="flex flex-wrap gap-2 items-center mb-4 p-3 bg-slate-50 rounded-2xl">
+            <select id="leadFilterState" onchange="onStateChange()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+                <option value="">Sabhi rajya</option>
+            </select>
             <select id="leadFilterDistrict" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Sabhi jile</option>
             </select>
@@ -3842,6 +3845,8 @@
             const box = document.getElementById('leadsListBox');
             box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Laa rahe hain…</p>';
             const q = new URLSearchParams();
+            const st = document.getElementById('leadFilterState').value;
+            if (st) q.set('state', st);
             const d = document.getElementById('leadFilterDistrict').value;
             const g = document.getElementById('leadFilterGender').value;
             const s = document.getElementById('leadFilterStatus').value;
@@ -3868,15 +3873,71 @@
         // Pehle dropdown me jile code me likhe hue the, isliye naya jila import karne par
         // wo list me aata hi nahi tha aur us jile ke lead chhaante nahi ja sakte the.
         // Ab naya jila chadhte hi apne aap list me aa jayega. (jileAutoFill)
+        // Rajya aur jila — dono HAATH SE nahi likhe jaate, lead se hi ban jaate hain.
+        // Doosre rajya me kaam shuru karte hi wo apne aap list me aa jayega.
+        //
+        // Jila rajya ke hisaab se bharta hai: Chhattisgarh chuna to sirf usi ke jile
+        // dikhenge. Warna do rajyon ke 50 jile ek hi list me mil jate aur dhoondhna
+        // mushkil ho jata.
+        //
+        // NOTE: hum SAB lead se list banate hain (leadsAll), sirf dikhne walon se nahi —
+        // warna Chhattisgarh chunte hi doosre rajya list se gayab ho jate aur wapas
+        // jaane ka rasta hi na bachta.
+        let leadsAllForFilters = [];
+
         function fillDistrictOptions() {
-            const sel = document.getElementById('leadFilterDistrict');
-            if (!sel) return;
-            const chuna = sel.value;
-            const jile = [...new Set(leadsCache.map(l => (l.district || '').trim()).filter(Boolean))].sort();
-            sel.innerHTML = '<option value="">Sabhi jile</option>'
-                + jile.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
-            if (chuna && jile.includes(chuna)) sel.value = chuna;
+            // Sabse badi list yaad rakho — jab koi chhaant na lagi ho tabhi
+            if (!document.getElementById('leadFilterState').value
+                && !document.getElementById('leadFilterGender').value
+                && !document.getElementById('leadFilterStatus').value
+                && leadsCache.length >= leadsAllForFilters.length) {
+                leadsAllForFilters = leadsCache;
+            }
+            const src = leadsAllForFilters.length ? leadsAllForFilters : leadsCache;
+
+            // --- rajya ---
+            const selS = document.getElementById('leadFilterState');
+            if (selS) {
+                const chunaS = selS.value;
+                const rajya = [...new Set(src.map(l => (l.state || '').trim()).filter(Boolean))].sort();
+                selS.innerHTML = '<option value="">Sabhi rajya</option>'
+                    + rajya.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+                if (chunaS && rajya.includes(chunaS)) selS.value = chunaS;
+            }
+
+            // --- jila (chune hue rajya ka) ---
+            const selD = document.getElementById('leadFilterDistrict');
+            if (selD) {
+                const chunaD = selD.value;
+                const rajyaChuna = selS ? selS.value : '';
+                const jile = [...new Set(src
+                    .filter(l => !rajyaChuna || (l.state || '').trim() === rajyaChuna)
+                    .map(l => (l.district || '').trim()).filter(Boolean))].sort();
+                selD.innerHTML = '<option value="">Sabhi jile</option>'
+                    + jile.map(j => `<option value="${esc(j)}">${esc(j)}</option>`).join('');
+                if (chunaD && jile.includes(chunaD)) selD.value = chunaD;
+            }
         }
+
+        // Rajya badla to jila khaali kar do — warna Chhattisgarh ka jila chuna reh jata
+        // aur doosre rajya me kuch nahi milta.
+        function onStateChange() {
+            const selD = document.getElementById('leadFilterDistrict');
+            if (selD) selD.value = '';
+            refreshLeads();
+        }
+
+        // Thappe ka rang. Ye thappa Google ke aankdon se banta hai —
+        // rating, kitne logon ne di, aur review me chetavni mili ya nahi.
+        // Sirf rating dekhna dhokha deta hai: 4.9 wale me 3 review ho sakte hain.
+        const VERDICT_LOOK = {
+            'ACHHA':           'bg-green-50 text-green-700',
+            'THEEK':           'bg-blue-50 text-blue-700',
+            'MILA-JULA':       'bg-amber-50 text-amber-700',
+            'SHIKAYAT ZYADA':  'bg-red-50 text-red-700',
+            'NAYA':            'bg-slate-100 text-slate-500',
+            'default':         'bg-slate-100 text-slate-500'
+        };
 
         function renderLeads() {
             // Jile ki list HAATH SE nahi likhi jaati — jo lead aaye, unhi se ban jaati hai.
@@ -3897,9 +3958,14 @@
 
             const box = document.getElementById('leadsListBox');
             const term = (document.getElementById('leadSearchBox').value || '').toLowerCase().trim();
-            const rows = term
-                ? leadsCache.filter(l => ((l.name||'') + ' ' + (l.landmark||'') + ' ' + (l.address||'')).toLowerCase().includes(term))
-                : leadsCache;
+            let rows = term
+                ? leadsCache.filter(l => ((l.name||'') + ' ' + (l.locality||'') + ' ' + (l.landmark||'') + ' ' + (l.address||'')).toLowerCase().includes(term))
+                : leadsCache.slice();
+
+            // Bade hostel pehle. Pehle list us kram me aati thi jis kram me import hui thi,
+            // isliye 637 review wala Godavari neeche kahin pada rehta tha aur caller
+            // 1 review wale pe waqt lagata tha. Ab jise zyada logon ne jaana hai wo upar.
+            rows.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
 
             // Upar ki ginti
             const c = { new:0, contacted:0, agreed:0, converted:0 };
@@ -3934,7 +4000,12 @@
                     <div class="flex justify-between items-start gap-3 mb-2">
                         <div class="min-w-0">
                             <h4 class="font-black text-slate-800 leading-tight">${esc(l.name)}</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">${esc(l.landmark || l.address || '')}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${esc(l.locality || '')}${l.locality && (l.landmark || l.address) ? ' · ' : ''}${esc(l.landmark || l.address || '')}</p>
+                            ${l.rating ? `<p class="text-[11px] mt-1">
+                                <b class="text-slate-700">${l.rating}&#9733;</b>
+                                <span class="text-slate-400"> ${l.reviewCount || 0} review</span>
+                                ${l.verdict ? `<span class="ml-1 px-1.5 py-0.5 rounded ${(VERDICT_LOOK[l.verdict] || VERDICT_LOOK.default)}">${esc(l.verdict)}</span>` : ''}
+                            </p>` : ''}
                         </div>
                         <span class="chip ${cls} border shrink-0 text-[10px]">${txt}</span>
                     </div>
@@ -8114,7 +8185,38 @@
                         }
                         globalBizProfile.company = askedName.trim();
                     }
-                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: globalBizProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+                    // MALIK KA PHONE DUNIYA KO NAHI JANA CHAHIYE.
+                    //
+                    // `businesses` par rules me `allow read: if true` hai — aur hona bhi
+                    // chahiye, kyunki guest ko bina login ke listing dikhni hai.
+                    // Par yahan poora `globalBizProfile` chala jata tha, jisme malik ka
+                    // PHONE, ID aur naam bhi hota hai. Yani koi bhi, bina login ke,
+                    // sabhi hostel malikon ke number nikaal sakta tha.
+                    //
+                    // Purani listing se phone haath se hataya gaya tha, par har NAYI
+                    // listing me wo dobara chala jata. Ab yahin rok di.
+                    //
+                    // Phone `businessContacts` me jata hai — wo admin aur us malik ke
+                    // alawa kisi ko nahi dikhta.
+                    const publicProfile = {
+                        company:   globalBizProfile.company || '',
+                        firstName: globalBizProfile.firstName || '',
+                        role:      globalBizProfile.role || ''
+                    };
+                    const ownerPhoneForContacts = (globalBizProfile.phone || '').trim();
+
+                    await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: publicProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
+
+                    // Phone band collection me — rules: sirf admin aur wahi malik padh sakta hai
+                    try {
+                        if (ownerPhoneForContacts) {
+                            await window.setDoc(window.doc(window.db, "businessContacts", newDocId), {
+                                ownerUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                                phone: ownerPhoneForContacts,
+                                updatedAt: new Date().toISOString()
+                            }, { merge: true });
+                        }
+                    } catch (cErr) { console.warn('businessContacts save nahi hua:', cErr); }
                     // Lead se bana ho to usi lead se jod do — status 'converted'
                     if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
                     alert('Listing submitted for verification!');
