@@ -1230,6 +1230,7 @@
                 <button type="button" onclick="runMaint('/admin/hide-owner-phones','Malik ke phone chhupane')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Malik ke phone chhupao</button>
                 <button type="button" onclick="runMaint('/admin/cleanup-locks','Atke hue bed chhodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Atke hue bed chhodo</button>
                 <button type="button" onclick="runMaint('/admin/backfill-owner-uid','Purani booking jodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Purani booking jodo</button>
+                <button type="button" onclick="runMaint('/admin/secure-payout-details','Bank details chhupane')" class="px-4 py-2 bg-amber-50 border border-amber-300 text-amber-900 font-bold rounded-xl text-xs hover:bg-amber-100">Bank details chhupao</button>
                 <button type="button" onclick="repairOwnerLinks(true)" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Pehle dekho (kuch badlega nahi)</button>
                 <button type="button" onclick="repairOwnerLinks(false)" class="px-4 py-2 btn-gradient text-white font-black rounded-xl text-xs shadow">Malik apne aap jodo</button>
             </div>
@@ -7659,13 +7660,11 @@
             }
         }
 
-        // Two modes:
-        //  A) BACKEND MODE (recommended, secure): server creates a Razorpay order and returns
-        //     { orderId, keyId }. Signature is verified server-side after payment.
-        //  B) FALLBACK / TEST MODE: if backend order creation fails, we open Razorpay with a
-        //     test key in "amount-only" mode. NEVER ship this to production — it skips
-        //     signature verification and anyone can fake a success client-side.
-        const RAZORPAY_TEST_KEY = 'rzp_test_1DP5mmOlF5G5ag'; // Razorpay's public sample test key
+        // ONE mode only: the server creates the Razorpay order and verifies the signature
+        // afterwards. There used to be a fallback that opened Razorpay with a public test key
+        // in "amount-only" mode when order creation failed — that skips signature verification,
+        // so anyone could fake a success from the browser. The fallback is gone and the key with
+        // it. If order creation fails, the payment fails; it does not quietly downgrade.
         function showPayError(msg) {
             const el = document.getElementById('payErrorMsg');
             if (!el) return;
