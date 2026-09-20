@@ -382,6 +382,80 @@
         <img id="zoomedImageTarget" class="zoom-content" src="" alt="Zoomed View">
     </div>
 
+    <!-- POOCHHO — the in-app assistant, for admin and staff only.
+         Deliberately a question box and not a chat thread: each question is answered from a
+         fresh snapshot the server builds, so there is no conversation history to go stale and
+         nothing for the model to remember wrongly. A field executive opening this sees answers
+         drawn only from their own leads and visits — that scoping happens on the server. -->
+    <div id="modalAssistant" class="zoom-modal hidden" onclick="if(event.target===this) closeAssistant()">
+        <div class="bg-white rounded-[2rem] max-w-xl w-full relative flex flex-col" style="max-height:88vh;" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3 p-5 pb-4 border-b border-slate-200">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-lg shadow">💬</div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="display-font text-xl font-black text-slate-900 leading-tight">Poochho</h3>
+                    <p class="text-[11px] font-bold text-slate-400" id="asstSubtitle">App ke baare me kuch bhi poochhiye</p>
+                </div>
+                <button type="button" onclick="closeAssistant()" class="w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0">✕</button>
+            </div>
+
+            <div id="asstThread" class="flex-1 overflow-y-auto layout-scroll p-5 space-y-3" style="min-height:180px;">
+                <div class="text-center py-6">
+                    <p class="text-xs font-bold text-slate-400 mb-3">Jaise:</p>
+                    <div id="asstSuggestions" class="flex flex-wrap gap-2 justify-center"></div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-200">
+                <div class="flex gap-2 items-end">
+                    <textarea id="asstInput" rows="1" placeholder="Sawaal likhiye…" maxlength="500"
+                        class="flex-1 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-semibold text-sm outline-none focus:border-indigo-400 transition resize-none"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askAssistant();}"></textarea>
+                    <button type="button" id="asstMicBtn" onclick="toggleAssistantMic()" title="Bolkar poochhiye"
+                        class="w-12 h-12 shrink-0 bg-slate-100 hover:bg-slate-200 rounded-xl text-lg transition">🎤</button>
+                    <button type="button" id="asstSendBtn" onclick="askAssistant()"
+                        class="w-12 h-12 shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow transition">→</button>
+                </div>
+                <p class="text-[10px] font-semibold text-slate-400 mt-2" id="asstFooterNote">
+                    Ye sirf dekh sakta hai, badal nahi sakta. Har sawaal record hota hai.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCOUNT SETTINGS / DELETE ACCOUNT
+         Play Store's data-safety rules require a way to delete the account from inside the app,
+         and the Privacy Policy states one exists. It did not. Deletion is deliberately blunt about
+         what survives: bookings are anonymised, not erased, because a hostel has to be able to show
+         who stayed, and nobody should be able to delete a dispute by deleting their login. -->
+    <div id="modalAccountSettings" class="zoom-modal hidden" onclick="closeAccountSettings()">
+        <div class="bg-white p-7 rounded-[2rem] max-w-md w-full relative max-h-[85vh] overflow-y-auto layout-scroll" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeAccountSettings()" class="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200">✕</button>
+            <h2 class="display-font text-2xl font-black text-slate-900 mb-1 pr-12">Account</h2>
+            <p class="text-xs font-semibold text-slate-500 mb-6">Manage your account and your data</p>
+
+            <div class="border-2 border-red-100 bg-red-50/60 rounded-2xl p-4">
+                <h3 class="font-black text-sm text-red-700 mb-2">Delete my account</h3>
+                <p class="text-[11px] font-semibold text-slate-600 leading-relaxed mb-2">This cannot be undone. When you delete your account:</p>
+                <ul class="text-[11px] font-semibold text-slate-600 leading-relaxed list-disc pl-4 space-y-1 mb-3">
+                    <li>Your ID photographs and registration forms are permanently deleted</li>
+                    <li>Your profile and sign-in are closed</li>
+                    <li>Past stays are kept as a record but your name and phone number are removed from them</li>
+                    <li>You cannot delete your account while a booking is still active</li>
+                </ul>
+                <p class="text-[11px] font-bold text-slate-700 mb-2">Type <b class="text-red-700">DELETE</b> to confirm:</p>
+                <input type="text" id="deleteAccountConfirmInput" autocomplete="off" placeholder="DELETE"
+                    class="w-full p-3 bg-white border-2 border-red-200 rounded-xl font-black text-sm outline-none focus:border-red-400 transition mb-2">
+                <p id="deleteAccountError" class="hidden text-[11px] font-bold text-red-600 mb-2"></p>
+                <button type="button" id="deleteAccountBtn" onclick="confirmDeleteAccount()"
+                    class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black text-sm rounded-xl shadow transition">Delete my account</button>
+            </div>
+
+            <p class="text-[10px] font-semibold text-slate-400 mt-4 leading-relaxed">
+                Prefer to ask us? Write to <a href="mailto:support@ho-om.in" class="text-indigo-600 underline">support@ho-om.in</a> and we will delete your account within 7 business days.
+            </p>
+        </div>
+    </div>
+
     <!-- T&C Policy Modal -->
     <div id="modalTnC" class="zoom-modal hidden" onclick="document.getElementById('modalTnC').classList.add('hidden')">
         <div class="bg-white p-8 rounded-[2rem] max-w-lg w-full relative max-h-[85vh] overflow-y-auto layout-scroll" onclick="event.stopPropagation()">
@@ -402,19 +476,21 @@
                         <b>Email:</b> <a href="mailto:grievance@ho-om.in" style="color:#2E75B6;">grievance@ho-om.in</a><br>
                         <b>General support:</b> <a href="mailto:support@ho-om.in" style="color:#2E75B6;">support@ho-om.in</a><br>
                         <b>Helpline (WhatsApp):</b> <a href="https://wa.me/919183206742" target="_blank" rel="noopener" style="color:#2E75B6;">+91 91832 06742</a><br>
+                        <b>Grievance Officer:</b> Ankit Kumar Dewangan, Compliance &amp; Grievance Officer<br>
+                        <b>Reply within:</b> 24–48 hours &nbsp;·&nbsp; <b>Resolved within:</b> 15 business days<br>
                         <b>HOSTEL OM-F</b>, Raipur, Chhattisgarh
                     </p>
                 </div>
 </div>
             <div id="tncContentEn" class="text-sm text-slate-600 space-y-4 font-medium hidden">
                 <p><b class="text-slate-800">1. Booking Confirmation:</b> Your booking is confirmed only once full payment or the required advance amount has been paid.</p>
-                <p><b class="text-slate-800">2. Cancellation Charges:</b><br>- 3+ days before check-in: 80% refund.<br>- 1 day before check-in: 50% refund.<br>- On check-in day or 'No-Show': 0% refund.</p>
+                <p><b class="text-slate-800">2. Cancellation &amp; Refund:</b><br>- The 20% advance you pay here is HostelOM's booking fee. It is <b>non-refundable</b> — on every plan, at any notice, and on a no-show.<br>- Cancelling releases your bed for someone else. It does not return the advance.<br>- The remaining 80% is paid at the hostel and is governed by that hostel's own policy, not ours.</p>
                 <p><b class="text-slate-800">3. Monthly Stays & Deposit:</b><br>- Security deposit is refunded only if the room is returned in the same condition as check-in.<br>- At least 15-30 days' notice is required before vacating the room.</p>
                 <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- The advance amount is Non-Refundable.</p>
             </div>
             <div id="tncContentHi" class="text-sm text-slate-600 space-y-4 font-medium hidden">
                 <p><b class="text-slate-800">1. बुकिंग की पुष्टि:</b> आपकी बुकिंग तभी पक्की मानी जाएगी जब आप पूरी राशि या आवश्यक अग्रिम राशि (एडवांस) का भुगतान कर देंगे।</p>
-                <p><b class="text-slate-800">2. रद्दीकरण शुल्क:</b><br>- चेक-इन से 3 दिन पहले: 80% वापसी।<br>- चेक-इन से 1 दिन पहले: 50% वापसी।<br>- चेक-इन के दिन या बिना बताए न आने पर: 0% वापसी।</p>
+                <p><b class="text-slate-800">2. रद्दीकरण और वापसी:</b><br>- यहाँ जो 20% अग्रिम राशि आप देते हैं, वह HostelOM का बुकिंग शुल्क है। वह <b>वापस नहीं होती</b> — किसी भी प्लान में, कितना भी पहले रद्द करें, या बिना बताए न आने पर।<br>- रद्द करने से आपका बेड किसी और के लिए खाली हो जाता है। अग्रिम राशि वापस नहीं आती।<br>- बाकी 80% हॉस्टल में दिया जाता है और उस पर उसी हॉस्टल की नीति लागू होगी, हमारी नहीं।</p>
                 <p><b class="text-slate-800">3. मासिक ठहराव और जमा राशि:</b><br>- सुरक्षा जमा राशि (सिक्योरिटी डिपॉज़िट) तभी वापस होगी जब कमरा चेक-इन जैसी स्थिति में वापस किया जाएगा।<br>- कमरा खाली करने से कम से कम 15-30 दिन पहले सूचना देना ज़रूरी है।</p>
                 <p><b class="text-slate-800">4. दैनिक/साप्ताहिक ठहराव:</b><br>- अग्रिम राशि (एडवांस) वापस नहीं की जाएगी।</p>
             </div>
@@ -847,6 +923,7 @@
             <div class="flex items-center gap-3">
                 <button type="button" onclick="openMessages('guest')" class="relative px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">💬 Messages<span id="guestMsgBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
                 <button type="button" onclick="goTo('screenMyBookings')" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">📋 My Bookings</button>
+                <button type="button" onclick="openAccountSettings()" title="Account settings" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">⚙️ Account</button>
                 <button type="button" onclick="logout()" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
         </div>
@@ -1179,6 +1256,7 @@
                 </div>
             </div>
             <div class="flex gap-2">
+                <button type="button" onclick="openAssistant()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition">💬 Poochho</button>
                 <button type="button" onclick="openMyLeads()" class="px-4 py-2.5 btn-gradient text-white font-black text-xs rounded-xl shadow transition">📌 Mere kaam</button>
                 <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
                 <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
@@ -1349,6 +1427,7 @@
             </div>
             <div class="flex items-center gap-4 flex-wrap justify-end">
                 <button type="button" onclick="logout()" class="px-5 py-2.5 bg-white/70 border border-slate-200/60 text-slate-600 font-bold rounded-2xl hover:bg-white transition shadow-sm">Logout</button>
+                <button type="button" onclick="openAssistant()" class="px-5 py-2.5 bg-indigo-600 text-white border border-indigo-700 font-black rounded-2xl hover:bg-indigo-700 transition shadow">💬 Poochho</button>
                 <button type="button" onclick="openBroadcastComposer()" class="px-5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 font-black rounded-2xl hover:bg-amber-100 transition shadow-sm">📢 Broadcast to All Owners</button>
                 <button type="button" onclick="goTo('screenAdminBookings')" class="px-5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 font-black rounded-2xl hover:bg-indigo-100 transition shadow-sm">📅 Bookings</button>
                 <button type="button" onclick="openStaffManager()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">👥 Staff</button>
@@ -1460,6 +1539,13 @@
         <div class="mt-8 pt-6 border-t border-slate-200/60 text-center">
             <p class="text-xs font-bold text-slate-500 mb-2">Need help with a booking?</p>
             <a href="#" id="myBookingsSupportLink" target="_blank" class="inline-flex items-center gap-2 px-5 py-3 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-black rounded-xl hover:bg-emerald-500 hover:text-white transition text-sm">💬 Contact Support on WhatsApp</a>
+            <!-- The number in plain sight, not only behind a button. A guest whose payment has
+                 just failed wants to see that a real person is reachable, and may want to save
+                 the number or call instead of typing. Filled from the constant, never typed twice. -->
+            <p class="text-[11px] font-bold text-slate-400 mt-3">
+                Or call us on <a href="#" id="myBookingsSupportTel" class="text-emerald-700 font-black underline">&nbsp;</a>
+                <span class="block mt-0.5 font-semibold text-slate-400">Mon–Sat, 9 AM – 8 PM</span>
+            </p>
         </div>
     </div>
 
@@ -2458,12 +2544,12 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Front <span class="text-slate-400 normal-case">(photo, name, DOB side)</span></label>
-                    <input type="file" id="grfAadharPhotoFront" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar()">
+                    <input type="file" id="grfAadharPhotoFront" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
                 </div>
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhar Card Back <span class="text-slate-400 normal-case">(address side — optional)</span></label>
-                    <input type="file" id="grfAadharPhotoBack" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer" onchange="grfAutoFillFromAadhar()">
-                    <p class="text-[9px] text-slate-400 font-semibold mt-1" id="grfAadharAutoFillStatus"></p>
+                    <input type="file" id="grfAadharPhotoBack" accept="image/*" class="w-full p-3 bg-white border-2 border-slate-100 rounded-xl text-xs font-medium text-slate-600 cursor-pointer">
+                    <p class="text-[9px] text-slate-400 font-semibold mt-1 leading-relaxed">Your ID photo is stored privately, is visible only to this hostel and HostelOM, and is deleted 30 days after your check-out.</p>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -5206,6 +5292,11 @@
             // Fallback, used only if the bookings fail to load — it is replaced below with the
             // guest's actual booking details as soon as we have them.
             if (supportLink) supportLink.href = supportWaLink(SUPPORT_WHATSAPP_NUMBER, ['Hello HostelOM Support,']);
+            const supportTel = document.getElementById('myBookingsSupportTel');
+            if (supportTel) {
+                supportTel.textContent = prettyPhone(SUPPORT_WHATSAPP_NUMBER);
+                supportTel.href = 'tel:+' + String(SUPPORT_WHATSAPP_NUMBER).replace(/\D/g, '');
+            }
             const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
             if (!uid) {
                 container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">🔒</span><p class="font-bold text-sm">Please sign in to see your bookings.</p></div>`;
@@ -5305,6 +5396,214 @@
                 alert('Could not cancel right now: ' + err.message);
             }
         }
+
+        // ==========================================
+        // POOCHHO — in-app assistant (admin + staff)
+        // ==========================================
+        const ASST_SUGGESTIONS = {
+            admin: ['Aaj kya dekhna chahiye?', 'Kitni listing live hai?',
+                    'Kaunsa payment atka hai?', 'Is mahine kitna kamaya?',
+                    'Staff ne kya kiya is mahine?', 'Kaunsi listing adhoori hai?'],
+            staff: ['Aaj kahan jaana hai?', 'Mere kitne lead bache hain?',
+                    'Is mahine maine kitne kiye?', 'Kaunsa lead sabse achha hai?']
+        };
+        let asstBusy = false;
+        let asstRecognition = null;
+
+        function openAssistant() {
+            const box = document.getElementById('modalAssistant');
+            if (!box) return;
+            // currentStaffRole is set at staff login; admins never have it.
+            const isAdmin = !currentStaffRole;
+            document.getElementById('asstSubtitle').innerText = isAdmin
+                ? 'Poore app ke baare me poochhiye'
+                : 'Apne kaam ke baare me poochhiye';
+            const wrap = document.getElementById('asstSuggestions');
+            if (wrap) {
+                wrap.innerHTML = (isAdmin ? ASST_SUGGESTIONS.admin : ASST_SUGGESTIONS.staff)
+                    .map(q => `<button type="button" onclick="asstAsk(this.dataset.q)" data-q="${esc(q)}" class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 font-bold text-[11px] rounded-full transition">${esc(q)}</button>`)
+                    .join('');
+            }
+            box.classList.remove('hidden');
+            setTimeout(() => { const i = document.getElementById('asstInput'); if (i) i.focus(); }, 100);
+        }
+        function closeAssistant() {
+            stopAssistantMic();
+            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+            const box = document.getElementById('modalAssistant');
+            if (box) box.classList.add('hidden');
+        }
+        window.asstAsk = function(q) {
+            const i = document.getElementById('asstInput');
+            if (i) i.value = q;
+            askAssistant();
+        };
+
+        function asstBubble(who, text, cls) {
+            const thread = document.getElementById('asstThread');
+            // First real question clears the suggestion chips.
+            const sugg = thread.querySelector('#asstSuggestions');
+            if (sugg) thread.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.className = who === 'you' ? 'flex justify-end' : 'flex justify-start';
+            const bubble = document.createElement('div');
+            bubble.className = who === 'you'
+                ? 'max-w-[85%] bg-indigo-600 text-white font-semibold text-sm rounded-2xl rounded-br-md px-4 py-2.5 whitespace-pre-wrap'
+                : 'max-w-[85%] bg-slate-100 text-slate-800 font-medium text-sm rounded-2xl rounded-bl-md px-4 py-2.5 whitespace-pre-wrap ' + (cls || '');
+            bubble.innerText = text;
+            wrap.appendChild(bubble);
+            thread.appendChild(wrap);
+            thread.scrollTop = thread.scrollHeight;
+            return bubble;
+        }
+
+        async function askAssistant() {
+            if (asstBusy) return;
+            const input = document.getElementById('asstInput');
+            const question = (input.value || '').trim();
+            if (!question) return;
+
+            asstBusy = true;
+            document.getElementById('asstSendBtn').disabled = true;
+            input.value = '';
+            asstBubble('you', question);
+            const thinking = asstBubble('bot', 'Dekh raha hoon\u2026', 'text-slate-400 italic');
+
+            try {
+                const res = await apiFetch('/assistant/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    thinking.innerText = data.error || 'Jawab nahi mila. Dobara try kijiye.';
+                    thinking.className = thinking.className.replace('text-slate-400 italic', 'text-red-600 font-semibold');
+                } else {
+                    thinking.innerText = data.answer;
+                    thinking.className = thinking.className.replace(' text-slate-400 italic', '');
+                    const note = document.getElementById('asstFooterNote');
+                    if (note && data.dailyLimit) {
+                        note.innerText = `Aaj ${data.asked} / ${data.dailyLimit} sawaal. Ye sirf dekh sakta hai, badal nahi sakta.`;
+                    }
+                    speakAssistant(data.answer);
+                }
+            } catch (e) {
+                console.error('assistant failed', e);
+                thinking.innerText = 'Server tak nahi pahuncha. Internet dekh lijiye.';
+                thinking.className = thinking.className.replace('text-slate-400 italic', 'text-red-600 font-semibold');
+            } finally {
+                asstBusy = false;
+                document.getElementById('asstSendBtn').disabled = false;
+                document.getElementById('asstThread').scrollTop = 999999;
+            }
+        }
+
+        // --- speaking and listening. Both are built into Android Chrome, so they cost nothing.
+        // Neither is essential: if the browser lacks them the box still works by typing.
+        function toggleAssistantMic() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const btn = document.getElementById('asstMicBtn');
+            if (!SR) { showAppToast('Is browser me bolna nahi chalta \u2014 likhkar poochhiye.'); return; }
+            if (asstRecognition) { stopAssistantMic(); return; }
+            asstRecognition = new SR();
+            asstRecognition.lang = 'hi-IN';       // Hindi and Hinglish both land here
+            asstRecognition.interimResults = false;
+            asstRecognition.maxAlternatives = 1;
+            btn.classList.add('bg-red-100');
+            btn.innerText = '\u25cf';
+            asstRecognition.onresult = (ev) => {
+                const said = (ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript) || '';
+                const input = document.getElementById('asstInput');
+                input.value = (input.value ? input.value + ' ' : '') + said;
+            };
+            asstRecognition.onerror = () => { showAppToast('Sunai nahi diya. Dobara.'); stopAssistantMic(); };
+            asstRecognition.onend = () => stopAssistantMic();
+            try { asstRecognition.start(); } catch (e) { stopAssistantMic(); }
+        }
+        function stopAssistantMic() {
+            const btn = document.getElementById('asstMicBtn');
+            if (btn) { btn.classList.remove('bg-red-100'); btn.innerText = '\ud83c\udfa4'; }
+            if (asstRecognition) { try { asstRecognition.stop(); } catch (e) {} asstRecognition = null; }
+        }
+        function speakAssistant(text) {
+            try {
+                if (!window.speechSynthesis || !text) return;
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(String(text).slice(0, 600));
+                u.lang = 'hi-IN';
+                u.rate = 1.02;
+                window.speechSynthesis.speak(u);
+            } catch (e) {}
+        }
+
+        window.openAssistant = openAssistant;
+        window.closeAssistant = closeAssistant;
+        window.askAssistant = askAssistant;
+        window.toggleAssistantMic = toggleAssistantMic;
+
+        // ==========================================
+        // ACCOUNT DELETION (guest)
+        // ==========================================
+        function openAccountSettings() {
+            const box = document.getElementById('modalAccountSettings');
+            if (!box) return;
+            const input = document.getElementById('deleteAccountConfirmInput');
+            if (input) input.value = '';
+            const err = document.getElementById('deleteAccountError');
+            if (err) err.classList.add('hidden');
+            box.classList.remove('hidden');
+        }
+        function closeAccountSettings() {
+            const box = document.getElementById('modalAccountSettings');
+            if (box) box.classList.add('hidden');
+        }
+
+        async function confirmDeleteAccount() {
+            const input = document.getElementById('deleteAccountConfirmInput');
+            const err = document.getElementById('deleteAccountError');
+            const btn = document.getElementById('deleteAccountBtn');
+            const showErr = (m) => { if (err) { err.innerText = m; err.classList.remove('hidden'); } };
+
+            // Typing the word is the whole safety net here — there is no undo on the other side.
+            if (!input || input.value.trim().toUpperCase() !== 'DELETE') {
+                showErr('Type DELETE in the box to confirm.');
+                return;
+            }
+            if (!(window.auth && window.auth.currentUser)) {
+                showErr('Please sign in again before deleting your account.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Deleting…';
+            try {
+                const res = await apiFetch('/account/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    // 409 = a stay is still running. Say which one, rather than just refusing.
+                    showErr(data.error || 'Could not delete your account right now. Please try again.');
+                    btn.disabled = false;
+                    btn.innerText = 'Delete my account';
+                    return;
+                }
+                closeAccountSettings();
+                alert('Your account has been deleted. Your ID documents have been removed. Thank you for using HostelOM.');
+                try { await logout(); } catch (e) { location.reload(); }
+            } catch (e) {
+                console.error('Account deletion failed', e);
+                showErr('Could not reach the server. Please check your connection and try again.');
+                btn.disabled = false;
+                btn.innerText = 'Delete my account';
+            }
+        }
+        window.openAccountSettings = openAccountSettings;
+        window.closeAccountSettings = closeAccountSettings;
+        window.confirmDeleteAccount = confirmDeleteAccount;
 
         // ==========================================
         // BOOKING CHAT — simple (non-real-time) in-app messenger, scoped to one confirmed booking.
@@ -6414,6 +6713,15 @@
         // jobs, and one number for both means neither gets answered properly.
         const OWNER_SUPPORT_WHATSAPP = '917869310431';
 
+        // Turns a stored number (country code + 10 digits, no spaces) into a readable
+        // +91 XXXXX XXXXX. The number itself is written once, as a constant; every place that
+        // SHOWS it formats from that, so there is never a second copy to forget when it changes.
+        function prettyPhone(n) {
+            const d = String(n || '').replace(/\D/g, '');
+            if (d.length === 12 && d.slice(0, 2) === '91') return '+91 ' + d.slice(2, 7) + ' ' + d.slice(7);
+            return d ? '+' + d : '';
+        }
+
         // Builds a wa.me link with the message already typed, so support never has to open with
         // "who is this?". Empty lines are dropped, so a missing field leaves no blank gap.
         function supportWaLink(number, lines) {
@@ -6506,21 +6814,20 @@
             }
         }
 
-        // Works out what the guest is owed under the policy they agreed to at booking:
-        // 3+ days before check-in -> 80%, 1 day -> 50%, same day / after -> nothing.
-        // Daily and weekly stays are non-refundable per that same policy.
+        // The 20% advance is HostelOM's booking fee and is never refunded — any plan, any
+        // notice, no-show included. That is what the guest ticks at booking time, so that is
+        // the agreement that binds. This function used to return an 80/50/0 ladder left over
+        // from an older policy, which told the admin to hand back money the guest had already
+        // been told was non-refundable. Same signature, so every caller keeps working.
         function computeRefundGuidance(bData) {
             const paid = Number(bData.amount) || 0;
-            const stay = (bData.bookingContext && bData.bookingContext.stayType) || '';
-            if (/daily|weekly/i.test(stay)) return { pct: 0, amount: 0, note: 'Daily/weekly stay - advance is non-refundable per policy.' };
-
-            const joining = bData.bookingContext && (bData.bookingContext.joiningDate || bData.joiningDate);
-            if (!joining) return { pct: null, amount: null, note: 'Check-in date not recorded - decide manually.' };
-
-            const days = Math.ceil((new Date(joining) - new Date()) / 86400000);
-            if (days >= 3) return { pct: 80, amount: Math.round(paid * 0.8), note: '3+ days before check-in -> 80% refund.' };
-            if (days >= 1) return { pct: 50, amount: Math.round(paid * 0.5), note: '1 day before check-in -> 50% refund.' };
-            return { pct: 0, amount: 0, note: 'Same day or after check-in -> no refund per policy.' };
+            return {
+                pct: 0,
+                amount: 0,
+                note: 'Advance is non-refundable per the policy the guest accepted at booking'
+                    + (paid ? ' (Rs ' + paid.toLocaleString('en-IN') + ' retained)' : '')
+                    + '. Cancelling only frees the bed.'
+            };
         }
 
         window.approveCancellation = async function(bookingDocId, onDone) {
@@ -6534,7 +6841,7 @@
                     ? r.note
                     : r.note + '\nRefund due: Rs ' + r.amount.toLocaleString('en-IN') + ' of Rs ' + (Number(bData.amount) || 0).toLocaleString('en-IN');
 
-                if (!confirm('Approve this cancellation?\n\n' + line + '\n\nThe bed will be freed immediately. Transfer the refund separately - the app does not move money yet.')) return;
+                if (!confirm('Approve this cancellation?\n\n' + line + '\n\nThe bed will be freed immediately. No refund is due — the advance stays with HostelOM per policy.')) return;
 
                 const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
                 await releaseBedsForBooking(bData.propertyId, bedIds, bData.lockId);
@@ -9272,40 +9579,12 @@
         // from typing all of this by hand. Never blocks the form: if it fails, they just type manually.
         // Sends both front and back if both are uploaded — many people have the small PVC-style card
         // where the address is only printed on the back, so front-only often leaves Address empty.
-        async function grfAutoFillFromAadhar() {
-            const frontFile = document.getElementById('grfAadharPhotoFront').files[0];
-            const backFile = document.getElementById('grfAadharPhotoBack').files[0];
-            if (!frontFile && !backFile) return;
-            const statusEl = document.getElementById('grfAadharAutoFillStatus');
-            statusEl.innerText = '⏳ Reading Aadhar card...'; statusEl.className = 'text-[9px] text-indigo-500 font-black mt-1';
-            try {
-                const formData = new FormData();
-                if (frontFile) formData.append('aadhar_photo', frontFile); // front — kept as the primary field name the backend already expects
-                if (backFile) formData.append('aadhar_photo_back', backFile);
-                const response = await apiFetch(`/extract-aadhar`, { method: 'POST', body: formData });
-                if (!response.ok) throw new Error('Server error');
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
+        // grfAutoFillFromAadhar() was here. It sent the Aadhaar photograph to the backend,
+        // which passed it to a third-party AI to read the card and fill this form. Removed:
+        // the full card left our control, which contradicts our own Privacy Policy and the
+        // DPDP Act. The photo still uploads to private storage for the hostel's records.
+        // The guest types name, DOB and Aadhaar number themselves.
 
-                let filledCount = 0;
-                const setIfEmpty = (id, val) => { const el = document.getElementById(id); if (el && val && !el.value) { el.value = val; filledCount++; } };
-                setIfEmpty('grfFullName', data.full_name);
-                setIfEmpty('grfDob', data.dob);
-                setIfEmpty('grfAadharNumber', (data.aadhar_number || '').replace(/\D/g, ''));
-                setIfEmpty('grfAddress', data.address);
-                setIfEmpty('grfFatherName', data.father_or_guardian_name);
-                if (data.gender && document.getElementById('grfGender')) {
-                    const g = /female/i.test(data.gender) ? 'Female' : /male/i.test(data.gender) ? 'Male' : 'Other';
-                    document.getElementById('grfGender').value = g; filledCount++;
-                }
-                statusEl.innerText = filledCount > 0 ? `✅ Auto-filled ${filledCount} fields from your Aadhar — please double-check them.` : '⚠️ Could not read details clearly — please fill manually.';
-                statusEl.className = filledCount > 0 ? 'text-[9px] text-emerald-600 font-black mt-1' : 'text-[9px] text-amber-600 font-black mt-1';
-            } catch (err) {
-                console.error('Aadhar auto-fill failed:', err);
-                statusEl.innerText = '⚠️ Could not auto-read this photo — please fill the fields manually.';
-                statusEl.className = 'text-[9px] text-amber-600 font-black mt-1';
-            }
-        }
         // Multi-step registration form: purely visual grouping (same fields, same submit logic) —
         // makes a long ~20-field form feel like 5 short steps instead of one overwhelming scroll.
         const GRF_TOTAL_STEPS = 2;
