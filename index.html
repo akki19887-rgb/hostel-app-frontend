@@ -486,8 +486,7 @@
                 <p><b class="text-slate-800">1. Booking Confirmation:</b> Your booking is confirmed only once full payment or the required advance amount has been paid.</p>
                 <p><b class="text-slate-800">2. Cancellation &amp; Refund:</b><br>- The 20% advance you pay here is HostelOM's booking fee. It is <b>non-refundable</b> if you cancel, change plan, arrive late, or do not turn up — on every plan, at any notice.<br>- Cancelling releases your bed for someone else. It does not return the advance.<br>- The remaining 80% is paid at the hostel and is governed by that hostel's own policy, not ours.</p>
                 <p><b class="text-slate-800">2a. When you DO get 100% back:</b><br>- The hostel cancels your booking before check-in.<br>- You reach on time but the bed you paid for is not available — the hostel is shut, the bed was given to someone else, or it was double-booked.<br>Report it to support on +91 91832 06742 before taking any other bed. Approved refunds start within 48 hours and reach your account in 5–7 working days.</p>
-                <p><b class="text-slate-800">3. Monthly Stays & Deposit:</b><br>- Security deposit is refunded only if the room is returned in the same condition as check-in.<br>- At least 15-30 days' notice is required before vacating the room.</p>
-                <p><b class="text-slate-800">4. Daily/Weekly Stays:</b><br>- The advance amount is Non-Refundable.</p>
+                <p><b class="text-slate-800">3. Security Deposit & Notice Period:</b><br>- Any security deposit, and the notice you must give before vacating, are set by the hostel itself — typically 15 to 30 days' notice, and the deposit returned if the room is left in the same condition.<br>- These are the hostel's own terms. HostelOM neither collects nor holds the deposit and is not a party to it. Please confirm them with the hostel before you check in.</p>
             </div>
             <div id="tncContentHi" class="text-sm text-slate-600 space-y-4 font-medium hidden">
                 <p><b class="text-slate-800">1. बुकिंग की पुष्टि:</b> आपकी बुकिंग तभी पक्की मानी जाएगी जब आप पूरी राशि या आवश्यक अग्रिम राशि (एडवांस) का भुगतान कर देंगे।</p>
@@ -2721,14 +2720,14 @@
             <div class="text-xs text-slate-600 font-semibold space-y-3 mt-4 leading-relaxed">
                 <p><b>1. Advance Payment:</b> You pay <span id="policyAdvancePctLabel">20</span>% of the total stay cost now through HostelOM. This is HostelOM's booking fee and reserves your bed.</p>
                 <p><b>2. Balance at Hostel:</b> The remaining amount is paid directly to the hostel/owner at check-in — HostelOM is not involved in that payment.</p>
-                <p class="bg-red-50 border border-red-100 rounded-xl p-3"><b>3. Non-Refundable:</b> The advance you pay now is <b>always non-refundable</b> — whether you cancel the booking or simply don't check in on your chosen date. There are no partial refunds. This is the same for every plan:</p>
+                <p class="bg-red-50 border border-red-100 rounded-xl p-3"><b>3. Non-Refundable:</b> If <b>you</b> cancel, change your plan, arrive late or don't turn up, the advance is <b>not refunded</b> — and there are no partial refunds. This is the same for every plan:</p>
                 <ul class="bg-red-50 border border-red-100 rounded-xl p-3 -mt-2 list-none space-y-1">
                     <li>📅 <b>Daily Plan</b> — advance non-refundable</li>
                     <li>🗓️ <b>Weekly Plan</b> — advance non-refundable</li>
                     <li>📆 <b>Monthly Plan</b> — advance non-refundable</li>
                 </ul>
                 <p><b>4. No-show:</b> If you don't check in without cancelling, your booking is automatically cancelled and the bed released to other guests — the advance stays forfeited.</p>
-                <p><b>5. If the hostel can't accommodate you</b> for a reason that isn't your fault, HostelOM will refund your advance in full.</p>
+                <p class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><b>5. When you get 100% back:</b> If the hostel cancels before check-in, or you reach on time and the bed you paid for is not available (hostel shut, bed given to someone else, or double-booked) — your full advance is refunded. Call <b>+91 91832 06742</b> before taking any other bed. Refund starts within 48 hours and reaches you in 5–7 working days.</p>
             </div>
         </div>
     </div>
@@ -5412,7 +5411,9 @@
                         bookingId: bookingDocId
                     });
                 } catch (e) {}
-                alert('Cancellation requested. The advance stays non-refundable per policy, but your bed claim has been released.');
+                alert('Cancellation requested. Your bed has been released.\n\nThe advance is not refunded when you cancel. '
+                    + 'But if the hostel cancelled on you, or the bed you paid for was not available, call +91 91832 06742 — '
+                    + 'in those two cases you get the full advance back.');
                 loadMyBookings();
             } catch (err) {
                 console.error('Cancellation request failed', err);
@@ -6769,8 +6770,9 @@
         }
         const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
         // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
-        // amount is HostelOM's booking fee/commission (100% of it, always non-refundable — see
-        // the Cancellation Policy). The remaining (100 - ADVANCE_PERCENT)% is paid by the guest
+        // amount is HostelOM's booking fee/commission. It is not refunded when the GUEST cancels,
+        // changes plan or does not turn up — but it is refunded in full in the two cases named in
+        // REFUND_EXCEPTIONS, where the bed we charged for was never actually made available. The remaining (100 - ADVANCE_PERCENT)% is paid by the guest
         // DIRECTLY to the hostel at check-in — HostelOM never touches that portion, so there is
         // nothing to pay out to the owner afterwards.
         const ADVANCE_PERCENT = 20;
