@@ -1084,8 +1084,37 @@
             </div>
         </div>
 
-        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mt-5">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Naya staff jodein</p>
+        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 mt-5">
+            <p class="text-[11px] font-black text-indigo-900 uppercase tracking-widest mb-3">Naya staff — account yahin bana lijiye</p>
+            <input type="text" id="staffNewName2" placeholder="Naam — jaise Ramesh Sahu"
+                class="w-full p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+            <input type="email" id="staffNewEmail" autocomplete="off" placeholder="Email — jaise ramesh@ho-om.in"
+                class="w-full mt-2 p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+            <div class="flex gap-2 mt-2">
+                <input type="text" id="staffNewPass" autocomplete="off" placeholder="Password"
+                    class="flex-1 min-w-0 p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+                <button type="button" onclick="suggestStaffPassword()"
+                    class="px-4 py-3 bg-white border-2 border-indigo-200 rounded-xl font-black text-[11px] text-indigo-700 shrink-0">Bana dijiye</button>
+            </div>
+            <select id="staffNewRole2" class="w-full mt-2 p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
+                <option value="field">Field — hostel list karne wala</option>
+                <option value="support">Support — phone uthane wala</option>
+                <option value="verifier">Verifier — visit karne wala</option>
+            </select>
+            <button type="button" id="btnCreateStaff" onclick="createStaffAccount()"
+                class="w-full mt-3 py-3.5 btn-gradient text-white font-black text-sm rounded-xl shadow-lg">Account banaiye + access dein</button>
+            <div id="staffCreatedBox" class="hidden mt-3 p-3 bg-white border-2 border-emerald-300 rounded-xl">
+                <p class="text-[11px] font-black text-emerald-800 mb-2">Ho gaya. Ye teen cheez staff ko bhej dijiye — password dobara nahi dikhega.</p>
+                <pre id="staffCreatedText" class="text-[11px] font-mono text-slate-800 whitespace-pre-wrap break-all select-all leading-relaxed"></pre>
+                <div class="flex gap-2 mt-2">
+                    <button type="button" onclick="copyStaffCreds()" class="flex-1 py-2 bg-slate-900 text-white font-black rounded-lg text-[11px]">Copy</button>
+                    <button type="button" onclick="whatsappStaffCreds()" class="flex-1 py-2 bg-emerald-600 text-white font-black rounded-lg text-[11px]">WhatsApp</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 mt-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pehle se account hai? ID paste kariye</p>
             <input type="text" id="staffNewUid" placeholder="Paste the ID the staff member sent you"
                 class="w-full p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
             <div class="grid grid-cols-2 gap-2 mt-2">
@@ -1097,11 +1126,11 @@
                     <option value="verifier">Verifier — visit karne wala</option>
                 </select>
             </div>
-            <button type="button" onclick="saveStaffMember()" class="w-full mt-2 py-3 btn-gradient text-white font-black text-sm rounded-xl shadow-lg">Access dein</button>
+            <button type="button" onclick="saveStaffMember()" class="w-full mt-2 py-3 bg-slate-800 text-white font-black text-sm rounded-xl shadow-lg">Access dein</button>
             <p class="text-[10px] font-semibold text-slate-400 mt-2">
-                Staff pehle apne phone par <b>STAFF &amp; ADMIN</b> screen se login karega. Access na hone par
-                usi screen par uski apni ID dikhegi, saath me <b>Copy ID</b> ka button. Wahi ID wo aapko
-                WhatsApp par bhejega — use yahan upar paste kar dijiye.
+                Ye tab use kariye jab us insaan ka account pehle se ho. Wo apne phone par
+                <b>STAFF &amp; ADMIN</b> se login karega, screen par uski ID aur <b>Copy ID</b> button dikhega,
+                wahi ID aapko bhej dega.
             </p>
         </div>
 
@@ -3856,6 +3885,63 @@
             } catch (e) {
                 box.innerHTML = `<p class="text-center text-red-500 font-bold text-sm py-6">Load nahi hua: ${e.message}</p>`;
             }
+        };
+
+        // A password the admin can read out over the phone without spelling it twice: no
+        // lookalike characters, no punctuation that changes on a Hindi keyboard.
+        window.suggestStaffPassword = function() {
+            const a = 'abcdefghjkmnpqrstuvwxyz', A = 'ABCDEFGHJKMNPQRSTUVWXYZ', n = '23456789';
+            const pick = set => set[Math.floor(Math.random() * set.length)];
+            let out = pick(A) + pick(a) + pick(a) + pick(a) + pick(a) + pick(n) + pick(n) + pick(n);
+            document.getElementById('staffNewPass').value = out;
+        };
+
+        let lastStaffCreds = '';
+        window.copyStaffCreds = function() {
+            try { navigator.clipboard.writeText(lastStaffCreds); showAppToast('Copy ho gaya'); }
+            catch (e) { showAppToast('Copy nahi hua \u2014 dabakar rakhiye aur select kar lijiye.'); }
+        };
+        window.whatsappStaffCreds = function() {
+            window.open('https://wa.me/?text=' + encodeURIComponent(lastStaffCreds), '_blank');
+        };
+
+        window.createStaffAccount = async function() {
+            const name = (document.getElementById('staffNewName2').value || '').trim();
+            const email = (document.getElementById('staffNewEmail').value || '').trim();
+            const password = document.getElementById('staffNewPass').value || '';
+            const role = document.getElementById('staffNewRole2').value;
+            if (!name) { showAppToast('Naam bhariye.'); return; }
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showAppToast('Email theek se bhariye.'); return; }
+            if (password.length < 8) { showAppToast('Password kam se kam 8 akshar ka rakhiye.'); return; }
+            const btn = document.getElementById('btnCreateStaff');
+            const was = btn.innerText;
+            btn.disabled = true; btn.innerText = 'Bana rahe hain\u2026';
+            try {
+                const res = await apiFetch('/admin/staff', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'create', name, email, password, role })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Nahi bana');
+                const roleWord = { field: 'Field', support: 'Support', verifier: 'Verifier' }[role] || role;
+                lastStaffCreds =
+                    'HostelOM staff login\n'
+                    + 'Website: https://ho-om.in\n'
+                    + 'Neeche STAFF & ADMIN par dabaiye\n\n'
+                    + 'Email: ' + email + '\n'
+                    + (d.reused ? 'Password: jo pehle se tha\n' : 'Password: ' + password + '\n')
+                    + 'Kaam: ' + roleWord;
+                document.getElementById('staffCreatedText').textContent = lastStaffCreds;
+                document.getElementById('staffCreatedBox').classList.remove('hidden');
+                if (d.reused) showAppToast(d.message);
+                document.getElementById('staffNewName2').value = '';
+                document.getElementById('staffNewEmail').value = '';
+                document.getElementById('staffNewPass').value = '';
+                await openStaffManager();
+                document.getElementById('staffCreatedBox').classList.remove('hidden');
+            } catch (e) {
+                showAppToast('Nahi hua: ' + e.message);
+            } finally { btn.disabled = false; btn.innerText = was; }
         };
 
         window.saveStaffMember = async function() {
