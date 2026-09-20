@@ -1259,7 +1259,7 @@
 
     <div id="screenMyActivity" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel max-h-[95vh] overflow-y-auto layout-scroll">
         <div class="flex items-center gap-3 mb-1">
-            <button type="button" onclick="goTo('screenSupportDesk')" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
+            <button type="button" onclick="goTo(staffHomeScreen())" class="w-10 h-10 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 shrink-0 transition">←</button>
             <div class="flex-1 min-w-0">
                 <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">My activity</h2>
                 <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">What you have done</p>
@@ -1312,7 +1312,7 @@
             </div>
         </div>
 
-        <button type="button" onclick="goTo('screenPropertyTypeSelection')"
+        <button type="button" onclick="startNewProperty('screenFieldDesk')"
             class="w-full mt-4 py-4 btn-gradient text-white font-black rounded-2xl shadow-lg tracking-wide">
             ➕ ADD A HOSTEL
         </button>
@@ -1932,7 +1932,7 @@
                 <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
             </button>
         </div>
-        <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-full mt-8 text-sm text-slate-400 font-bold hover:text-slate-700 text-center block transition">Cancel</button>
+        <button type="button" onclick="exitListing()" class="w-full mt-8 text-sm text-slate-400 font-bold hover:text-slate-700 text-center block transition">Cancel</button>
     </div>
 
     <div id="screenGoogleMap" class="hidden premium-card p-6 rounded-[2rem] max-w-5xl w-full flex flex-col h-[85vh] screen-panel">
@@ -1962,7 +1962,7 @@
         <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-6">
             <!-- Was a dead end: the only way out was to reload, which dropped the person back
                  at the login screen and lost whatever they had typed. -->
-            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition shrink-0">←</button>
+            <button type="button" onclick="exitListing()" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition shrink-0">←</button>
             <div class="w-12 h-12 rounded-2xl btn-gradient flex items-center justify-center text-white text-xl shadow-lg">🏡</div>
             <div><h2 class="display-font text-2xl font-black text-slate-900">Flat / House Details</h2><p class="text-xs text-slate-500 font-semibold">Tell guests what this place is like</p></div>
         </div>
@@ -2056,7 +2056,7 @@
     <!-- BUSINESS SECURE FORM -->
     <div id="screenBusinessSecureForm" class="hidden premium-card p-5 md:p-10 rounded-[2rem] max-w-4xl w-full max-h-[90vh] overflow-y-auto layout-scroll screen-panel">
         <div class="flex items-center gap-3 border-b border-slate-200/60 pb-4 mb-8">
-            <button type="button" onclick="goTo('screenBusinessDashboard')" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition shrink-0">←</button>
+            <button type="button" onclick="exitListing()" class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-600 hover:bg-slate-200 transition shrink-0">←</button>
             <div class="w-12 h-12 rounded-2xl btn-dark flex items-center justify-center text-white text-xl shadow-lg">🔒</div>
             <div>
                 <h2 class="display-font text-3xl font-black text-slate-900">Secure Legal Form</h2>
@@ -2265,7 +2265,7 @@
         <div id="dynamicBusinessRoomsContainer" class="flex-1 overflow-y-auto layout-scroll grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24 pr-2 min-h-[300px]"></div>
 
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 rounded-b-[2rem] flex justify-between items-center shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] z-20">
-            <button type="button" onclick="goTo('screenBusinessDashboard')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Cancel</button>
+            <button type="button" onclick="exitListing()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Cancel</button>
             <button type="button" id="submitAdminBtn" onclick="submitToAdmin()" class="btn-gradient px-8 py-3 text-white font-black rounded-2xl shadow-xl tracking-wider">✅ VERIFY & PUBLISH</button>
         </div>
     </div>
@@ -3508,7 +3508,7 @@
                 }
                 resetFlatHouseForm();
                 alert('✅ Your flat/house listing has been saved!');
-                goTo('screenBusinessDashboard');
+                exitListing();
             } catch (err) {
                 console.error('Flat/House save failed:', err);
                 errBox.innerText = 'Could not save: ' + err.message; errBox.classList.remove('hidden');
@@ -3850,6 +3850,24 @@
         // This shows only what is needed to answer a phone call.
         // ==========================================================================
         let currentStaffRole = '';
+
+        // Where a staff screen's Back button should land. An owner has one home; a staff
+        // member's home depends on the job they were given, and a field executive sent to the
+        // Support Desk has effectively hit a dead end.
+        function staffHomeScreen() {
+            return ({
+                field: 'screenFieldDesk',
+                verifier: 'screenVerifierDesk',
+                support: 'screenSupportDesk',
+            })[currentStaffRole] || 'screenAdminDashboard';
+        }
+
+        // The listing flow is opened from three places — the owner's dashboard, the Field Desk,
+        // and a lead. It has to come back to whichever one opened it.
+        let listingHomeScreen = 'screenBusinessDashboard';
+        function exitListing() {
+            goTo(listingHomeScreen || 'screenBusinessDashboard');
+        }
         let currentStaffName = '';
         let _staffIdleTimer = null;
 
@@ -4328,7 +4346,7 @@
             } catch (e) { /* record na bhi bane to kaam rukna nahi chahiye */ }
 
             // --- purana form, bhara hua ---
-            startNewProperty();                 // sab purana kachra saaf
+            startNewProperty(leadsCameFrom);    // sab purana kachra saaf, aur wapsi ka pata yaad
             leadBeingBuilt = { id: l.id, name: l.name };
 
             globalBizProfile = Object.assign({}, globalBizProfile, {
@@ -7975,7 +7993,7 @@
         // the server a head start waking up, so by the time they hit the real AI request it's often
         // already warm. This never blocks anything — failures are silently ignored.
         function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
-        function startNewProperty() { editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; if (typeof resetFlatHouseForm === 'function') resetFlatHouseForm(); wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
+        function startNewProperty(openedFrom) { listingHomeScreen = openedFrom || 'screenBusinessDashboard'; editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; if (typeof resetFlatHouseForm === 'function') resetFlatHouseForm(); wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
         async function addFloorMap() {
             wakeUpAIBackend();
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
@@ -8752,7 +8770,7 @@
                     if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
                     alert('Listing submitted for verification!');
                 }
-                editingBusinessDocId = null; goTo('screenBusinessDashboard');
+                editingBusinessDocId = null; exitListing();
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
 
