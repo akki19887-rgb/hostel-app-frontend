@@ -8392,36 +8392,66 @@
                 btn.disabled = false; btn.innerText = originalText;
             }
         }
+        // Har listener apna maal yahan rakhta hai; dono milkar ek hi list bante hain.
+        let _bizNotifStore = {};
         function listenBizNotifications() {
             if (bizNotifUnsubscribe) bizNotifUnsubscribe();
-            try {
-                bizNotifUnsubscribe = window.onSnapshot(window.collection(window.db, "notifications"), (qs) => {
+            _bizNotifStore = {};
+            const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+            if (!myUid) return;
+
+            // Do narrow listener. Inki shart firestore.rules ki lines se hu-ba-hu milti hai,
+            // isliye ye manzoor hote hain. Pehle poori collection par listen hota tha, jo
+            // Firestore seedha mana kar deta hai - ghanti isi wajah se hamesha chup thi.
+            const qMine = window.query(window.collection(window.db, "notifications"),
+                                       window.where("audience", "==", "owner"),
+                                       window.where("ownerUid", "==", myUid),
+                                       window.limit(100));
+            const qAll  = window.query(window.collection(window.db, "notifications"),
+                                       window.where("audience", "==", "allOwners"),
+                                       window.limit(50));
+
+            function renderBizNotifications() {
                     let unread = 0; let html = '';
-                    const items = [];
-                    const myIds = window._myPropertyIds || null; // set by refreshBusinessDash's property listener
-                    qs.forEach(d => {
-                        const n = d.data();
-                        // Show a business owner ONLY: (a) activity tied to one of THEIR OWN properties,
-                        // or (b) an admin broadcast meant for everyone. Anything else (e.g. "new business
-                        // onboarded" — an admin-only activity guests entry) is hidden from owner dashboards.
-                        const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-                    const isMine = (n.ownerUid && myUid && n.ownerUid === myUid)
-                                || (n.propertyId && myIds && myIds.includes(n.propertyId));
-                        if (!isMine && !n.isBroadcast) return;
-                        items.push({ ...n, _docId: d.id }); if (!n.read) unread++;
-                    });
+                    const items = Object.values(_bizNotifStore);
+                    items.forEach(n => { if (!n.read) unread++; });
                     items.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
                     const clearAllBtn = items.length > 0 ? `<div class="p-2 border-b border-slate-100 flex justify-end"><button type="button" onclick="clearAllBizNotifications()" class="text-[10px] font-black text-red-500 hover:text-red-700">🗑️ Clear All</button></div>` : '';
                     items.slice(0, 20).forEach(n => {
-                        const cardCls = n.isBroadcast ? 'p-3 border-b border-slate-100 last:border-0 relative bg-amber-50' : 'p-3 border-b border-slate-100 last:border-0 relative';
+                        const cardCls = (n.audience === 'allOwners') ? 'p-3 border-b border-slate-100 last:border-0 relative bg-amber-50' : 'p-3 border-b border-slate-100 last:border-0 relative';
                         html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${escAudit(n._docId)}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button>${n.title ? `<p class="text-[10px] font-black text-slate-500 uppercase tracking-wide pr-6">${escAudit(n.title)}</p>` : ''}<p class="text-xs font-bold text-slate-700 pr-6">${escAudit(n.message)}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
                     });
                     const badge = document.getElementById('bizNotifBadge');
                     if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
                     document.getElementById('bizNotifPanel').innerHTML = clearAllBtn + (html || `<p class="text-xs text-slate-400 font-semibold text-center py-4">No notifications yet</p>`);
                     window._lastNotifDocIds = items.map(n => n._docId); // used by "Clear All"
+            }
+
+            function attach(q, tag) {
+                return window.onSnapshot(q, (qs) => {
+                    // Is listener ka purana maal hatao, phir naya bharo - warna mita hua
+                    // notification list me pada rehta.
+                    Object.keys(_bizNotifStore).forEach(k => {
+                        if (_bizNotifStore[k]._tag === tag) delete _bizNotifStore[k];
+                    });
+                    qs.forEach(d => { _bizNotifStore[d.id] = { ...d.data(), _docId: d.id, _tag: tag }; });
+                    renderBizNotifications();
+                }, (err) => {
+                    // Ise kabhi chupana nahi hai. Chup ghanti tooti ghanti se bhi buri hai.
+                    console.error('Notification listener (' + tag + ') fail hua:', err);
+                    const panel = document.getElementById('bizNotifPanel');
+                    if (panel && Object.keys(_bizNotifStore).length === 0) {
+                        panel.innerHTML = '<p class="text-xs text-red-500 font-semibold text-center py-4">Notification abhi nahi aa pa rahe.<br>Dobara login karke dekhiye.</p>';
+                    }
                 });
-            } catch(e) {}
+            }
+
+            const stopMine = attach(qMine, 'mine');
+            const stopAll  = attach(qAll,  'all');
+            bizNotifUnsubscribe = function () {
+                try { stopMine(); } catch (e) {}
+                try { stopAll(); } catch (e) {}
+            };
         }
         async function deleteNotification(docId) {
             try { await window.deleteDoc(window.doc(window.db, "notifications", docId)); }
@@ -8804,16 +8834,29 @@
 
                     await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: publicProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
 
-                    // Phone band collection me — rules: sirf admin aur wahi malik padh sakta hai
-                    try {
-                        if (ownerPhoneForContacts) {
-                            await window.setDoc(window.doc(window.db, "businessContacts", newDocId), {
-                                ownerUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
-                                phone: ownerPhoneForContacts,
-                                updatedAt: new Date().toISOString()
-                            }, { merge: true });
+                    // Phone band collection me — rules: sirf admin aur wahi malik padh sakta hai.
+                    //
+                    // Ye kaam SERVER se hota hai. Pehle browser seedha businessContacts me
+                    // likhne ki koshish karta tha, par wahan niyam 'backend only' hai — har
+                    // baar mana hota tha aur galti console.warn me dab jaati thi. Isi wajah se
+                    // khud se jude har malik ka number kho gaya tha.
+                    if (ownerPhoneForContacts) {
+                        try {
+                            const cRes = await apiFetch('/owner/contact', {
+                                method: 'POST',
+                                body: JSON.stringify({ businessId: newDocId, phone: ownerPhoneForContacts })
+                            });
+                            if (!cRes.ok) throw new Error((await cRes.json().catch(() => ({}))).error || ('HTTP ' + cRes.status));
+                        } catch (cErr) {
+                            // Listing to save ho chuki hai — use wapas nahi lete. Par number ka
+                            // na bachna chhupana nahi hai: bina number ke aap malik tak
+                            // pahunch hi nahi sakte.
+                            console.error('Malik ka number save nahi hua:', cErr);
+                            alert('Listing save ho gayi, lekin aapka phone number save nahi ho paya.\n\n'
+                                + 'Kripya HostelOM ko bata dijiye, warna hum aap tak nahi pahunch payenge.\n\n'
+                                + 'Wajah: ' + cErr.message);
                         }
-                    } catch (cErr) { console.warn('businessContacts save nahi hua:', cErr); }
+                    }
                     // Lead se bana ho to usi lead se jod do — status 'converted'
                     if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
                     alert('Listing submitted for verification!');
