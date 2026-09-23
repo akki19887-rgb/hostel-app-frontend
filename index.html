@@ -1097,9 +1097,10 @@
                     class="px-4 py-3 bg-white border-2 border-indigo-200 rounded-xl font-black text-[11px] text-indigo-700 shrink-0">Bana dijiye</button>
             </div>
             <select id="staffNewRole2" class="w-full mt-2 p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
-                <option value="field">Field — hostel list karne wala</option>
-                <option value="support">Support — phone uthane wala</option>
-                <option value="verifier">Verifier — visit karne wala</option>
+                <option value="staff">Staff — sab kuch (hostel jodna + phone uthana)</option>
+                <option value="field">Field — sirf hostel list karne wala</option>
+                <option value="support">Support — sirf phone uthane wala</option>
+                <option value="verifier">Verifier — jaanch karne wala</option>
             </select>
             <button type="button" id="btnCreateStaff" onclick="createStaffAccount()"
                 class="w-full mt-3 py-3.5 btn-gradient text-white font-black text-sm rounded-xl shadow-lg">Account banaiye + access dein</button>
@@ -1121,9 +1122,10 @@
                 <input type="text" id="staffNewName" placeholder="Naam"
                     class="p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
                 <select id="staffNewRole" class="p-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-[13px] outline-none focus:border-indigo-400 transition">
-                    <option value="support">Support — phone uthane wala</option>
-                    <option value="field">Field — hostel list karne wala</option>
-                    <option value="verifier">Verifier — visit karne wala</option>
+                    <option value="staff">Staff — sab kuch</option>
+                    <option value="field">Field — sirf hostel</option>
+                    <option value="support">Support — sirf phone</option>
+                    <option value="verifier">Verifier — jaanch</option>
                 </select>
             </div>
             <button type="button" onclick="saveStaffMember()" class="w-full mt-2 py-3 bg-slate-800 text-white font-black text-sm rounded-xl shadow-lg">Access dein</button>
@@ -1284,11 +1286,12 @@
             <div class="flex items-center gap-3">
                 <div class="w-11 h-11 rounded-2xl bg-emerald-600 flex items-center justify-center text-white text-lg shadow-lg">🏃</div>
                 <div>
-                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Field Desk</h2>
-                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest" id="fieldNameLabel">Field executive</p>
+                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Staff Desk</h2>
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest" id="fieldNameLabel">Staff</p>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap justify-end">
+                <button type="button" id="fdAdminBack" onclick="goTo('screenAdminDashboard')" class="hidden px-4 py-2.5 bg-slate-900 text-white font-black text-xs rounded-xl transition">← Console</button>
                 <button type="button" onclick="openAssistant()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow transition">💬 Poochho</button>
                 <button type="button" onclick="openMyLeads()" class="px-4 py-2.5 btn-gradient text-white font-black text-xs rounded-xl shadow transition">📌 Mere kaam</button>
                 <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
@@ -1311,6 +1314,20 @@
                 <div class="text-2xl font-black text-indigo-700" id="fdListedMonth">0</div>
                 <div class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">This month</div>
             </div>
+        </div>
+
+        <!-- Customer care. Sits high because it is the reactive job - the phone rings and the
+             caller is waiting - while listing work is planned and can be scrolled to. -->
+        <div class="mt-4 bg-indigo-50/60 border-2 border-indigo-100 rounded-2xl p-4">
+            <label class="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">🎧 Guest ka phone ya Booking ID</label>
+            <div class="flex gap-2">
+                <input type="text" id="supportSearchInput" placeholder="98261 45890"
+                    onkeydown="if(event.key==='Enter') runSupportSearch()"
+                    class="flex-1 min-w-0 p-3 bg-white border-2 border-indigo-100 rounded-xl font-bold text-sm outline-none focus:border-indigo-400 transition">
+                <button type="button" onclick="runSupportSearch()" class="px-5 btn-gradient text-white font-black text-sm rounded-xl shadow shrink-0">Search</button>
+            </div>
+            <p id="supportEmpty" class="text-[10px] font-semibold text-indigo-400/80 mt-1.5">10 digit number, ya booking ID jaise BK-M3X9K2</p>
+            <div id="supportResults" class="mt-3 space-y-3"></div>
         </div>
 
         <button type="button" onclick="startNewProperty('screenFieldDesk')"
@@ -1363,7 +1380,8 @@
                     <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest" id="verifierNameLabel">Verifier</p>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap justify-end">
+                <button type="button" id="vdAdminBack" onclick="goTo('screenAdminDashboard')" class="hidden px-4 py-2.5 bg-slate-900 text-white font-black text-xs rounded-xl transition">← Console</button>
                 <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 Activity</button>
                 <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
             </div>
@@ -1412,43 +1430,6 @@
         <div id="vdRecent" class="space-y-2"></div>
     </div>
 
-    <div id="screenSupportDesk" class="hidden premium-card p-6 md:p-8 rounded-[2rem] max-w-3xl w-full screen-panel">
-        <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-lg shadow-lg">🎧</div>
-                <div>
-                    <h2 class="display-font text-2xl font-black text-slate-900 leading-tight">Support Desk</h2>
-                    <p id="supportRoleLabel" class="text-[11px] font-black text-indigo-500 uppercase tracking-widest"></p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button type="button" onclick="openMyActivity()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">📋 My activity</button>
-                <button type="button" onclick="staffLogout()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs rounded-xl transition">Logout</button>
-            </div>
-        </div>
-
-        <!-- Search is by PHONE first, because that is what a caller reads out. Nobody
-             remembers their booking ID. -->
-        <div class="mt-5">
-            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone number ya Booking ID</label>
-            <div class="flex gap-2">
-                <input type="text" id="supportSearchInput" placeholder="98261 45890"
-                    onkeydown="if(event.key==='Enter') runSupportSearch()"
-                    class="flex-1 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-indigo-400 transition">
-                <button type="button" onclick="runSupportSearch()" class="px-6 btn-gradient text-white font-black text-sm rounded-2xl shadow-lg">Search</button>
-            </div>
-            <p class="text-[10px] font-semibold text-slate-400 mt-1.5">Caller ka number daaliye — 10 digit, ya booking ID jaise BK-M3X9K2</p>
-        </div>
-
-        <div id="supportResults" class="mt-5 space-y-3"></div>
-
-        <div id="supportEmpty" class="text-center py-14">
-            <div class="text-4xl mb-3">🔍</div>
-            <p class="text-sm font-black text-slate-400">Number daal ke Search dabaiye</p>
-            <p class="text-[11px] font-semibold text-slate-300 mt-1">Booking, payment aur payout — sab yahin dikhega</p>
-        </div>
-    </div>
-
     <div id="screenAdminDashboard" class="hidden premium-card p-5 md:p-8 rounded-[2rem] max-w-5xl w-full screen-panel overflow-y-auto layout-scroll max-h-[90vh]">
         <div class="flex justify-between items-center border-b border-slate-200/60 pb-6 mb-6">
             <div class="flex items-center gap-4">
@@ -1467,6 +1448,8 @@
                 <button type="button" onclick="openAuditLog()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">📜 Audit log</button>
                 <button type="button" onclick="openSystemHealth()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">🩺 System</button>
 <button type="button" onclick="openLeadsDesk()" class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 font-black rounded-2xl hover:bg-slate-200 transition shadow-sm">&#128204; Leads</button>
+                <button type="button" onclick="openFieldDesk()" class="px-5 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-black rounded-2xl hover:bg-emerald-100 transition shadow-sm">🏃 Staff Desk</button>
+                <button type="button" onclick="openVerifierDesk()" class="px-5 py-2.5 bg-purple-50 text-purple-700 border border-purple-200 font-black rounded-2xl hover:bg-purple-100 transition shadow-sm">🔎 Verifier</button>
             </div>
         </div>
 
@@ -3127,14 +3110,26 @@
             if (!bizBox || !userBox) return;
             bizBox.innerHTML = userBox.innerHTML = `<div class="flex justify-center py-8"><div class="loader"></div></div>`;
             try {
-                const snap = await window.getDocs(window.collection(window.db, 'notifications'));
+                // Cap the read. This used to pull the entire collection on every open, which
+                // grows without bound because nothing prunes it.
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'notifications'), window.limit(300)));
                 const items = []; snap.forEach(d => items.push(d.data()));
                 items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
                 // New rows carry `audience`; older rows still carry the legacy `role` field.
                 const bizItems = items.filter(n => n.audience === 'owner' || n.audience === 'allOwners' || n.role === 'business');
                 const userItems = items.filter(n => n.audience === 'guest' || n.audience === 'allGuests' || n.audience === 'admin' || n.role === 'user' || (!n.role && !n.audience));
+                // escAudit, not raw. A guest can write an admin-audience notification, and this
+                // feed renders in a browser holding the admin session.
                 const renderList = (list) => list.length
-                    ? list.slice(0, 30).map(n => `<div class="p-3 border-b border-slate-100 last:border-0"><p class="text-xs font-bold text-slate-700">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p></div>`).join('')
+                    ? list.slice(0, 30).map(n => {
+                        const isEsc = n.type === 'staff_escalation';
+                        return `<div class="p-3 border-b border-slate-100 last:border-0 ${isEsc ? 'bg-amber-50' : ''}">`
+                            + (n.title ? `<p class="text-[11px] font-black ${isEsc ? 'text-amber-700' : 'text-slate-500'} uppercase tracking-wide">${escAudit(n.title)}</p>` : '')
+                            + `<p class="text-xs font-bold text-slate-700">${escAudit(n.message)}</p>`
+                            + `<p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? escAudit(new Date(n.createdAt).toLocaleString('en-IN')) : ''}</p>`
+                            + `</div>`;
+                      }).join('')
                     : `<p class="text-xs text-slate-400 font-semibold text-center py-6">No activity yet</p>`;
                 bizBox.innerHTML = renderList(bizItems);
                 userBox.innerHTML = renderList(userItems);
@@ -3858,8 +3853,9 @@
         function staffHomeScreen() {
             return ({
                 field: 'screenFieldDesk',
+                staff: 'screenFieldDesk',
+                support: 'screenFieldDesk',
                 verifier: 'screenVerifierDesk',
-                support: 'screenSupportDesk',
             })[currentStaffRole] || 'screenAdminDashboard';
         }
 
@@ -3884,7 +3880,8 @@
                 const d = await res.json();
                 if (!res.ok) throw new Error(d.error || 'Failed');
 
-                const roleLabel = { support: 'Support', field: 'Field', verifier: 'Verifier' };
+                const roleLabel = { staff: 'Staff — sab kuch', support: 'Support',
+                                    field: 'Field', verifier: 'Verifier' };
                 const rows = (d.staff || []).sort((a, b) => (b.active === true) - (a.active === true));
 
                 box.innerHTML = rows.length ? rows.map(m => `
@@ -3942,7 +3939,8 @@
                 });
                 const d = await res.json();
                 if (!res.ok) throw new Error(d.error || 'Nahi bana');
-                const roleWord = { field: 'Field', support: 'Support', verifier: 'Verifier' }[role] || role;
+                const roleWord = { staff: 'Hostel jodna + phone uthana', field: 'Field',
+                                   support: 'Customer care', verifier: 'Verifier' }[role] || role;
                 lastStaffCreds =
                     'HostelOM staff login\n'
                     + 'Website: https://ho-om.in\n'
@@ -4783,10 +4781,37 @@
         // Everything here is scoped to the signed-in staff member by the Firestore rules, so a
         // field executive sees their own visits and nobody else's — including their own numbers,
         // which is the whole reason they will open this screen every evening.
+        // An admin visiting a staff desk needs a way back to the console, and must not be
+        // offered "Logout", which signs a staff member out of a shared phone.
+        function markAdminVisiting() {
+            const isAdmin = !currentStaffRole || currentStaffRole === 'admin';
+            [['fdAdminBack', 'screenFieldDesk'], ['vdAdminBack', 'screenVerifierDesk']]
+                .forEach(([btnId, screenId]) => {
+                    const b = document.getElementById(btnId);
+                    if (b) b.classList.toggle('hidden', !isAdmin);
+                    const panel = document.getElementById(screenId);
+                    if (!panel) return;
+                    panel.querySelectorAll('button').forEach(x => {
+                        if (/^\s*Logout\s*$/.test(x.textContent || '')) x.classList.toggle('hidden', isAdmin);
+                    });
+                });
+        }
+
         window.openFieldDesk = async function() {
             goTo('screenFieldDesk');
+            // Start with an empty search. Leaving the last caller's booking on screen is how
+            // one guest's details get read out to the next one.
+            const _sr = document.getElementById('supportResults');
+            if (_sr) _sr.innerHTML = '';
+            const _si = document.getElementById('supportSearchInput');
+            if (_si) _si.value = '';
+            markAdminVisiting();
             const nameEl = document.getElementById('fieldNameLabel');
-            if (nameEl) nameEl.innerText = (currentStaffName || 'Field executive');
+            if (nameEl) {
+                const job = { staff: 'Staff', field: 'Field', support: 'Customer care',
+                              verifier: 'Verifier' }[currentStaffRole] || 'Admin';
+                nameEl.innerText = (currentStaffName ? currentStaffName + ' · ' + job : job);
+            }
             await refreshFieldDesk();
         };
 
@@ -4906,6 +4931,7 @@
 
         window.openVerifierDesk = async function() {
             goTo('screenVerifierDesk');
+            markAdminVisiting();
             const nameEl = document.getElementById('verifierNameLabel');
             if (nameEl) nameEl.innerText = (currentStaffName || 'Verifier');
             closeVerifierForm();
@@ -5022,14 +5048,9 @@
             }
         }
 
-        window.openSupportDesk = function() {
-            const labels = { support: 'Support agent', field: 'Field executive', verifier: 'Verifier' };
-            document.getElementById('supportRoleLabel').innerText = labels[currentStaffRole] || 'Staff';
-            document.getElementById('supportResults').innerHTML = '';
-            document.getElementById('supportEmpty').classList.remove('hidden');
-            document.getElementById('supportSearchInput').value = '';
-            goTo('screenSupportDesk');
-        };
+        // There is one desk now. The name stays so that anything still asking for the
+        // Support Desk lands somewhere real instead of a screen that no longer exists.
+        window.openSupportDesk = function() { return openFieldDesk(); };
 
         // Staff often work from home, on a laptop the family also uses. Thirty idle minutes
         // and the session closes itself.
@@ -5092,18 +5113,16 @@
             empty.classList.add('hidden');
             box.innerHTML = '<p class="text-center text-slate-400 font-bold text-sm py-8">Searching...</p>';
 
-            const digits = raw.replace(/\D/g, '');
             try {
-                let docs = [];
-                if (digits.length === 10) {
-                    const snap = await getDocs(query(collection(db, 'bookings'),
-                        where('guestPhone', '==', digits), limit(20)));
-                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-                } else {
-                    const snap = await getDocs(query(collection(db, 'bookings'),
-                        where('bookingId', '==', raw.toUpperCase()), limit(10)));
-                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-                }
+                // Asking Firestore straight from the browser could never work: the booking read
+                // rule is written for the guest and the owner, and a staff member is neither.
+                // The server does the lookup and sends back a masked number.
+                const res = await apiFetch('/staff/search', {
+                    method: 'POST', body: JSON.stringify({ q: raw })
+                });
+                const payload = await res.json();
+                if (!res.ok) throw new Error(payload.error || 'Search nahi ho paya');
+                const docs = payload.bookings || [];
 
                 if (!docs.length) {
                     box.innerHTML = `<div class="text-center py-12">
@@ -5114,8 +5133,6 @@
                     return;
                 }
 
-                docs.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-
                 const statusMap = {
                     pending_payment_confirmation: ['⏳ Payment verify hona baaki', 'bg-amber-50 text-amber-700 border-amber-200'],
                     paid_verified: ['✅ Paid & Verified', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
@@ -5123,34 +5140,35 @@
                     checked_out: ['🚪 Checked out', 'bg-slate-100 text-slate-600 border-slate-200'],
                     cancellation_requested: ['🔄 Cancellation maangi hai', 'bg-orange-50 text-orange-700 border-orange-200'],
                     cancelled: ['❌ Cancelled', 'bg-red-50 text-red-700 border-red-200'],
+                    rejected: ['❌ Admin ne reject kiya', 'bg-red-50 text-red-700 border-red-200'],
                     no_show: ['🚫 No-show', 'bg-slate-100 text-slate-600 border-slate-200']
                 };
 
                 box.innerHTML = docs.map(b => {
                     const [label, cls] = statusMap[b.status] || ['—', 'bg-slate-100 text-slate-600 border-slate-200'];
-                    const beds = ((b.bookingContext && b.bookingContext.beds) || []).map(x => x.id).join(', ');
-                    const joining = (b.bookingContext && b.bookingContext.joiningDate) || '';
+                    const beds = (b.beds || []).join(', ');
+                    const joining = b.joiningDate || '';
                     return `<div class="p-4 rounded-2xl border-2 border-slate-200 bg-white">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="font-black text-slate-900 text-[16px] truncate">${b.guestName || 'Guest'}</p>
-                                <p class="text-[11px] font-bold text-slate-400 mt-0.5">${b.hostelName || ''}${beds ? ' · Bed ' + beds : ''}</p>
+                                <p class="font-black text-slate-900 text-[16px] truncate">${esc(b.guestName || 'Guest')}</p>
+                                <p class="text-[11px] font-bold text-slate-400 mt-0.5">${esc(b.hostelName || '')}${beds ? ' · Bed ' + esc(beds) : ''}</p>
                             </div>
                             <span class="chip border-2 font-black text-[10px] shrink-0 ${cls}">${label}</span>
                         </div>
 
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 mt-3 text-[12px]">
-                            <div><span class="font-bold text-slate-400">Booking</span><br><span class="font-black text-slate-700">${b.bookingId || b.id}</span></div>
+                            <div><span class="font-bold text-slate-400">Booking</span><br><span class="font-black text-slate-700">${esc(b.bookingId || b.docId)}</span></div>
                             <div><span class="font-bold text-slate-400">Advance</span><br><span class="font-black text-slate-700">₹${(Number(b.amount) || 0).toLocaleString('en-IN')}</span></div>
                             <div><span class="font-bold text-slate-400">Joining</span><br><span class="font-black text-slate-700">${joining || '—'}</span></div>
                             <div><span class="font-bold text-slate-400">Booked on</span><br><span class="font-black text-slate-700">${String(b.createdAt || '').slice(0, 10) || '—'}</span></div>
                         </div>
 
                         <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 flex-wrap">
-                            <span class="text-[13px] font-black text-slate-500">${maskPhone(b.guestPhone)}</span>
-                            <button type="button" onclick="revealSupportPhone('${b.id}', this)"
+                            <span class="text-[13px] font-black text-slate-500">${esc(b.phoneMasked || '—')}</span>
+                            <button type="button" onclick="revealSupportPhone('${b.docId}', this)"
                                 class="text-[11px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-600 hover:text-white transition">Reveal</button>
-                            <button type="button" onclick="openSupportEscalate('${b.id}','${(b.guestName || '').replace(/'/g, '')}')"
+                            <button type="button" onclick="openSupportEscalate('${b.docId}','${esc((b.guestName || '').replace(/'/g, ''))}')"
                                 class="ml-auto text-[11px] font-black text-white bg-amber-500 px-3 py-1.5 rounded-lg hover:bg-amber-600 transition">⚠️ Admin ko bhejo</button>
                         </div>
                     </div>`;
@@ -5527,9 +5545,13 @@
                         bookingId: bookingDocId
                     });
                 } catch (e) {}
-                alert('Cancellation requested. Your bed has been released.\n\nThe advance is not refunded when you cancel. '
-                    + 'But if the hostel cancelled on you, or the bed you paid for was not available, call +91 91832 06742 — '
-                    + 'in those two cases you get the full advance back.');
+                // Was "Your bed has been released". It is not: the status goes to
+                // cancellation_requested and the bed stays occupied until an admin approves. The
+                // guest walked away believing they were free while the bed sat off the market.
+                alert('Cancellation bhej di gayi.\n\nAbhi aapka bed chhoda nahi gaya hai — HostelOM ke dekhne ke baad chhoota hai. '
+                    + 'Aam taur par ek din lagta hai.\n\nAapka advance wapas nahi hota jab aap khud cancel karte hain. '
+                    + 'Par agar hostel ne cancel kiya, ya aap pahunche aur jis bed ka paisa diya wo mila hi nahi — '
+                    + 'to +91 91832 06742 par phone kijiye, poora advance wapas milta hai.');
                 loadMyBookings();
             } catch (err) {
                 console.error('Cancellation request failed', err);
@@ -6643,9 +6665,10 @@
                     // Each role gets its own desk. Before this, a field executive and a verifier
                     // both landed on the Support Desk and could only search bookings — the job
                     // they were actually hired to do had no screen.
-                    if (staffRole === 'field') openFieldDesk();
-                    else if (staffRole === 'verifier') openVerifierDesk();
-                    else openSupportDesk();
+                    // One desk for field, sales and customer care - the same person does all
+                    // three. Only the verifier is deliberately kept apart.
+                    if (staffRole === 'verifier') openVerifierDesk();
+                    else openFieldDesk();
                     return;
                 }
 
@@ -6721,6 +6744,35 @@
         // `isRestore` is true when we're just re-opening an existing session on page load,
         // rather than someone actually logging in.
         async function routeToDashboard(isRestore) {
+            // Role used to be read once, at login, and trusted until the tab closed. So an
+            // account switched off in the morning kept working all day, and a refresh dropped
+            // the staff identity entirely - which also silently killed the 30-minute idle
+            // logout on a shared laptop. Re-read it here, every time.
+            try {
+                const u = window.auth && window.auth.currentUser;
+                if (u) {
+                    const isAdminNow = (await window.getDoc(window.doc(window.db, 'admin', u.uid))).exists();
+                    if (!isAdminNow) {
+                        const sd = await window.getDoc(window.doc(window.db, 'staffRoles', u.uid));
+                        if (sd.exists()) {
+                            const sdata = sd.data() || {};
+                            if (sdata.active !== true) {
+                                await window.firebaseSignOut(window.auth);
+                                showAppToast('Aapka access band kar diya gaya hai.');
+                                goTo('screenOptions');
+                                return;
+                            }
+                            currentStaffRole = sdata.role || '';
+                            currentStaffName = sdata.name || '';
+                            startStaffIdleTimer();
+                            if (currentStaffRole === 'verifier') { openVerifierDesk(); return; }
+                            openFieldDesk();
+                            return;
+                        }
+                    }
+                }
+            } catch (e) { console.warn('Staff re-check failed', e); }
+
             try { enablePushNotifications(accountMode, Notification && Notification.permission === 'default'); } catch (e) {}
             // Show the waiting-chats count as soon as a dashboard appears.
             setTimeout(() => { try { refreshMessageBadge(); } catch (e) {} }, 1200);
@@ -6920,23 +6972,20 @@
         // up (this was flagged as a real gap — within a month every bed would look permanently
         // full). The advance the guest paid stays non-refundable per policy; only the BED goes
         // back to being bookable by someone else.
-        async function releaseBedsForBooking(propertyId, bedIds, lockId) {
-            if (!propertyId || propertyId === 'unknown' || !bedIds || bedIds.length === 0 || typeof db === 'undefined') return;
-            await runTransaction(db, async (transaction) => {
-                const bizRef = window.doc(window.db, 'businesses', propertyId);
-                const bizSnap = await transaction.get(bizRef);
-                if (!bizSnap.exists()) return;
-                const bizData = bizSnap.data();
-                const updatedRooms = (bizData.roomsAndBeds || []).map(room => ({
-                    ...room,
-                    beds: (room.beds || []).map(b => bedIds.includes(b.id) ? { ...b, status: 'available', occupiedBookingId: null } : b)
-                }));
-                transaction.update(bizRef, { roomsAndBeds: updatedRooms });
-                if (lockId) {
-                    const lockRef = window.doc(window.db, 'bedLocks', lockId);
-                    transaction.delete(lockRef); // admin-only per Firestore rules — cleans up the reservation entirely
-                }
+        // This used to run in the browser and delete the bedLock inside the same transaction
+        // that freed the beds. The lock belongs to the GUEST, so an owner deleting it is refused
+        // — and because the whole transaction rolls back together, the beds were never freed and
+        // the status write that came afterwards never ran either. Check-out simply did not work.
+        // No Firestore rule can say "the owner of this property, for this booking": that needs
+        // two documents. The server checks it instead.
+        async function releaseBedsForBooking(bookingDocId) {
+            if (!bookingDocId) return { ok: false };
+            const res = await apiFetch('/booking/release-beds', {
+                method: 'POST', body: JSON.stringify({ bookingId: bookingDocId })
             });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(d.error || 'Bed free nahi ho paya');
+            return d;
         }
 
         // Shared by the Admin Bookings screen AND the business owner's own Bookings screen.
@@ -7032,7 +7081,7 @@
                              + (r.amount ? '\n\nRefund it within 48 hours — the app does not move money yet.' : ''))) return;
 
                 const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
-                await releaseBedsForBooking(bData.propertyId, bedIds, bData.lockId);
+                await releaseBedsForBooking(bookingDocId);
                 await updateDoc(doc(db, 'bookings', bookingDocId), {
                     status: 'cancelled',
                     cancelledAt: new Date().toISOString(),
@@ -7586,7 +7635,7 @@
 
                 if (!confirm(`Check out ${bData.guestName || 'this guest'}?\n\n${bedLabel} will be free immediately and can be booked by someone else.\nAny unpaid rent stays on your Rent list.`)) return;
 
-                await releaseBedsForBooking(bData.propertyId, beds, bData.lockId);
+                await releaseBedsForBooking(bookingDocId);
                 await updateDoc(doc(db, 'bookings', bookingDocId), {
                     status: 'checked_out',
                     checkedOutAt: new Date().toISOString()
@@ -7634,7 +7683,7 @@
                 const bData = oneSnap.exists() ? oneSnap.data() : null;
                 if (!bData) { alert('Booking not found.'); return; }
                 const bedIds = ((bData.bookingContext && bData.bookingContext.beds) || []).map(bd => bd.id);
-                await releaseBedsForBooking(bData.propertyId, bedIds, bData.lockId);
+                await releaseBedsForBooking(bookingDocId);
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'no_show', noShowAt: new Date().toISOString() });
 
                 // The bed just went back on the market. The owner needs to know that so they can
@@ -8365,7 +8414,7 @@
                     const clearAllBtn = items.length > 0 ? `<div class="p-2 border-b border-slate-100 flex justify-end"><button type="button" onclick="clearAllBizNotifications()" class="text-[10px] font-black text-red-500 hover:text-red-700">🗑️ Clear All</button></div>` : '';
                     items.slice(0, 20).forEach(n => {
                         const cardCls = n.isBroadcast ? 'p-3 border-b border-slate-100 last:border-0 relative bg-amber-50' : 'p-3 border-b border-slate-100 last:border-0 relative';
-                        html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${n._docId}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button><p class="text-xs font-bold text-slate-700 pr-6">${n.message}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
+                        html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${escAudit(n._docId)}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button>${n.title ? `<p class="text-[10px] font-black text-slate-500 uppercase tracking-wide pr-6">${escAudit(n.title)}</p>` : ''}<p class="text-xs font-bold text-slate-700 pr-6">${escAudit(n.message)}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
                     });
                     const badge = document.getElementById('bizNotifBadge');
                     if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
@@ -10015,11 +10064,39 @@
                         });
                     });
                 } catch (lockErr) {
-                    submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
-                    if (lockErr.message === 'ALREADY_BOOKED') { errBox.innerText = 'This bed was just booked by someone else for this date. Please pick a different bed or date.'; }
-                    else { errBox.innerText = 'Could not verify bed availability. Please try again.'; console.warn(lockErr); }
-                    errBox.classList.remove('hidden');
-                    return;
+                    // Reclaiming an abandoned hold is a `set` onto a document that already
+                    // exists, which Firestore counts as an update - and updating a bedLock is
+                    // admin-only. So one guest abandoning checkout blocked that bed and that date
+                    // for everybody. Ask the server to clear it (it only clears a hold that is
+                    // unconfirmed AND past the window), then take the hold properly.
+                    let reclaimed = false;
+                    if (lockErr.message !== 'ALREADY_BOOKED') {
+                        try {
+                            const cr = await apiFetch('/bed/clear-stale-lock', {
+                                method: 'POST', body: JSON.stringify({ lockId })
+                            });
+                            const cd = await cr.json().catch(() => ({}));
+                            if (cr.ok && cd.cleared) {
+                                await window.setDoc(window.doc(window.db, 'bedLocks', lockId), {
+                                    propertyId: propIdForLock,
+                                    bedId: bedIdForLock,
+                                    joiningDate: joiningDateVal,
+                                    lockedAt: new Date().toISOString(),
+                                    heldByUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
+                                    expiresAt: new Date(Date.now() + LOCK_EXPIRY_MS),
+                                    confirmed: false
+                                });
+                                reclaimed = true;
+                            }
+                        } catch (e) { console.warn('Stale hold could not be cleared', e); }
+                    }
+                    if (!reclaimed) {
+                        submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
+                        if (lockErr.message === 'ALREADY_BOOKED') { errBox.innerText = 'This bed was just booked by someone else for this date. Please pick a different bed or date.'; }
+                        else { errBox.innerText = 'Could not verify bed availability. Please try again.'; console.warn(lockErr); }
+                        errBox.classList.remove('hidden');
+                        return;
+                    }
                 }
             }
             submitBtn.innerText = 'Generating Form...';
@@ -10100,7 +10177,9 @@
                 line('Full Name:', formData.fullName);
                 line('Date of Birth:', formData.dob);
                 line('Gender:', formData.gender);
-                line('Aadhar Number:', formData.aadharNumber);
+                // This read a field the form has never had - only the last four digits are kept,
+                // deliberately - so every PDF handed to a hostel printed "undefined".
+                line('ID (last 4 digits):', formData.aadharLast4 ? ('XXXX XXXX ' + formData.aadharLast4) : 'Not given');
                 line('Blood Group:', formData.bloodGroup);
                 line('Status:', formData.occupationType);
                 line('College/School/Company:', formData.collegeName);
