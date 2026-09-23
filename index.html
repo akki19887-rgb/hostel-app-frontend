@@ -25,6 +25,32 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HostelOM">
+
+    <!-- LINK KA PREVIEW - WhatsApp, Facebook, Instagram DM, LinkedIn, Telegram.
+         Ye tag ab tak ek bhi nahi the, isliye ho-om.in ka link kahin bhi bhejo to
+         bilkul saada dikhta tha: na logo, na naam, na ek line ka parichay. Staff
+         din bhar yahi link bhejta hai; uske saath app ka wahi chehra jana chahiye
+         jo logon ke phone par dikhta hai.
+         Tasveer wahi app icon hai - icon-512.png - koi nayi file chadhane ki
+         zarurat nahi. Chakor tasveer ke saath twitter:card 'summary' rakha hai
+         (large nahi), warna chakor logo kat kar patti jaisa dikhta hai. -->
+    <meta name="description" content="Chhattisgarh ke hostel aur PG - photo, room, bed aur rate dekhkar online booking. Sirf 20% advance online, baaki hostel par.">
+    <meta property="og:site_name" content="HostelOM">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ho-om.in/">
+    <meta property="og:title" content="HostelOM - Hostels at one click">
+    <meta property="og:description" content="Chhattisgarh ke hostel aur PG - photo, room, bed aur rate dekhkar online booking. Sirf 20% advance online, baaki hostel par.">
+    <meta property="og:image" content="https://ho-om.in/icon-512.png">
+    <meta property="og:image:secure_url" content="https://ho-om.in/icon-512.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="HostelOM ka logo">
+    <meta property="og:locale" content="en_IN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="HostelOM - Hostels at one click">
+    <meta name="twitter:description" content="Chhattisgarh ke hostel aur PG - photo, room, bed aur rate dekhkar online booking.">
+    <meta name="twitter:image" content="https://ho-om.in/icon-512.png">
     <!-- PERF: Tailwind stays eager (needed for first paint since there's no build step yet).
          Fabric.js, jsPDF and Google Maps are loaded on-demand now — see loadScriptOnce() below. -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -3917,6 +3943,65 @@
             try { navigator.clipboard.writeText(lastStaffCreds); showAppToast('Copy ho gaya'); }
             catch (e) { showAppToast('Copy nahi hua \u2014 dabakar rakhiye aur select kar lijiye.'); }
         };
+        // WhatsApp kholne ka tez raasta.
+        //
+        // `wa.me` app ka darwaza nahi hai - wo ek web page hai. Dabane par pehle naya tab
+        // khulta hai, page internet se aata hai, kabhi "Continue to Chat" bhi beech me aata
+        // hai, aur tab WhatsApp khulta hai. Mobile par isme kai second lag jate hain.
+        //
+        // Mobile par ham seedha app ko bulate hain. App na ho to sava second me khud purane
+        // raaste par chale jate hain, isliye kuch toota nahi.
+        // "Kaun sa link banega" alag rakha hai "kaise kholenge" se - isse ise seedha
+        // jaancha ja sakta hai, aur galat number ki safai ek hi jagah hoti hai.
+        window.whatsappUrls = function (phone, text) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (!digits) return null;
+            const num = digits.length === 10 ? '91' + digits : digits;
+            return {
+                num: num,
+                app: 'whatsapp://send?phone=' + num + (text ? ('&text=' + encodeURIComponent(text)) : ''),
+                web: 'https://wa.me/' + num + (text ? ('?text=' + encodeURIComponent(text)) : ''),
+            };
+        };
+
+        // Lead ko WhatsApp par likhne ka tayyar sandesh.
+        //
+        // Pehle ye button khaali WhatsApp kholta tha. Khaali sandesh me link nahi hota,
+        // aur bina link ke HostelOM ka logo wala preview card bhi nahi dikhta - malik ko
+        // sirf ek anjaan number ka "Hi" milta tha.
+        //
+        // WhatsApp sandesh bhejta nahi, sirf likh kar rakh deta hai - staff bhejne se
+        // pehle jitna chahe badal sakta hai.
+        window.whatsappLead = function (phone, hostelName) {
+            const naam = (hostelName || '').trim();
+            const msg = 'Namaste ' + (naam ? (naam + ' ') : '') + '\n\n'
+                + 'Main HostelOM se baat kar raha hoon - Chhattisgarh ka hostel aur PG booking platform.\n\n'
+                + 'Aap apna hostel HostelOM par list kar sakte hain - photo, room, bed aur rate ke saath. '
+                + 'Listing ke liye koi fees nahi. Hum sirf booking par kamate hain.\n\n'
+                + 'Ek baar dekh lijiye:\n'
+                + 'https://ho-om.in';
+            return window.openWhatsApp(phone, msg);
+        };
+
+        window.openWhatsApp = function (phone, text) {
+            const u = window.whatsappUrls(phone, text);
+            if (!u) { if (window.showAppToast) showAppToast('Number nahi hai.'); return; }
+            const web = u.web;
+
+            const onPhone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+            if (!onPhone) { window.open(web, '_blank', 'noopener'); return; }
+
+            // Agar app khul gaya to ye page peechhe chala jayega - wahi hamari pehchaan hai.
+            let gaya = false;
+            const dekho = function () { if (document.hidden) gaya = true; };
+            document.addEventListener('visibilitychange', dekho);
+            window.location.href = u.app;
+            setTimeout(function () {
+                document.removeEventListener('visibilitychange', dekho);
+                if (!gaya && !document.hidden) window.open(web, '_blank', 'noopener');
+            }, 1200);
+        };
+
         window.whatsappStaffCreds = function() {
             window.open('https://wa.me/?text=' + encodeURIComponent(lastStaffCreds), '_blank');
         };
@@ -4247,7 +4332,7 @@
                     ${last ? `<p class="text-[11px] text-slate-600 bg-slate-50 rounded-lg px-2 py-1 mb-2"><b>Aakhri baat:</b> ${esc(last.note || '')}</p>` : ''}
                     <div class="flex flex-wrap gap-2">
                         ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
-                        ${ph ? `<a href="https://wa.me/91${ph}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</a>` : ''}
+                        ${ph ? `<button type="button" onclick="whatsappLead('${ph}', '${esc(l.name || '')}')" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</button>` : ''}
                         ${l.placeId ? `<a href="https://www.google.com/maps/place/?q=place_id:${l.placeId}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Map</a>` : ''}
                         ${(l.coordinates && l.coordinates.lat && l.coordinates.lng) ? `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${l.coordinates.lat},${l.coordinates.lng}" target="_blank" rel="noopener" title="Gali ka nazara — mohalla kaisa hai" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">&#128205; Street View</a>` : ''}
                         <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
@@ -7336,7 +7421,7 @@
             if (!phone) { showAppToast('This guest has no phone number on file.'); return; }
             const amt = (Number(row.amount) || 0).toLocaleString('en-IN');
             const msg = `Namaste ${row.guestName || ''}, aapka rent Rs ${amt} pending hai${row.dueDate ? ' (due ' + row.dueDate + ')' : ''}. Kripya jaldi jama kar dijiye. - ${row.hostelName || 'Hostel'}`;
-            window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+            openWhatsApp(phone, msg);
         };
 
         window.remindAllPending = async function() {
@@ -7366,7 +7451,7 @@
                 const first = walkIns[0];
                 const msg = encodeURIComponent(`Namaste ${first.guestName}, aapka rent ₹${(Number(first.amount)||0).toLocaleString('en-IN')} pending hai. Kripya jama kar dijiye. Dhanyavaad.`);
                 if (confirm(`${sent} guest(s) ko app par reminder chala gaya.\n\n${walkIns.length} walk-in guest hain jinke paas app nahi hai — WhatsApp kholein?`)) {
-                    window.open(`https://wa.me/91${String(first.guestPhone).replace(/\D/g,'')}?text=${msg}`, '_blank');
+                    openWhatsApp(first.guestPhone, decodeURIComponent(msg));
                 }
             } else {
                 showAppToast(sent ? `🔔 Reminder sent to ${sent} guest(s)` : 'Could not send reminders right now.');
@@ -11989,8 +12074,8 @@
                     class="${cls} bg-indigo-50 hover:bg-indigo-600 text-indigo-500 hover:text-white">💬</button>`;
             }
             if (guestPhone) {
-                return `<a href="https://wa.me/91${String(guestPhone).replace(/\D/g,'')}" target="_blank" rel="noopener" title="WhatsApp this guest"
-                    class="${cls} bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white no-underline">📞</a>`;
+                return `<button type="button" onclick="openWhatsApp('${String(guestPhone).replace(/\D/g,'')}')" title="WhatsApp this guest"
+                    class="${cls} bg-emerald-50 hover:bg-emerald-600 text-emerald-600 hover:text-white">📞</button>`;
             }
             return '';
         }
