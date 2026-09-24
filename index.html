@@ -4912,6 +4912,32 @@
             await refreshFieldDesk();
         };
 
+        // Kis lead par kaam ho raha hai. Lead se aaye to bharta hai, warna khali.
+        let fdLeadId = '';
+
+        window.visitFromLead = function (leadId, hostelName, ownerName, phone) {
+            fdLeadId = leadId || '';
+            goTo('screenFieldDesk');
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+            set('fdHostelName', hostelName);
+            set('fdOwnerName', ownerName);
+            set('fdOwnerPhone', String(phone || '').replace(/\D/g, '').slice(-10));
+            set('fdNote', '');
+            set('fdFollowDate', '');
+            const chip = document.getElementById('fdLeadChip');
+            const nm = document.getElementById('fdLeadChipName');
+            if (nm) nm.innerText = hostelName || 'lead';
+            if (chip) chip.classList.remove('hidden');
+            const h = document.getElementById('fdNote');
+            if (h) h.focus();
+        };
+
+        window.clearVisitLead = function () {
+            fdLeadId = '';
+            const chip = document.getElementById('fdLeadChip');
+            if (chip) chip.classList.add('hidden');
+        };
+
         window.logFieldVisit = async function(outcome) {
             const u = window.auth && window.auth.currentUser;
             if (!u) { showAppToast('Not signed in.'); return; }
