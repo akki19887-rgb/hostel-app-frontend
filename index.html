@@ -4973,6 +4973,39 @@
             }
             try {
                 await window.addDoc(window.collection(window.db, 'staffVisits'), row);
+
+                // Lead ko bhi bata do. Ye sabse zaroori hissa hai: iske bina visit ek alag
+                // kone me pada rehta tha aur lead 'new' hi dikhti thi.
+                if (fdLeadId) {
+                    const leadStatus = { listed: 'agreed', refused: 'refused' }[outcome] || 'contacted';
+                    const kya = { listed: 'Visit: listing ban gayi',
+                                  follow_up: 'Visit: dobara aana hai',
+                                  revisit: 'Visit: malik nahi mile',
+                                  refused: 'Visit: mana kar diya' }[outcome] || 'Visit hua';
+                    const kabTak = row.followUpOn ? (' (dobara ' + row.followUpOn + ')') : '';
+                    try {
+                        const r = await apiFetch('/admin/leads/update', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                leadId: fdLeadId,
+                                status: leadStatus,
+                                note: kya + kabTak + (row.note ? (' - ' + row.note) : ''),
+                                ownerName: row.ownerName,
+                                ownerPhone: row.ownerPhone
+                            })
+                        });
+                        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || ('HTTP ' + r.status));
+                    } catch (le) {
+                        // Visit to bach gaya. Lead update na hona chhupana nahi hai - warna
+                        // aapko lagega sab ho gaya aur Leads page purana hi dikhta rahega.
+                        console.error('Lead update nahi hua:', le);
+                        showAppToast('Visit save ho gaya, par lead update nahi hui: ' + le.message);
+                    }
+                }
+
+                const fdate = document.getElementById('fdFollowDate');
+                if (fdate) fdate.value = '';
+                clearVisitLead();
                 document.getElementById('fdHostelName').value = '';
                 document.getElementById('fdOwnerName').value = '';
                 document.getElementById('fdOwnerPhone').value = '';
