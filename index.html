@@ -4955,9 +4955,17 @@
                 outcome: outcome,
                 visitedAt: new Date().toISOString()
             };
+            // Lead se aaya ho to rishta record me likh do - isi se admin ke Leads page par
+            // dikhega ki is hostel par jaa chuke hain.
+            if (fdLeadId) row.leadId = fdLeadId;
             // A "come back later" is only useful if it comes back on its own. Two weeks is what the
             // field script already tells them to say, so the app holds them to their own promise.
-            if (outcome === 'follow_up' || outcome === 'revisit') {
+            // Par agar malik ne khud koi din bataya hai, to wahi chalega - app ka andaza nahi.
+            const chosen = (document.getElementById('fdFollowDate') || {}).value || '';
+            if (chosen) {
+                row.followUpOn = chosen;
+                row.followUpDone = false;
+            } else if (outcome === 'follow_up' || outcome === 'revisit') {
                 const d = new Date();
                 d.setDate(d.getDate() + (outcome === 'revisit' ? 3 : 15));
                 row.followUpOn = d.toISOString().slice(0, 10);
