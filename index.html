@@ -1364,6 +1364,12 @@
         <!-- Log a visit -->
         <div class="mt-5 bg-white border-2 border-slate-200 rounded-2xl p-4">
             <h3 class="text-sm font-black text-slate-900 mb-3">Log a visit</h3>
+            <!-- Jab lead se aaye ho to yahan dikhta hai ki kis lead par kaam ho raha hai.
+                 Bina iske visit kisi lead se judta hi nahi tha. -->
+            <div id="fdLeadChip" class="hidden mb-2 flex items-center justify-between gap-2 bg-emerald-50 border-2 border-emerald-200 rounded-xl px-3 py-2">
+                <p class="text-[11px] font-black text-emerald-800 min-w-0 break-words">🔗 Lead se juda: <span id="fdLeadChipName"></span></p>
+                <button type="button" onclick="clearVisitLead()" class="shrink-0 text-[11px] font-black text-slate-500 hover:text-red-600">hatao ✕</button>
+            </div>
             <input type="text" id="fdHostelName" placeholder="Hostel name"
                 class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400 mb-2">
             <div class="grid grid-cols-2 gap-2 mb-2">
