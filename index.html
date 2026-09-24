@@ -1379,7 +1379,12 @@
                     class="p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400">
             </div>
             <textarea id="fdNote" rows="2" placeholder="What did they say?"
-                class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-semibold text-sm outline-none focus:border-emerald-400 mb-3"></textarea>
+                class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-semibold text-sm outline-none focus:border-emerald-400 mb-2"></textarea>
+            <!-- Tareekh khud chuniye. Khali chhodenge to app pehle jaisa hi karega:
+                 "come back later" par 15 din, "owner not there" par 3 din. -->
+            <label class="block text-[11px] font-black text-slate-500 mb-1">Dobara kab jaana hai? <span class="font-bold text-slate-400">(khali chhod dijiye to app khud tay karega)</span></label>
+            <input type="date" id="fdFollowDate"
+                class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-400 mb-3">
             <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="logFieldVisit('listed')" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs transition">✅ Listing done</button>
                 <button type="button" onclick="logFieldVisit('follow_up')" class="py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition">⏳ Come back later</button>
