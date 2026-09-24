@@ -1,0 +1,12 @@
+# HostelOM - ho-om.in
+# Ye file ab tak thi hi nahi. Jo bhi ise maangta tha - Google ka crawler, WhatsApp,
+# koi bhi औzaar - use poora app (900 KB) milta tha, ek chhoti text file ke bajay.
+
+User-agent: *
+Allow: /
+
+# Andar ke raaste search me nahi aane chahiye - wo sirf login ke baad ke hain.
+Disallow: /admin
+Disallow: /staff
+
+Sitemap: https://ho-om.in/sitemap.xml
