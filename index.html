@@ -6933,6 +6933,8 @@
             showOtpError('');
             const otp = (document.getElementById('authOtpInput').value || '').trim();
             if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { showOtpError('Please enter the 6-digit OTP.'); return; }
+            // Yahan tak aaye to koshish asli hai. Galat nikla to neeche finally me taala
+            // khul jayega, taaki user sudhaar kar dobara try kar sake.
             if (!_otpSessionId) { showOtpError('OTP session expired. Please request a new OTP.'); return; }
 
             const btn = document.getElementById('btnVerifyOtp');
