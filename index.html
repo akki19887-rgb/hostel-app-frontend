@@ -6001,6 +6001,20 @@
             document.getElementById('asstSubtitle').innerText = isAdmin
                 ? 'Poore app ke baare me poochhiye'
                 : 'Apne kaam ke baare me poochhiye';
+            // Har baar thread naye sire se.
+            //
+            // Chips thread ke ANDAR hain, aur pehle sawaal par thread khali kar diya jata
+            // tha - yani chips hamesha ke liye gayab. Aur band karne par sirf modal
+            // chhupta tha, to saanjhe field phone par agla staff pichhle aadmi ka sawaal
+            // aur jawab (jisme lead ka data hota hai) padh leta tha.
+            const thread0 = document.getElementById('asstThread');
+            if (thread0) {
+                thread0.innerHTML = '<div class="text-center py-6">'
+                    + '<p class="text-xs font-bold text-slate-400 mb-3">Jaise:</p>'
+                    + '<div id="asstSuggestions" class="flex flex-wrap gap-2 justify-center"></div></div>';
+            }
+            const inp0 = document.getElementById('asstInput');
+            if (inp0) inp0.value = '';
             const wrap = document.getElementById('asstSuggestions');
             if (wrap) {
                 wrap.innerHTML = (isAdmin ? ASST_SUGGESTIONS.admin : ASST_SUGGESTIONS.staff)
