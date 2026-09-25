@@ -9655,7 +9655,8 @@
             // appear duplicated/ghosted (and blurry from overlapping text) for both admin and the user.
             if (adminFabricCanvasInstance) { adminFabricCanvasInstance.dispose(); adminFabricCanvasInstance = null; }
             currentAdminDocId = docId; admin2DBlocks = [];
-            const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); loadedBusinessData = busData;
+            const busData = await getBiz(docId); loadedBusinessData = busData;
+
             floorWalkthroughsCache = (busData && busData.floorWalkthroughs) || {};
             if(busData && busData.layout2D && busData.layout2D.length > 0) { admin2DBlocks = busData.layout2D; } else if (busData && busData.roomsAndBeds) { admin2DBlocks = [{ type: 'corridor', id: 'C1', name: 'Corridor Walkway', position: 'center', floor: busData.roomsAndBeds[0].floor || 'Ground Floor' }, ...busData.roomsAndBeds.map(r => ({ type: 'room', id: r.id || 'B'+Date.now(), name: r.name, beds: r.beds.map(b => ({id: b.id, price: b.price || 5000})), amenities: r.amenities || ['study_table', 'bathroom'], has_door: r.has_door !== false, floor: r.floor || 'Ground Floor' })) ]; }
             adminLocalCanvasStates = busData.fabricCanvasStates || {};
