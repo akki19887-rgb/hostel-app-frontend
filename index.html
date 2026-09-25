@@ -4419,7 +4419,7 @@
                     ${last ? `<p class="text-[11px] text-slate-600 bg-slate-50 rounded-lg px-2 py-1 mb-2"><b>Aakhri baat:</b> ${esc(last.note || '')}</p>` : ''}
                     <div class="flex flex-wrap gap-2">
                         ${ph ? `<a href="tel:+91${ph}" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Call</a>` : '<span class="px-3 py-1.5 text-slate-400 text-xs">Number nahi</span>'}
-                        ${ph ? `<button type="button" onclick="whatsappLead('${ph}', '${esc(l.name || '')}')" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</button>` : ''}
+                        ${ph ? `<button type="button" onclick="whatsappLead('${ph}', '${jsq(l.name || '')}')" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</button>` : ''}
                         ${l.placeId ? `<a href="https://www.google.com/maps/place/?q=place_id:${l.placeId}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Map</a>` : ''}
                         ${(l.coordinates && l.coordinates.lat && l.coordinates.lng) ? `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${l.coordinates.lat},${l.coordinates.lng}" target="_blank" rel="noopener" title="Gali ka nazara — mohalla kaisa hai" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">&#128205; Street View</a>` : ''}
                         <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
