@@ -4478,6 +4478,23 @@
                 ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
         }
 
+        // onclick="fn('...')" ke ANDAR naam daalne ke liye.
+        //
+        // esc() yahan kaam nahi karta: wo ' ko &#39; banata hai, browser use wapas
+        // ' bana deta hai, aur JavaScript ko milta hai fn('Ram's PG') — jo toota
+        // hua hai. "Ram's PG" jaise har lead ke saare button chup-chaap marr jate the.
+        //
+        // Yahan pehle JS ke liye escape karte hain (\' ), phir HTML ke liye — isi kram me,
+        // kyunki browser pehle HTML kholta hai aur baad me JS padhta hai.
+        function jsq(s) {
+            return String(s == null ? '' : s)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\r?\n/g, ' ')
+                .replace(/[&<>"]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[m]));
+        }
+
+
         async function noteLead(leadId) {
             const note = prompt('Kya baat hui?');
             if (note === null) return;
