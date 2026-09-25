@@ -5212,7 +5212,11 @@
                                 status: leadStatus,
                                 note: kya + kabTak + (row.note ? (' - ' + row.note) : ''),
                                 ownerName: row.ownerName,
-                                ownerPhone: row.ownerPhone
+                                // 'ownerPhone' nahi — wo khaana matlab rakhta hai "login
+                                // number, jaanch ho chuki". Field ka kachcha number 'phone'
+                                // me jata hai, wahi jise lead card ka Call button dialta hai.
+                                phone: row.ownerPhone
+
                             })
                         });
                         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || ('HTTP ' + r.status));
