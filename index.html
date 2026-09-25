@@ -5683,6 +5683,11 @@
                 // unnecessary work most users never looked at.
             }
             if(screenId === 'screenBusinessDashboard') refreshBusinessDash();
+            // Listing publish karne ke baad staff yahin wapas aata hai. Pehle yahan koi
+            // branch hi nahi thi, to "Aaj listing" ki ginti purani hi dikhti rehti thi —
+            // apne kiye kaam ka ekmatr saboot, aur wo hilta hi nahi tha.
+            if(screenId === 'screenFieldDesk' && typeof refreshFieldDesk === 'function') refreshFieldDesk();
+
             if(screenId === 'screenAdminBookings') { loadAdminBookings(); loadPendingUpiPayments(); loadConfirmedBookings(); }
             if(screenId === 'screenMyBookings') loadMyBookings();
             if(screenId === 'screenGoogleMap') {
