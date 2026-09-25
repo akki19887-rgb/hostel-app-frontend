@@ -9634,7 +9634,16 @@
                     let bizProfileHtml = '';
                     if (data.businessProfile) { bizProfileHtml = `<div class="bg-slate-50 p-3 rounded-xl mb-3 border border-slate-200"><p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 border-b border-slate-200 pb-1">Owner Details</p><div class="flex flex-wrap gap-x-4 gap-y-1"><span class="text-xs font-bold text-slate-800">👤 ${data.businessProfile.firstName}</span><span class="text-xs font-bold text-slate-800">🏢 ${data.businessProfile.company}</span><span class="text-xs font-bold text-slate-800">📱 ${data.businessProfile.phone}</span></div></div>`; }
                     let govtVerificationHtml = '';
-                    if (data.legalDetails) { govtVerificationHtml = `<div class="bg-indigo-50 p-3 rounded-xl mb-3 border border-indigo-200"><p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 border-b border-indigo-100 pb-1">🔒 Government Verification</p><div class="flex flex-wrap gap-x-4 gap-y-1"><span class="text-xs font-bold text-slate-800">📜 Licence: ${data.legalDetails.licence || '—'}</span><span class="text-xs font-bold text-slate-800">🧾 GST: ${data.legalDetails.gst || '—'}</span></div></div>`; }
+                    // Purani listing me hi legalDetails bacha hai. Naya data businessContacts
+                    // me jata hai — wo band hai, isliye yahan nahi aata. Purane me bane hue
+                    // jhoothe number (LIC-OM-9942 / 22AAAAA0000A1Z5) ab chhupa dete hain,
+                    // taaki koi unhe asli samajh kar bharosa na kar le.
+                    if (data.legalDetails) {
+                        const FAKE = ['LIC-OM-9942', '22AAAAA0000A1Z5'];
+                        const lic = FAKE.includes(data.legalDetails.licence) ? '' : (data.legalDetails.licence || '');
+                        const gst = FAKE.includes(data.legalDetails.gst) ? '' : (data.legalDetails.gst || '');
+                        if (lic || gst) { govtVerificationHtml = `<div class="bg-indigo-50 p-3 rounded-xl mb-3 border border-indigo-200"><p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 border-b border-indigo-100 pb-1">📜 Purani listing ka record</p><div class="flex flex-wrap gap-x-4 gap-y-1">${lic ? `<span class="text-xs font-bold text-slate-800">Licence: ${lic}</span>` : ''}${gst ? `<span class="text-xs font-bold text-slate-800">GST: ${gst}</span>` : ''}</div></div>`; }
+                    }
                     let rulesSummaryHtml = '';
                     if (data.rules) {
                         const r = data.rules; let chips = '';
