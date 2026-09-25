@@ -9059,26 +9059,33 @@
                     // likhne ki koshish karta tha, par wahan niyam 'backend only' hai — har
                     // baar mana hota tha aur galti console.warn me dab jaati thi. Isi wajah se
                     // khud se jude har malik ka number kho gaya tha.
-                    if (ownerPhoneForContacts) {
-                        try {
-                            const cRes = await apiFetch('/owner/contact', {
-                                method: 'POST',
-                                body: JSON.stringify({ businessId: newDocId, phone: ownerPhoneForContacts })
-                            });
-                            if (!cRes.ok) throw new Error((await cRes.json().catch(() => ({}))).error || ('HTTP ' + cRes.status));
-                        } catch (cErr) {
-                            // Listing to save ho chuki hai — use wapas nahi lete. Par number ka
-                            // na bachna chhupana nahi hai: bina number ke aap malik tak
-                            // pahunch hi nahi sakte.
-                            console.error('Malik ka number save nahi hua:', cErr);
-                            alert('Listing save ho gayi, lekin aapka phone number save nahi ho paya.\n\n'
-                                + 'Kripya HostelOM ko bata dijiye, warna hum aap tak nahi pahunch payenge.\n\n'
-                                + 'Wajah: ' + cErr.message);
-                        }
-                    }
+                    // Number server ko. Wahan tay hota hai ki listing kiski hai.
+                    const own = await attachOwnerByPhone(newDocId, ownerPhoneForContacts,
+                                                         globalBizProfile.firstName || '');
                     // Lead se bana ho to usi lead se jod do — status 'converted'
-                    if (typeof attachBuiltListingToLead === 'function') await attachBuiltListingToLead(newDocId);
-                    alert('Listing submitted for verification!');
+                    let leadOk = true;
+                    if (typeof attachBuiltListingToLead === 'function') {
+                        leadOk = await attachBuiltListingToLead(newDocId);
+                    }
+
+                    // Ab saaf-saaf batao kya hua. Pehle sirf "submitted" likha aata tha,
+                    // chahe malik juda ho ya na juda ho.
+                    if (!own.ok) {
+                        alert('Listing save ho gayi, LEKIN malik us se juda nahi.\n\n'
+                            + 'Iska matlab: malik ko ye listing apne dashboard me nahi dikhegi.\n\n'
+                            + 'Ankit ko bata dijiye. Wajah: ' + (own.error || 'pata nahi'));
+                    } else if (own.claimed) {
+                        alert('✅ Listing ban gayi aur malik ke naam ho gayi.\n\n'
+                            + 'Malik apne number se login karke ise abhi dekh sakta hai.'
+                            + (leadOk ? '' : '\n\n⚠ Lead se jod nahi paye — Leads page par khud check kar lijiye.'));
+                    } else {
+                        alert('✅ Listing ban gayi.\n\n'
+                            + 'Malik ne abhi tak app me login nahi kiya hai.\n'
+                            + 'Usse ' + ownerPhoneForContacts + ' par EK BAAR OTP login karwa dijiye —\n'
+                            + 'listing usi waqt apne aap uske naam ho jayegi.'
+                            + (leadOk ? '' : '\n\n⚠ Lead se jod nahi paye — Leads page par khud check kar lijiye.'));
+                    }
+
                 }
                 editingBusinessDocId = null; exitListing();
             } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
