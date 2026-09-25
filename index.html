@@ -4562,10 +4562,24 @@
             businessState   = l.state || 'Chhattisgarh';
             businessAddress = l.address || '';
             const c = l.coordinates || {};
-            if (c.lat && c.lng) businessCoordinates = { lat: Number(c.lat), lng: Number(c.lng) };
+            if (c.lat && c.lng) {
+                businessCoordinates = { lat: Number(c.lat), lng: Number(c.lng) };
+                // Lead ka pata Google se aaya hai — wahi sabse theek hai.
+                // Pehle ye flag nahi lagta tha, isliye "CONFIRM & NEXT" mana kar deta
+                // tha aur staff ko naksha par ungli se tap karna padta tha — jisse
+                // lead ka asli pata mit jata tha.
+                ownerMovedPin = true;
+            }
 
             const typeMap = { 'Female': 'Girls Hostel', 'Male': 'Boys Hostel' };
             const t = typeMap[l.gender];
+
+            // Gender lead me likha hai to wahi bhar do.
+            // Bina iske dropdown chup-chaap "Boys" padhta tha aur Female lead se bani
+            // GIRLS hostel bhi "Boys Only" ban kar publish ho jati thi.
+            const gmap = { 'Female': 'Girls', 'Male': 'Boys', 'Co-ed': 'Co-ed' };
+            const gsel2 = document.getElementById('formGenderType');
+            if (gsel2) gsel2.value = gmap[l.gender] || '';
 
             showLeadBanner(l);
 
