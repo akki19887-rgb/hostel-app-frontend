@@ -2128,8 +2128,14 @@
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-[10px] font-black text-red-500 mb-1 uppercase tracking-widest">⚠️ Gender Policy (Safety — Required)</label>
+                        <!-- Pehla option jaan-bujh kar KHALI hai. Pehle "Boys Only" pehla tha
+                             aur kisi par selected nahi tha, to bina chhue hi har listing
+                             "Boys" ban jati thi. Girls hostel guest ke Girls-Only filter
+                             se gayab ho jati thi, aur baad me sirf admin badal sakta hai. -->
                         <select id="formGenderType" class="w-full p-3 border-2 border-red-200 rounded-xl font-bold text-slate-800 bg-white">
+                            <option value="" selected>-- Chuniye --</option>
                             <option value="Boys">Boys Only</option>
+
                             <option value="Girls">Girls Only</option>
                             <option value="Co-ed">Co-ed (Both)</option>
                         </select>
