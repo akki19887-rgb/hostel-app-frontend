@@ -4536,15 +4536,23 @@
         // Listing ban jaane ke baad usko lead se jod do.
         // submitToAdmin ke andar se bulaya jata hai.
         async function attachBuiltListingToLead(businessId) {
-            if (!leadBeingBuilt || !businessId) return;
+            if (!leadBeingBuilt || !businessId) return true;
+            // Pehle yahan r.ok dekha hi nahi jata tha. Server 403 ya 500 de to bhi
+            // "Listing submitted" dikh jata tha, lead 'new' hi padi rehti thi, aur
+            // agle hafte koi doosra staff usi hostel par dobara chala jata tha.
+            let ok = false;
             try {
-                await apiFetch('/admin/leads/attach-business', {
+                const r = await apiFetch('/admin/leads/attach-business', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ leadId: leadBeingBuilt.id, businessId: businessId })
                 });
-            } catch (e) { console.warn('lead se jod nahi paye', e); }
+                ok = !!r.ok;
+                if (!ok) console.error('lead attach:', (await r.json().catch(() => ({}))).error || r.status);
+            } catch (e) { console.error('lead se jod nahi paye', e); }
             clearLeadBanner(true);
+            return ok;
         }
+
 
         // ============================================================
         //  KAAM AUR STAFF
