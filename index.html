@@ -3548,6 +3548,7 @@
                 };
 
                 let savedId = editingFlatHouseDocId || '';
+                window.__fhWasEdit = !!editingFlatHouseDocId;
                 if (editingFlatHouseDocId) {
                     // Editing: keep existing photos for any slot that wasn't re-uploaded this time.
                     if (photoUrls.length === 0) delete docData.coverPhotoUrl;
