@@ -4422,7 +4422,7 @@
                         ${ph ? `<button type="button" onclick="whatsappLead('${ph}', '${jsq(l.name || '')}')" class="px-3 py-1.5 bg-green-50 text-green-700 font-bold rounded-lg text-xs">WhatsApp</button>` : ''}
                         ${l.placeId ? `<a href="https://www.google.com/maps/place/?q=place_id:${l.placeId}" target="_blank" rel="noopener" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Map</a>` : ''}
                         ${(l.coordinates && l.coordinates.lat && l.coordinates.lng) ? `<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${l.coordinates.lat},${l.coordinates.lng}" target="_blank" rel="noopener" title="Gali ka nazara — mohalla kaisa hai" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">&#128205; Street View</a>` : ''}
-                        <button type="button" onclick="noteLead('${l.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
+                        <button type="button" onclick="noteLead('${jsq(l.id)}')" class="px-3 py-1.5 bg-blue-50 text-blue-700 font-bold rounded-lg text-xs">Baat hui</button>
                         <button type="button" onclick="visitFromLead('${jsq(l.id)}', '${jsq(l.name || '')}', '${jsq(l.ownerName || '')}', '${ph || ''}')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg text-xs">Visit kiya</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="buildHostelFromLead('${l.id}')" class="px-3 py-1.5 btn-gradient text-white font-black rounded-lg text-xs shadow">Hostel banao</button>`
