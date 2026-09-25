@@ -4430,7 +4430,13 @@
                         <button type="button" onclick="openLeadTasks('${jsq(l.id)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Kaam &amp; staff</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="linkLead('${jsq(l.id)}','${jsq(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
-                            : `<button type="button" onclick="changeOwnerPhone('${jsq(l.ownerUid || '')}','${jsq(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`}
+                            : (!currentStaffRole || currentStaffRole === 'admin'
+                                ? `<button type="button" onclick="changeOwnerPhone('${jsq(l.ownerUid || '')}','${jsq(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`
+                                // Login number badalna = account kisi aur ke haath ja sakta hai.
+                                // Isliye ye sirf admin ke liye hai. Pehle button sabko dikhta tha
+                                // aur dabate hi server mana kar deta tha - staff ko lagta tha app
+                                // kharab hai.
+                                : `<span class="px-3 py-1.5 text-slate-400 font-bold text-[11px]">Number badalna ho to Ankit ko boliye</span>`)}
                     </div>
                 </div>`;
             }).join('');
