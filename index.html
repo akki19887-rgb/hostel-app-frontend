@@ -10197,7 +10197,8 @@
 
         async function openRedbusLayout(docId) {
             let propertyData = null;
-            if(docId) { const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); docSnap.forEach(d => { if(d.id === docId) propertyData = d.data(); }); }
+            if(docId) { propertyData = (await getBiz(docId)) || propertyData; }
+
             else { propertyData = window.currentPropertyData; }
             if(propertyData && propertyData.imageMapBeds && propertyData.imageMapBeds.length > 0 && propertyData.mapImageUrl) { mappedBedsData = propertyData.imageMapBeds; uploadedMapDataUrl = propertyData.mapImageUrl; buildImageBasedLayout(); goTo('screenUserImageRedbus'); }
             else { alert('No image mapped property found. Admin needs to map images first.'); }
