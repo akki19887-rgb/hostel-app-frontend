@@ -4427,7 +4427,7 @@
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="buildHostelFromLead('${l.id}')" class="px-3 py-1.5 btn-gradient text-white font-black rounded-lg text-xs shadow">Hostel banao</button>`
                             : ''}
-                        <button type="button" onclick="openLeadTasks('${l.id}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Kaam &amp; staff</button>
+                        <button type="button" onclick="openLeadTasks('${jsq(l.id)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Kaam &amp; staff</button>
                         ${l.status !== 'converted'
                             ? `<button type="button" onclick="linkLead('${jsq(l.id)}','${jsq(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
                             : `<button type="button" onclick="changeOwnerPhone('${jsq(l.ownerUid || '')}','${jsq(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`}
