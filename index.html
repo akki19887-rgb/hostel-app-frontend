@@ -4486,6 +4486,30 @@
         //
         // Yahan pehle JS ke liye escape karte hain (\' ), phir HTML ke liye — isi kram me,
         // kyunki browser pehle HTML kholta hai aur baad me JS padhta hai.
+        // NAYE PEHLE - aur index na ho to bhi screen khali na rahe.
+        //
+        // Bina orderBy ke Firestore "koi bhi N" deta hai, "aakhri N" nahi. Isliye
+        // orderBy zaroori hai. Par uske liye composite index chahiye, aur wo Firebase
+        // console me ek baar banana padta hai. Jab tak na bane, purana tarika chal
+        // jata hai - galat kram ke saath sahi, par khali screen se behtar.
+        //
+        // Girne par console me Firebase khud "create index" ka poora link deta hai.
+        async function newestFirst(collName, whereField, whereValue, sortField, howMany) {
+            const C = window.collection(window.db, collName);
+            try {
+                const snap = await window.getDocs(window.query(
+                    C, window.where(whereField, '==', whereValue),
+                    window.orderBy(sortField, 'desc'), window.limit(howMany)));
+                return { snap: snap, ordered: true };
+            } catch (e) {
+                console.warn('[' + collName + '] orderBy nahi chala - index banana hoga. '
+                           + 'Firebase ka link is error me hai:', e);
+                const snap = await window.getDocs(window.query(
+                    C, window.where(whereField, '==', whereValue), window.limit(howMany)));
+                return { snap: snap, ordered: false };
+            }
+        }
+
         function jsq(s) {
             return String(s == null ? '' : s)
                 .replace(/\\/g, '\\\\')
