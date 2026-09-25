@@ -9054,7 +9054,8 @@
         }
 
         window.openBusinessEdit = async function(docId) {
-            editingBusinessDocId = docId; const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses"))); let busData = null; docSnap.forEach(d => { if(d.id === docId) busData = d.data(); }); if(!busData) return;
+            editingBusinessDocId = docId; const busData = await getBiz(docId); if(!busData) return;
+
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || [];
 
             // The edit flow skips the map screen, so businessCity/businessCoordinates would still hold
