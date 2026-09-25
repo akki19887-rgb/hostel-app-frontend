@@ -4500,6 +4500,23 @@
         // jata hai - galat kram ke saath sahi, par khali screen se behtar.
         //
         // Girne par console me Firebase khud "create index" ka poora link deta hai.
+        // Ek listing chahiye to EK hi mangwao.
+        //
+        // Poore app me paanch jagah `getDocs(collection('businesses'))` karke us ek
+        // document ko forEach se chhaana jata tha - yani ek hostel kholne par platform
+        // ki saari listing utarti thi. Field officer ke mobile data par ye roz ka kharcha
+        // tha aur screen der se khulti thi.
+        async function getBiz(docId) {
+            if (!docId) return null;
+            try {
+                const s = await window.getDoc(window.doc(window.db, 'businesses', docId));
+                return s.exists() ? s.data() : null;
+            } catch (e) {
+                console.error('listing nahi mili:', docId, e);
+                return null;
+            }
+        }
+
         async function newestFirst(collName, whereField, whereValue, sortField, howMany) {
             const C = window.collection(window.db, collName);
             try {
