@@ -3517,9 +3517,24 @@
                     panorama360Url: panorama360Url,
                     status: 'available' // becomes 'booked' once someone completes an instant booking
                 };
+                // MALIK KA NUMBER YAHAN SE BAHAR NAHI JAYEGA.
+                //
+                // Pehle yahan `...globalBizProfile` tha. Us spread me malik ka phone,
+                // ID number aur poora naam bhi aa jata tha — aur ye document duniya
+                // padh sakti hai (`allow read: if true`, kyunki guest ko bina login
+                // ke listing dikhni hai). Yani koi bhi har flat-malik ka number
+                // nikaal sakta tha. Hostel wale raste par ye theek ho chuka tha,
+                // yahan reh gaya tha.
+                //
+                // Ab sirf wahi teen cheezein jo guest ko dikhni hi hain.
+                const publicProfile = {
+                    company:   name,
+                    firstName: (globalBizProfile && globalBizProfile.firstName) || '',
+                    role:      (globalBizProfile && globalBizProfile.role) || ''
+                };
                 const docData = {
                     propertyType: 'House/Flat',
-                    businessProfile: { company: name, ...(globalBizProfile || {}) },
+                    businessProfile: publicProfile,
                     businessName: name,
                     coverPhotoUrl: photoUrls[0] || (editingFlatHouseDocId ? undefined : ''),
                     flatDetails,
@@ -3531,17 +3546,71 @@
                     ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
                     createdAt: new Date().toISOString()
                 };
+
+                let savedId = editingFlatHouseDocId || '';
                 if (editingFlatHouseDocId) {
                     // Editing: keep existing photos for any slot that wasn't re-uploaded this time.
                     if (photoUrls.length === 0) delete docData.coverPhotoUrl;
+                    // EDIT ME YE CHAAR NAHI JA SAKTE.
+                    //
+                    // Rules me update ki ijazat ginti ki keys par hai. `createdAt` us
+                    // list me hai hi nahi — aur wo har baar naya banta tha, isliye HAR
+                    // edit mana hota tha, admin ka bhi. `status` sirf admin badal sakta
+                    // hai, to pehle se approved listing edit karne par wo bhi rok deta
+                    // tha. `ownerId` aur `propertyType` badalne ki koi wajah hi nahi.
+                    delete docData.createdAt;
+                    delete docData.status;
+                    delete docData.ownerId;
+                    delete docData.propertyType;
+                    docData.lastEditedAt = new Date().toISOString();
                     await window.updateDoc(window.doc(window.db, 'businesses', editingFlatHouseDocId), docData);
                     editingFlatHouseDocId = null;
                 } else {
-                    await window.addDoc(window.collection(window.db, 'businesses'), docData);
+                    const ref = await window.addDoc(window.collection(window.db, 'businesses'), docData);
+                    savedId = (ref && ref.id) || '';
                 }
+
+                // MALIK KA NUMBER — hostel wale raste jaisa hi.
+                //
+                // Pehle flat wale raste par ye kaam hota hi nahi tha. Listing ban jati
+                // thi aur malik tak pahunchne ka koi rasta nahi bachta tha, kyunki
+                // businessContacts me app se likha hi nahi ja sakta.
+                let fhOwnerMsg = '';
+                if (savedId && !window.__fhWasEdit) {
+                    let ph = ((globalBizProfile && globalBizProfile.phone) || '').replace(/\D/g, '').slice(-10);
+                    if (ph.length !== 10) {
+                        const asked = askOwnerPhone(name);
+                        if (asked) { ph = asked; if (globalBizProfile) globalBizProfile.phone = asked; }
+                    }
+                    if (ph.length === 10) {
+                        const own = await attachOwnerByPhone(savedId, ph,
+                                       (globalBizProfile && globalBizProfile.firstName) || '');
+                        fhOwnerMsg = !own.ok
+                            ? '\n\n⚠ Malik is listing se juda NAHI. Ankit ko bata dijiye.'
+                            : (own.claimed
+                                ? '\n\nMalik ke naam ho gayi — wo apne number se login karke dekh sakta hai.'
+                                : '\n\nMalik se ' + ph + ' par ek baar OTP login karwa dijiye,\nphir listing apne aap uske naam ho jayegi.');
+                    } else {
+                        fhOwnerMsg = '\n\n⚠ Malik ka number nahi mila — ye listing abhi kisi ke naam nahi hai.';
+                    }
+                }
+
+                // Lead se banaya tha to lead ko bhi band karo.
+                //
+                // Pehle ye sirf hostel wale raste par hota tha. Flat banane par lead
+                // khuli reh jati thi AUR upar wali neeli patti chipki reh jati thi —
+                // to agla hostel galti se isi purani lead se jud jata tha.
+                let fhLeadOk = true;
+                if (savedId && typeof attachBuiltListingToLead === 'function') {
+                    fhLeadOk = await attachBuiltListingToLead(savedId);
+                }
+                if (typeof clearLeadBanner === 'function') clearLeadBanner(true);
+
                 resetFlatHouseForm();
-                alert('✅ Your flat/house listing has been saved!');
+                alert('✅ Your flat/house listing has been saved!' + fhOwnerMsg
+                      + (fhLeadOk ? '' : '\n\n⚠ Lead se jod nahi paye — Leads page khud dekh lijiye.'));
                 exitListing();
+
             } catch (err) {
                 console.error('Flat/House save failed:', err);
                 errBox.innerText = 'Could not save: ' + err.message; errBox.classList.remove('hidden');
