@@ -4707,18 +4707,48 @@
             if (pick === null) return;
             const tasks = pick.split(',').map(x => LEAD_TASKS[parseInt(x.trim(), 10) - 1]).filter(Boolean);
 
-            const who = prompt(
-                'KISKO DENA HAI?\n\nStaff ki UID chipkaiye.\n' +
-                'Khaali chhod kar OK = kisi ko nahi (saunp wapas)\n\n' +
-                'UID Staff Manager me har staff ke saamne likhi hoti hai.',
-                l.assignedTo || ''
-            );
-            if (who === null) return;
-            let name = l.assignedName || '';
-            if (who.trim() && who.trim() !== (l.assignedTo || '')) {
-                name = (prompt('Us staff ka naam? (sirf dikhane ke liye)', '') || '').trim();
+            // TEAM KI LIST APP KHUD LE AATI HAI.
+            //
+            // Pehle yahan Firebase UID maangi jati thi. Wo sirf Staff Manager me dikhti
+            // hai aur wo admin-only hai - to field officer lead kisi sathi ko de hi
+            // nahi sakta tha. Ab sirf number chunna hai.
+            let roster = [];
+            try {
+                const rr = await apiFetch('/staff/roster', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const rj = await rr.json().catch(() => ({}));
+                if (rr.ok) roster = rj.staff || [];
+            } catch (e) { console.warn('roster nahi aaya', e); }
+
+            let who = '', name = '';
+            if (roster.length) {
+                const menu = roster.map((s, i) =>
+                    (i + 1) + '. ' + s.name + (s.role ? ' (' + s.role + ')' : '')
+                    + (s.uid === (l.assignedTo || '') ? '  <- abhi inke paas' : '')).join('\n');
+                const pickWho = prompt(
+                    'KISKO DENA HAI?\n\n' + menu +
+                    '\n\nNumber likhiye.\nKhaali chhod kar OK = kisi ko nahi (saunp wapas)',
+                    String(roster.findIndex(s => s.uid === (l.assignedTo || '')) + 1 || '')
+                );
+                if (pickWho === null) return;
+                const idx = parseInt(String(pickWho).trim(), 10) - 1;
+                if (roster[idx]) { who = roster[idx].uid; name = roster[idx].name; }
+            } else {
+                // List na aaye to purana rasta band nahi karte.
+                const typed = prompt(
+                    'KISKO DENA HAI?\n\nTeam ki list abhi nahi aa payi.\n' +
+                    'Staff ki UID chipkaiye, ya khaali chhod kar OK = kisi ko nahi.',
+                    l.assignedTo || ''
+                );
+                if (typed === null) return;
+                who = String(typed).trim();
+                if (who && who !== (l.assignedTo || '')) {
+                    name = (prompt('Us staff ka naam? (sirf dikhane ke liye)', '') || '').trim();
+                } else if (who) { name = l.assignedName || ''; }
             }
-            if (!who.trim()) name = '';
+
 
             try {
                 const r = await apiFetch('/admin/leads/update', {
