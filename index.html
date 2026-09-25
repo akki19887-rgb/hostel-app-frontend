@@ -4754,7 +4754,8 @@
                 const r = await apiFetch('/admin/leads/update', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ leadId: leadId, tasks: tasks,
-                                           assignedTo: who.trim(), assignedName: name })
+                                           assignedTo: who, assignedName: name })
+
                 });
                 const j = await r.json();
                 if (!r.ok) throw new Error(j.error || 'Save nahi hua');
