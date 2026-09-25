@@ -8630,7 +8630,14 @@
             ownerMovedPin = false;
             mappedBedsData = [];
             loadedBusinessData = null;
-            businessRules = {}; businessLegalData = {};
+            businessRules = {};
+            businessLegalData = { propertyId: '', personRole: '', regType: 'none', regNumber: '',
+                                  portalNameMatch: 'unchecked', upiNameMatch: 'unchecked',
+                                  aadhaarRedacted: '[Aadhaar Redacted]' };
+            ['formPropertyId', 'formRegNumber'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+            const pr = document.getElementById('formPersonRole'); if (pr) pr.value = '';
+            ['formPortalMatch', 'formUpiMatch'].forEach(id => { const e = document.getElementById(id); if (e) e.value = 'unchecked'; });
+            const rt = document.getElementById('formRegType'); if (rt) rt.value = 'none';
             selectedPropertyType = '';
 
             // Cover photo ka file input bhi — warna pichhli hostel ki photo chali jati thi.
