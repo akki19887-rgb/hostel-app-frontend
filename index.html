@@ -4429,7 +4429,7 @@
                             : ''}
                         <button type="button" onclick="openLeadTasks('${l.id}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Kaam &amp; staff</button>
                         ${l.status !== 'converted'
-                            ? `<button type="button" onclick="linkLead('${l.id}','${esc(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
+                            ? `<button type="button" onclick="linkLead('${jsq(l.id)}','${jsq(l.name)}')" class="px-3 py-1.5 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">Malik jodo</button>`
                             : `<button type="button" onclick="changeOwnerPhone('${l.ownerUid || ''}','${esc(l.name)}')" class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs">Number badlo</button>`}
                     </div>
                 </div>`;
