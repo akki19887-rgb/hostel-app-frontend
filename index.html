@@ -6970,6 +6970,10 @@
                 showOtpError(err.message || 'Incorrect OTP. Please try again.');
             } finally {
                 if (btn) { btn.disabled = false; btn.innerText = originalText || 'VERIFY OTP'; }
+                // Taala yahin kholna ZAROORI hai. Galat OTP par band hi rah jata to
+                // user sudhaar kar dobara koshish hi nahi kar pata - button dabta,
+                // aur kuch hota hi nahi.
+                _otpVerifyBusy = false;
             }
         }
 
