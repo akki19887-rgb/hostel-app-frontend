@@ -3635,9 +3635,9 @@
             }
         }
         window.openFlatHouseEdit = async function(docId) {
-            const docSnap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
-            let busData = null; docSnap.forEach(d => { if (d.id === docId) busData = d.data(); });
+            const busData = await getBiz(docId);
             if (!busData) return;
+
             editingFlatHouseDocId = null;
             const fd = busData.flatDetails || {};
             resetFlatHouseForm();
