@@ -6912,6 +6912,8 @@
                 document.getElementById('otpSentToNumber').innerText = raw;
                 document.getElementById('otpStepLabel').innerText = 'Enter the 6-digit OTP sent via SMS';
                 document.getElementById('authOtpInput').focus();
+                _otpVerifyBusy = false;           // naya OTP aaya - pichhli koshish ka taala kholo
+                wireOtpAutoSubmit();
                 listenForWebOtp();
             } catch (err) {
                 console.error('OTP send failed', err);
