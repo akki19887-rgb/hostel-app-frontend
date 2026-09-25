@@ -4360,6 +4360,43 @@
             }).join('');
         }
 
+        // MALIK KA NUMBER — listing ki jaan.
+        //
+        // Ye ek jagah isliye hai ki hostel aur flat/house dono raste isi se guzrein.
+        // Number ke bina listing ek anaath record hai: na malik use dekh sakta hai,
+        // na hum us tak pahunch sakte hain.
+        //
+        // Server tay karta hai ki listing kiski hai — yahan se sirf number jata hai.
+        async function attachOwnerByPhone(businessId, phone, ownerName) {
+            const digits = String(phone || '').replace(/\D/g, '').slice(-10);
+            if (!businessId || digits.length !== 10) return { ok: false, skipped: true };
+            try {
+                const r = await apiFetch('/listing/set-owner-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ businessId: businessId, phone: digits,
+                                           ownerName: ownerName || '' })
+                });
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+                return { ok: true, claimed: !!j.claimed, note: j.note || '' };
+            } catch (e) {
+                console.error('Malik jodne me dikkat:', e);
+                return { ok: false, error: e.message || String(e) };
+            }
+        }
+
+        // Number khali ho to POOCHO. Chup-chaap aage badhna hi asli bug tha.
+        function askOwnerPhone(hostelName) {
+            const p = prompt('Malik ka phone number (10 ank)\n\n'
+                + (hostelName ? (hostelName + '\n\n') : '')
+                + 'Isi number se malik apne dashboard me login karega aur yahi listing\n'
+                + 'use dikhegi. Number ke bina listing kisi ki nahi hoti.');
+            if (p === null) return null;
+            const d = String(p).replace(/\D/g, '').slice(-10);
+            return d.length === 10 ? d : '';
+        }
+
         function esc(s) {
             return String(s || '').replace(/[&<>"']/g, m =>
                 ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
