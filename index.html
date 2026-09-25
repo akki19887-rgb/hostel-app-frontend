@@ -8388,7 +8388,14 @@
             // pehli ke naam, pate, pin, bed-naksha aur cover photo ke saath publish
             // ho jati thi — aur staff ko kuch galat dikhta bhi nahi tha, kyunki naam
             // pehle se bhara hone ki wajah se poocha hi nahi jata tha.
-            globalBizProfile   = { company: '', firstName: '', lastName: '', phone: '', role: '', idType: '', idValue: '' };
+            // MALIK KHUD hai to uski apni pehchaan mat mitao — sirf listing ka naam saaf karo.
+            // STAFF hai to sab kuch saaf, kyunki uske profile me pichhle malik ka number
+            // pada hota hai aur wo agli listing par chipak jata — yani listing galat
+            // aadmi ke naam ho jati.
+            const meKhudMalik = (accountMode === 'business') && !currentStaffRole;
+            globalBizProfile = meKhudMalik
+                ? Object.assign({}, globalBizProfile || {}, { company: '' })
+                : { company: '', firstName: '', lastName: '', phone: '', role: '', idType: '', idValue: '' };
             businessCity = ''; businessState = ''; businessAddress = '';
             businessCoordinates = { lat: 21.2514, lng: 81.6296 };   // Raipur, sirf naksha kholne ke liye
             ownerMovedPin = false;
