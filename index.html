@@ -3976,6 +3976,11 @@
         // and a lead. It has to come back to whichever one opened it.
         let listingHomeScreen = 'screenBusinessDashboard';
         function exitListing() {
+            // Neeli "lead se bhara ja raha hai" patti body me fixed hai, kisi screen-panel
+            // me nahi - isliye goTo use kabhi nahi chhupata tha. Adhoora chhod kar wapas
+            // aane par wo har screen par tangi rehti thi, aur leadBeingBuilt set rehne se
+            // AGLI listing usi purani lead se jud jati thi.
+            if (typeof clearLeadBanner === 'function') clearLeadBanner(true);
             goTo(listingHomeScreen || 'screenBusinessDashboard');
         }
         let currentStaffName = '';
