@@ -9031,7 +9031,25 @@
                         firstName: globalBizProfile.firstName || '',
                         role:      globalBizProfile.role || ''
                     };
-                    const ownerPhoneForContacts = (globalBizProfile.phone || '').trim();
+                    // Number khali ho to rukiye aur poochhiye.
+                    //
+                    // Doorstep par staff apne phone se listing banata hai, isliye
+                    // globalBizProfile.phone aksar khali hota tha — aur tab ye poora
+                    // hissa chup-chaap chhoot jata tha. Listing ban jati thi jiska
+                    // malik se koi rishta hi nahi hota tha.
+                    let ownerPhoneForContacts = (globalBizProfile.phone || '').replace(/\D/g, '').slice(-10);
+                    if (ownerPhoneForContacts.length !== 10) {
+                        const asked = askOwnerPhone(globalBizProfile.company || '');
+                        if (asked === null || asked === '') {
+                            alert('Malik ka 10 ank ka number zaroori hai.\n\n'
+                                + 'Uske bina listing kisi ke naam nahi hoti — na malik ko dikhegi, '
+                                + 'na hum us tak pahunch payenge.');
+                            if (btn) { btn.disabled = false; btn.innerText = 'VERIFY & PUBLISH'; }
+                            return;
+                        }
+                        ownerPhoneForContacts = asked;
+                        globalBizProfile.phone = asked;
+                    }
 
                     await window.setDoc(window.doc(window.db, "businesses", newDocId), { businessName: globalBizProfile.company, businessProfile: publicProfile, propertyType: selectedPropertyType, coordinates: businessCoordinates, city: businessCity || '', state: businessState || '', pinAddress: businessAddress || '', rules: businessRules, layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, imageMapBeds: mappedBedsData, mapImageUrl: mainMapUrl, floorMapUrls: floorMapUrlsObj, coverPhotoUrl: uploadedCoverUrl, status: "pending_approval", ownerId: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null, dateSubmitted: new Date(), uploadedAt: new Date().toISOString() });
 
