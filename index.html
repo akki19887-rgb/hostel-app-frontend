@@ -7015,6 +7015,23 @@
                     const cached = localStorage.getItem('hostelom_business_profile');
                     if (cached) globalBizProfile = JSON.parse(cached);
                 } catch(e) {}
+                // Doorstep par bani listing uthao.
+                //
+                // Field officer ne malik ke number par listing banayi thi, par us waqt
+                // malik ka account tha hi nahi — to wo 'intezaar' me rakhi gayi.
+                // Ab malik saamne hai: server uske number se milti har listing usi ke
+                // naam kar deta hai. Pehle ye kaam sirf admin haath se karta tha.
+                try {
+                    const cl = await apiFetch('/owner/claim-listings', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    const cj = await cl.json().catch(() => ({}));
+                    if (cl.ok && (cj.claimed || []).length) {
+                        showAppToast('✅ Aapki ' + cj.claimed.length + ' listing mil gayi.');
+                    }
+                } catch (e) { console.warn('claim nahi ho paya', e); }
+
                 try {
                     const ownerUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
                     if (ownerUid) {
