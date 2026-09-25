@@ -4518,16 +4518,25 @@
         async function attachOwnerByPhone(businessId, phone, ownerName) {
             const digits = String(phone || '').replace(/\D/g, '').slice(-10);
             if (!businessId || digits.length !== 10) return { ok: false, skipped: true };
+            // Property aur malik ki jaanch bhi isi ke saath jati hai — alag call ki
+            // zaroorat nahi, aur dono ek hi jagah (businessContacts) me baithte hain.
+            const L = (typeof businessLegalData === 'object' && businessLegalData) ? businessLegalData : {};
             try {
                 const r = await apiFetch('/listing/set-owner-phone', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ businessId: businessId, phone: digits,
-                                           ownerName: ownerName || '' })
+                                           ownerName: ownerName || '',
+                                           propertyId: L.propertyId || '',
+                                           personRole: L.personRole || '',
+                                           regType: L.regType || '',
+                                           regNumber: L.regNumber || '',
+                                           portalNameMatch: L.portalNameMatch || '',
+                                           upiNameMatch: L.upiNameMatch || '' })
                 });
                 const j = await r.json().catch(() => ({}));
                 if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
-                return { ok: true, claimed: !!j.claimed, note: j.note || '' };
+                return { ok: true, claimed: !!j.claimed, note: j.note || '', flags: j.flags || [] };
             } catch (e) {
                 console.error('Malik jodne me dikkat:', e);
                 return { ok: false, error: e.message || String(e) };
