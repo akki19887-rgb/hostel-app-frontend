@@ -5209,15 +5209,18 @@
             followBox.innerHTML = '<p class="text-xs font-bold text-slate-400 py-3">Loading…</p>';
             recentBox.innerHTML = '';
             try {
-                const snap = await window.getDocs(window.query(
-                    window.collection(window.db, 'staffVisits'),
-                    window.where('staffUid', '==', u.uid),
-                    window.limit(200)
-                ));
+                // Pehle yahan orderBy tha hi nahi, isliye 200 visit ke baad ye "koi bhi
+                // 200" deta tha - ginti girne lagti thi aur aaj ka follow-up gayab ho
+                // sakta tha.
+                const got = await newestFirst('staffVisits', 'staffUid', u.uid, 'visitedAt', 200);
+                const snap = got.snap;
                 const rows = [];
                 snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
-                // Sorted here rather than in the query so this needs no composite index.
                 rows.sort((a, b) => String(b.visitedAt || '').localeCompare(String(a.visitedAt || '')));
+                if (!got.ordered && rows.length >= 200) {
+                    showAppToast('Dhyan dijiye: purane visit poore nahi aa rahe. Ankit ko bataiye.');
+                }
+
 
                 const today = new Date().toISOString().slice(0, 10);
                 const month = today.slice(0, 7);
