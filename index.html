@@ -8337,7 +8337,18 @@
             businessRules.minStayDays = document.getElementById('formMinStayDays') ? Math.max(1, parseInt(document.getElementById('formMinStayDays').value) || 1) : 1;
             businessRules.minStayWeeks = document.getElementById('formMinStayWeeks') ? Math.max(1, parseInt(document.getElementById('formMinStayWeeks').value) || 1) : 1;
             businessRules.acType = document.getElementById('formAcType') ? document.getElementById('formAcType').value : 'AC & Non-AC Both';
-            businessRules.genderType = document.getElementById('formGenderType') ? document.getElementById('formGenderType').value : 'Co-ed';
+            // Gender bina aage nahi. Ye safety ka sawaal hai, aur baad me sirf admin
+            // badal sakta hai — isliye yahin rok dena hi sahi hai.
+            const gEl = document.getElementById('formGenderType');
+            const gVal = gEl ? (gEl.value || '') : '';
+            if (!gVal) {
+                alert('Gender Policy chuniye — Boys Only, Girls Only ya Co-ed.\n\n'
+                    + 'Guest isi se hostel dhoondhta hai, aur baad me ise sirf admin badal sakta hai.');
+                if (gEl) gEl.focus();
+                return;
+            }
+            businessRules.genderType = gVal;
+
             businessRules.bathType = document.getElementById('formBathType') ? document.getElementById('formBathType').value : 'Attached';
             businessRules.parking = document.getElementById('formParking') ? document.getElementById('formParking').value : 'Bike Only';
             businessRules.laundry = document.getElementById('formLaundry') ? document.getElementById('formLaundry').value : 'Not Available';
