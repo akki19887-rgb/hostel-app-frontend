@@ -4593,13 +4593,23 @@
             if (!ok) return;
 
             // ijazat darj — status bhi agreed ho jata hai
+            //
+            // Pehle yahan r.ok dekha hi nahi jata tha aur catch khali tha. Upar wale
+            // confirm me hum waada karte hain "aapka naam aur samay record ho jayega" —
+            // aur agar wo na bane to listing bin kisi saboot ke ban jati thi ki malik
+            // ne haan kaha bhi tha. Kaam phir bhi nahi rokte, par chhupate bhi nahi.
             try {
-                await apiFetch('/admin/leads/update', {
+                const cr = await apiFetch('/admin/leads/update', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ leadId: leadId, consent: true, status: 'agreed',
                                            note: 'Malik ne ijazat di — hostel banana shuru' })
                 });
-            } catch (e) { /* record na bhi bane to kaam rukna nahi chahiye */ }
+                if (!cr.ok) throw new Error((await cr.json().catch(() => ({}))).error || ('HTTP ' + cr.status));
+            } catch (e) {
+                console.error('ijazat darj nahi hui', e);
+                showAppToast('Dhyan: ijazat ka record nahi bana. Hostel bana lijiye, par Ankit ko bata dijiye.');
+            }
+
 
             // --- purana form, bhara hua ---
             startNewProperty(leadsCameFrom);    // sab purana kachra saaf, aur wapsi ka pata yaad
