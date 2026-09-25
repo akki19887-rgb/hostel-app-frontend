@@ -8533,7 +8533,32 @@
         }
 
         function saveLegalAndNext() {
-            businessLegalData.licence = document.getElementById('formLicence').value || 'LIC-OM-9942'; businessLegalData.gst = document.getElementById('formGst').value || '22AAAAA0000A1Z5';
+            // JHOOTHE DEFAULT HATA DIYE.
+            //
+            // Pehle dono khaano par ek default laga hua tha: khaali chhodo to app khud
+            // ek gadha hua licence number (LIC ... 9942) aur ek gadha hua GST number
+            // (22AAAAA ... 1Z5) bhar deta tha, aur use
+            // "Government Verification" ke naam se dikhata tha. Uska matlab ye tha ki
+            // asli aur nakli number me fark karna namumkin tha.
+            // Ab khaali ka matlab khaali hai.
+            const gv = (id) => { const el = document.getElementById(id); return el ? (el.value || '').trim() : ''; };
+            businessLegalData.propertyId      = gv('formPropertyId').toUpperCase();
+            businessLegalData.personRole      = gv('formPersonRole');
+            businessLegalData.regType         = gv('formRegType') || 'none';
+            businessLegalData.regNumber       = gv('formRegNumber').toUpperCase();
+            businessLegalData.portalNameMatch = gv('formPortalMatch') || 'unchecked';
+            businessLegalData.upiNameMatch    = gv('formUpiMatch') || 'unchecked';
+
+            if (!businessLegalData.propertyId) {
+                alert('Property ID bhariye.\n\nGhar ke bahar lagi neeli plate par "Property ID" likha hota hai — jaise RPR569H00006.\n\nIsi se pata chalta hai ki listing kis makaan ki hai.');
+                const el = document.getElementById('formPropertyId'); if (el) el.focus();
+                return;
+            }
+            if (!businessLegalData.personRole) {
+                alert('Bataiye ki saamne khada vyakti kaun hai — malik, parivaar ka, ya manager/kirayedar.\n\nIsse pata chalta hai ki listing par bharosa kitna karna hai.');
+                const el = document.getElementById('formPersonRole'); if (el) el.focus();
+                return;
+            }
             businessRules.stayTypes = { daily: document.getElementById('stayDaily') ? document.getElementById('stayDaily').checked : false, weekly: document.getElementById('stayWeekly') ? document.getElementById('stayWeekly').checked : false, monthly: document.getElementById('stayMonthly') ? document.getElementById('stayMonthly').checked : true };
             businessRules.securityDeposit = document.getElementById('formDeposit') ? parseInt(document.getElementById('formDeposit').value) || 0 : 0;
             businessRules.minStayMonths = document.getElementById('formMinStayMonths') ? Math.max(1, parseInt(document.getElementById('formMinStayMonths').value) || 1) : 1;
