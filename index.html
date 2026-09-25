@@ -5021,14 +5021,12 @@
             const u = window.auth && window.auth.currentUser;
             if (!u) { list.innerHTML = '<p class="text-center text-xs font-bold text-red-500 py-10">Not signed in.</p>'; return; }
             try {
-                const snap = await window.getDocs(window.query(
-                    window.collection(window.db, 'auditLog'),
-                    window.where('actorUid', '==', u.uid),
-                    window.limit(50)
-                ));
+                // Neeche likha hai "Newest first. Showing your last 50 actions."
+                // Bina orderBy ke wo waada jhootha tha - 50 se zyada kaam ke baad
+                // koi bhi 50 aate the, aaj ke nahi.
+                const gotA = await newestFirst('auditLog', 'actorUid', u.uid, 'at', 50);
                 const rows = [];
-                snap.forEach(d => rows.push(d.data()));
-                // Sorted client-side so this needs no composite index — 50 rows is nothing.
+                gotA.snap.forEach(d => rows.push(d.data()));
                 rows.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
 
                 if (!rows.length) {
