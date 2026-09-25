@@ -2091,8 +2091,65 @@
                 <h3 class="text-xs font-black text-indigo-900 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">1</span> Government Verification</h3>
                 <div class="space-y-3">
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhaar (Privacy Protected)</label><input type="text" id="formAadhaar" value="[Aadhaar Redacted]" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-100 text-slate-500 font-bold cursor-not-allowed"></div>
-                    <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Business Licence</label><input type="text" id="formLicence" placeholder="e.g. LIC-XXXX" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-                    <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">GST Number</label><input type="text" id="formGst" placeholder="Enter GST" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70 uppercase"></div>
+                    <!-- PROPERTY ID - ghar ke bahar lagi nagar nigam ki plate se.
+                         Yahi ek cheez hai jo officer BINA KISI SE POOCHHE likh sakta hai,
+                         aur jo listing ko ek asli, dhoondhe ja sakne wale makaan se bandhti hai.
+                         Purana "Business Licence" khaana hata diya - zyadatar hostel ke paas
+                         wo hota hi nahi tha, aur jo bhara jata tha wo kahin save bhi nahi hota tha. -->
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Property ID <span class="text-red-500">*</span></label>
+                        <input type="text" id="formPropertyId" placeholder="jaise RPR569H00006"
+                            class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70 uppercase">
+                        <p class="text-[10px] font-bold text-slate-400 mt-1">Ghar ke bahar lagi neeli plate par "Property ID" likha hota hai</p>
+                    </div>
+
+                    <!-- Yahi sawaal aage ka sab kuch tay karta hai. Malik khud ho to kaam khatam;
+                         kirayedar ya manager ho to us listing par aapko khud nazar daalni hogi. -->
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Saamne khada vyakti kaun hai? <span class="text-red-500">*</span></label>
+                        <select id="formPersonRole" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                            <option value="" selected>-- Chuniye --</option>
+                            <option value="owner">Malik khud</option>
+                            <option value="family">Parivaar ka (beta / patni / bhai)</option>
+                            <option value="manager">Manager ya kirayedar</option>
+                        </select>
+                    </div>
+
+                    <!-- Dono jaanch ek-ek tap ki hain. "Dekh nahi paye" bhi ek sahi jawab hai -
+                         jhootha "haan" se kahin behtar, aur usi se pata chalta hai kahan dobara dekhna hai. -->
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">mcraipur.in par naam mila?</label>
+                        <select id="formPortalMatch" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                            <option value="unchecked" selected>Dekh nahi paye</option>
+                            <option value="yes">Haan, wahi naam hai</option>
+                            <option value="no">Nahi, naam alag hai</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">UPI par naam mila?</label>
+                        <select id="formUpiMatch" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                            <option value="unchecked" selected>Dekh nahi paye</option>
+                            <option value="yes">Haan, wahi naam hai</option>
+                            <option value="no">Nahi, naam alag hai</option>
+                        </select>
+                        <p class="text-[10px] font-bold text-slate-400 mt-1">Apne UPI app me malik ka number daaliye — naam dikh jayega. Paisa mat bhejiye, cancel kar dijiye.</p>
+                    </div>
+
+                    <!-- MARZI SE. GST zaroori karna sabse badi galti hoti - zyadatar hostel
+                         Rs 20 lakh ki hadd se neeche hain, unke paas GST hai hi nahi. -->
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Registration <span class="font-bold text-slate-400 normal-case">(ho to — zaroori nahi)</span></label>
+                        <div class="flex gap-2">
+                            <select id="formRegType" class="w-2/5 p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
+                                <option value="none" selected>Koi nahi</option>
+                                <option value="gumasta">Gumasta</option>
+                                <option value="udyam">Udyam</option>
+                                <option value="gst">GST</option>
+                            </select>
+                            <input type="text" id="formRegNumber" placeholder="Number"
+                                class="flex-1 p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70 uppercase">
+                        </div>
+                    </div>
                 </div>
             </div>
 
