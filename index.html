@@ -8337,7 +8337,44 @@
         // the server a head start waking up, so by the time they hit the real AI request it's often
         // already warm. This never blocks anything — failures are silently ignored.
         function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
-        function startNewProperty(openedFrom) { listingHomeScreen = openedFrom || 'screenBusinessDashboard'; editingBusinessDocId = null; globalDynamicRooms = []; admin2DBlocks = []; floorMaps = []; uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = ''; if (typeof resetFlatHouseForm === 'function') resetFlatHouseForm(); wakeUpAIBackend(); goTo('screenPropertyTypeSelection'); }
+        function startNewProperty(openedFrom) {
+            listingHomeScreen = openedFrom || 'screenBusinessDashboard';
+            editingBusinessDocId = null;
+            globalDynamicRooms = []; admin2DBlocks = []; floorMaps = [];
+            uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = '';
+
+            // NAYI LISTING KA MATLAB — KUCH BHI PURANA NAHI.
+            //
+            // Ye saari cheezein pehle saaf nahi hoti thin. Din ki doosri hostel
+            // pehli ke naam, pate, pin, bed-naksha aur cover photo ke saath publish
+            // ho jati thi — aur staff ko kuch galat dikhta bhi nahi tha, kyunki naam
+            // pehle se bhara hone ki wajah se poocha hi nahi jata tha.
+            globalBizProfile   = { company: '', firstName: '', lastName: '', phone: '', role: '', idType: '', idValue: '' };
+            businessCity = ''; businessState = ''; businessAddress = '';
+            businessCoordinates = { lat: 21.2514, lng: 81.6296 };   // Raipur, sirf naksha kholne ke liye
+            ownerMovedPin = false;
+            mappedBedsData = [];
+            loadedBusinessData = null;
+            businessRules = {}; businessLegalData = {};
+            selectedPropertyType = '';
+
+            // Cover photo ka file input bhi — warna pichhli hostel ki photo chali jati thi.
+            const cov = document.getElementById('propertyCoverPhoto');
+            if (cov) cov.value = '';
+            const gsel = document.getElementById('formGenderType');
+            if (gsel) gsel.value = '';
+            const pcl = document.getElementById('pinCityLabel');
+            if (pcl) pcl.innerText = '';
+
+            // Pichhli lead se rishta bhi todo — warna agla hostel usi purani lead se
+            // jud jata tha aur use galti se 'converted' kar deta tha.
+            if (typeof clearLeadBanner === 'function') clearLeadBanner(true);
+
+            if (typeof resetFlatHouseForm === 'function') resetFlatHouseForm();
+            wakeUpAIBackend();
+            goTo('screenPropertyTypeSelection');
+        }
+
         async function addFloorMap() {
             wakeUpAIBackend();
             const name = document.getElementById('newFloorName').value; const fileInput = document.getElementById('newFloorFile');
