@@ -6899,7 +6899,13 @@
             }
         }
 
+        // Ek hi OTP do baar na jaye. Typing wala auto-verify aur WebOTP wala - dono
+        // ek hi pal me chal sakte hain, aur tab server par do request pahunch jati
+        // hain. Doosri hamesha "galat OTP" lauta kar user ko darati hai.
+        let _otpVerifyBusy = false;
+
         async function verifyOtpFromBackend() {
+            if (_otpVerifyBusy) return;
             showOtpError('');
             const otp = (document.getElementById('authOtpInput').value || '').trim();
             if (otp.length !== 6 || !/^\d{6}$/.test(otp)) { showOtpError('Please enter the 6-digit OTP.'); return; }
