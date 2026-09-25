@@ -6838,6 +6838,28 @@
             showOtpError('');
         }
 
+        // 6 ANK POORE = KAAM KHATAM. Button dabane ki zaroorat nahi.
+        //
+        // Ye har phone par chalta hai, aaj se, bina kisi SMS badlav ke. WebOTP sirf
+        // Android Chrome par aur sirf tab chalta hai jab SMS ka roop sahi ho - tab tak
+        // (aur iPhone par hamesha) OTP haath se hi aata hai. Wahan ye ek tap bachata hai.
+        //
+        // Saath hi khaana saaf bhi karta hai: "OTP: 1 2 3 4 5 6" paste kijiye to sirf
+        // ank bachte hain. Pehle aisa paste kaam hi nahi karta tha.
+        function wireOtpAutoSubmit() {
+            const input = document.getElementById('authOtpInput');
+            if (!input || input.dataset.autoWired === '1') return;
+            input.dataset.autoWired = '1';
+            input.addEventListener('input', () => {
+                const only = (input.value || '').replace(/\D/g, '').slice(0, 6);
+                if (input.value !== only) input.value = only;
+                if (only.length === 6) {
+                    input.blur();                 // keyboard hata do, taaki "Verifying..." dikhe
+                    verifyOtpFromBackend();
+                }
+            });
+        }
+
         // WEBOTP API: on supported browsers (mainly Android Chrome), this silently listens for an
         // incoming SMS and auto-fills + auto-submits the OTP — no manual typing/copy-pasting needed.
         // Safe no-op everywhere else (iOS, desktop, unsupported SMS format) — falls back to normal
