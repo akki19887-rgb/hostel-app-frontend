@@ -13254,5 +13254,26 @@
     <button type="button" id="tourHelpBtn" onclick="startTour(document.getElementById('screenBusinessDashboard') && !document.getElementById('screenBusinessDashboard').classList.contains('hidden') ? 'owner' : 'guest', true)"
         title="App kaise chalayein"
         style="position:fixed; right:16px; bottom:16px; z-index:9998; width:44px; height:44px; border-radius:50%; border:0; background:#1F3864; color:#fff; font-weight:900; font-size:18px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.25); display:none;">?</button>
+
+    <!-- SITE FOOTER
+         Ye sirf sajaavat nahi hai. Google Play aur har payment gateway (Razorpay, PayU)
+         Privacy, Terms, Refund aur Contact ko KHULE URL par maangte hain, aur site ke
+         neeche se link kiya hua. App ke andar ka popup unke liye maujood hi nahi hota,
+         kyunki unka reviewer app me login nahi karta.
+         Chaaron page alag file hain (privacy.html, terms.html, refund.html, contact.html)
+         aur firebase.json unhe /privacy, /terms, /refund, /contact par khol deta hai.
+         Link poore page load karte hain - jaan-bujh kar, taaki reviewer ko wahi URL mile. -->
+    <footer style="position:absolute; left:0; right:0; bottom:0; padding:16px 14px 18px;
+                   text-align:center; font-size:11.5px; line-height:1.8; color:#64748b;
+                   font-weight:600; background:rgba(255,255,255,.72); backdrop-filter:blur(6px);
+                   border-top:1px solid rgba(148,163,184,.25); z-index:1;">
+        <div>
+            <a href="/privacy" style="color:#475569; margin:0 7px; white-space:nowrap;">Privacy Policy</a>&middot;
+            <a href="/terms" style="color:#475569; margin:0 7px; white-space:nowrap;">Terms of Service</a>&middot;
+            <a href="/refund" style="color:#475569; margin:0 7px; white-space:nowrap;">Cancellation &amp; Refund</a>&middot;
+            <a href="/contact" style="color:#475569; margin:0 7px; white-space:nowrap;">Contact Us</a>
+        </div>
+        <div style="margin-top:4px;">&copy; 2026 HOSTEL OM-F &middot; Raipur, Chhattisgarh &middot; Gumasta RPR/2026/44022952</div>
+    </footer>
 </body>
 </html>
