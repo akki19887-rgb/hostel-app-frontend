@@ -5594,7 +5594,15 @@
             if(screenId === 'screenMyBookings') loadMyBookings();
             if(screenId === 'screenGoogleMap') {
                 if (googleMap) {
-                    setTimeout(() => { google.maps.event.trigger(googleMap, "resize"); googleMap.setCenter(businessCoordinates); }, 150);
+                    // Naksha to nayi jagah chala jata tha, par HO wala pin purane hostel
+                    // par hi pada reh jata tha — aksar screen se bahar. Pin sirf initMap me
+                    // ek baar lagta tha, isliye doosri listing par wo kabhi hilta hi nahi tha.
+                    setTimeout(() => {
+                        google.maps.event.trigger(googleMap, "resize");
+                        googleMap.setCenter(businessCoordinates);
+                        if (googleMarker) googleMarker.position = businessCoordinates;
+                    }, 150);
+
                 } else {
                     loadScriptOnce(MAPS_CDN).then(() => { initMap(); }).catch(() => { console.warn('Google Maps failed to load'); });
                 }
