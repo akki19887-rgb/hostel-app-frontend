@@ -4427,8 +4427,17 @@
                 const j = await r.json();
                 if (!r.ok) throw new Error(j.error || 'Nahi mila');
                 leadsCache = j.leads || [];
-                fillDistrictOptions();
+                // Dropdown ab suchi se bharti hai, lead se nahi. Lead se bharne
+                // par sirf wahi jile dikhte the jo abhi load hue hon - yani
+                // chhaant lagate hi baaki jile gayab ho jate.
+                if (leadPlaces) { fillDistrictFromTree(); fillLocalityFromTree(); }
+                else fillDistrictOptions();
                 renderLeads();
+                if (j.capped) {
+                    box.insertAdjacentHTML('afterbegin',
+                        '<p class="text-[11px] font-bold text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-2">'
+                        + 'Itne zyada hain ki sab ek saath nahi aa sakte. Area bhi chun lijiye.</p>');
+                }
             } catch (e) {
                 box.innerHTML = '<p class="text-center text-red-500 text-sm py-8 font-bold">Nahi khul paya: ' + e.message + '</p>';
             }
