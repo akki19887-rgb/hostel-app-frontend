@@ -4473,7 +4473,7 @@
                         </div>
                         <span class="chip ${cls} border shrink-0 text-[10px]">${txt}</span>
                     </div>
-                    ${l.facilities ? `<p class="text-[11px] text-slate-400 mb-2">${esc(l.facilities)}</p>` : ''}
+                    ${leadFacts(l)}
                     ${(l.tasks && l.tasks.length) ? `<p class="text-[11px] mb-2">${l.tasks.map(t => `<span class="inline-block bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 mr-1 mb-1">${esc(t)}</span>`).join('')}</p>` : ''}
                     ${l.assignedName ? `<p class="text-[11px] text-slate-600 mb-2">👤 <b>${esc(l.assignedName)}</b> ko diya gaya</p>` : ''}
                     ${l.consent ? `<p class="text-[11px] text-green-700 mb-2">✅ Malik ki ijazat li ja chuki hai</p>` : ''}
