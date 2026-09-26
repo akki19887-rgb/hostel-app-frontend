@@ -10106,8 +10106,20 @@
 
                         liveBeds.forEach(bedObj => {
                             if (knownBedIds.has(bedObj.bedId)) {
-                                // Already tracked — keep its price in sync with whatever was set on the canvas.
-                                admin2DBlocks.forEach(b => { if (b.beds) { const bd = b.beds.find(x => x.id === bedObj.bedId); if (bd) { bd.price = bedObj.bedPrice; bd.priceMonthly = bedObj.bedPrice; } } });
+                                // Ye bed pehle se juda hai - ISKA DAAM MAT CHHEDO.
+                                //
+                                // Pehle yahan canvas ka 'bedPrice' bed par wapas chipka
+                                // diya jata tha. Par canvas ka daam us waqt ka hai jab
+                                // listing bani thi; owner baad me Data Editor se jo rate
+                                // badalta hai wo canvas tak jata hi nahi (updateBedPrice
+                                // sirf globalDynamicRooms aur admin2DBlocks ko chhuta hai,
+                                // aur redrawAdminCanvasForFloor saved state milte hi
+                                // wapas laut jata hai).
+                                //
+                                // Natija: owner 7500 karta, submit sahi hota, phir admin
+                                // Architect Mode se Publish dabata aur rate wapas 5000 ho
+                                // jata. Guest ko 5000 dikhta, owner samajhta 7500 live hai.
+                                // Har publish par dobara.
                                 return;
                             }
                             const containingRoom = findContainingRoom(bedObj);
