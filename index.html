@@ -4402,6 +4402,25 @@
             if (s) q.set('status', s);
             const mine = document.getElementById('leadOnlyMine');
             if (mine && mine.checked) q.set('assignedTo', 'me');
+
+            // KUCH CHUNA HI NAHI TO LIST MAT MAANGO.
+            //
+            // Pehle yahan bina kisi chhaant ke 500 lead aa girte the. Ab 2,000+
+            // lead hain - un 500 me se KAUNSE aayenge ye tay bhi nahi hai
+            // (server par order_by nahi hai). Baaki chup-chaap gayab rehte.
+            // Jila chunte hi ginti 300 se neeche aa jati hai, to hadd lagti hi nahi.
+            if (!st && !d && !ar && !(mine && mine.checked)) {
+                leadsCache = [];
+                box.innerHTML = '<div class="text-center py-10">'
+                    + '<p class="text-4xl mb-2">&#128269;</p>'
+                    + '<p class="font-black text-slate-700">Pehle rajya ya jila chuniye</p>'
+                    + '<p class="text-xs text-slate-400 mt-1">Ya "Mere kaam" par tick lagaiye</p>'
+                    + '</div>';
+                document.getElementById('leadsStatsBox').innerHTML = '';
+                return;
+            }
+
+            box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Laa rahe hain…</p>';
             q.set('limit', '500');
             try {
                 const r = await apiFetch('/admin/leads?' + q.toString());
