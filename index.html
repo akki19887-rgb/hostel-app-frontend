@@ -12763,7 +12763,18 @@
             globalDynamicRooms = roomBlocks.map(block => {
                 const existing = globalDynamicRooms.find(r => r.id === block.id) || {};
                 const beds = block.beds || [];
+                // PEHLE JO THA WO SAB SAATH LE JAO, PHIR UPAR SE NAYA LIKHO.
+                //
+                // Pehle yahan sirf 8 khaane likhe jate the aur baaki chup-chaap
+                // gir jate the. Ye function 16 jagah se bulaya jata hai - ek bed
+                // jodne par bhi chalta hai - to room ki photo (rawFiles), 360
+                // ka tour (panorama360Url, raw360File) aur "Same as Room 1" wale
+                // saare link (syncPhotoFrom, syncRateFrom) mit jate the.
+                //
+                // Staff ko kuch dikhta bhi nahi tha: photo screen par lagi rehti
+                // thi par submit ke waqt bhejne ko kuch bachta hi nahi tha.
                 return {
+                    ...existing,
                     id: block.id,
                     name: block.name,
                     floor: block.floor || 'Ground Floor',
