@@ -4676,9 +4676,23 @@
             if (note === null) return;
             const st = prompt('Ab kya halat hai?\n\ncontacted = phone kiya\nagreed = raazi ho gaya\nrefused = mana kar diya\n\n(khaali chhod dein to halat wahi rahegi)', 'contacted');
             if (st === null) return;
+
+            // BED aur RATE - phone call ki asli kamai.
+            //
+            // Ye Google se milte hi nahi, sirf malik se poochhne par milte hain. Pehle
+            // ye baat note ke text me kahin likh di jati thi, isliye na chhaani ja sakti
+            // thi na gini. Ab alag khaane me jati hai.
+            //
+            // Cancel dabane par (null) kuch nahi bhejte - purana jaisa ka taisa rehta
+            // hai. Khaali chhodne par bhi wahi. Sirf likha hua hi jata hai.
+            const bedIn  = prompt('Kitne bed hain?\n\n(pata na chala to khaali chhod dein)');
+            const rateIn = prompt('Rate kahan se shuru hota hai? (mahine ka, rupaye me)\n\n(pata na chala to khaali chhod dein)');
+
             try {
                 const body = { leadId: leadId, note: note };
                 if (st.trim()) body.status = st.trim();
+                if (bedIn  !== null && bedIn.trim())  body.beds     = bedIn.trim();
+                if (rateIn !== null && rateIn.trim()) body.rentFrom = rateIn.trim();
                 const r = await apiFetch('/admin/leads/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
