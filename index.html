@@ -4283,7 +4283,8 @@
             document.getElementById('leadsMaintBox').classList.add('hidden');
             const mine = document.getElementById('leadOnlyMine');
             if (mine) mine.checked = true;
-            await refreshLeads();
+            await loadLeadPlaces();
+            await refreshLeads();      // "Mere kaam" khud ek chhaant hai
         }
 
         function leadsGoBack() {
