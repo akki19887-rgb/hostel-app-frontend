@@ -4306,6 +4306,87 @@
             await refreshLeads();
         }
 
+        // Rajya -> jila -> area ki suchi. Isme lead ka data NAHI hai, sirf naam
+        // aur ginti. Iske bina dropdown bhar hi nahi sakti, kyunki ab hum
+        // khulte hi lead load nahi karte.
+        let leadPlaces = null;
+
+        async function loadLeadPlaces(force) {
+            if (leadPlaces && !force) return leadPlaces;
+            try {
+                const r = await apiFetch('/admin/leads/places' + (force ? '?fresh=1' : ''));
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Suchi nahi aayi');
+                leadPlaces = j.tree || {};
+                fillStateOptions(j.total || 0);
+            } catch (e) {
+                // Suchi na aaye to bhi page kaam kare - purana tarika bacha rehta hai
+                console.warn('lead places:', e.message);
+                leadPlaces = null;
+            }
+            return leadPlaces;
+        }
+
+        function fillStateOptions(total) {
+            const sel = document.getElementById('leadFilterState');
+            if (!sel || !leadPlaces) return;
+            const chuna = sel.value;
+            const rajya = Object.keys(leadPlaces).sort();
+            sel.innerHTML = '<option value="">Rajya chuniye' + (total ? ' (' + total + ')' : '') + '</option>'
+                + rajya.map(r => {
+                    let n = 0;
+                    for (const j in leadPlaces[r]) n += leadPlaces[r][j].n || 0;
+                    return `<option value="${esc(r)}">${esc(r)} (${n})</option>`;
+                }).join('');
+            if (chuna && rajya.includes(chuna)) sel.value = chuna;
+        }
+
+        function fillDistrictFromTree() {
+            const selS = document.getElementById('leadFilterState');
+            const selD = document.getElementById('leadFilterDistrict');
+            if (!selS || !selD || !leadPlaces) return;
+            const st = selS.value;
+            const jile = st ? Object.keys(leadPlaces[st] || {}).sort() : [];
+            const chuna = selD.value;
+            selD.innerHTML = '<option value="">Sabhi jile</option>'
+                + jile.map(j => `<option value="${esc(j)}">${esc(j)} (${leadPlaces[st][j].n})</option>`).join('');
+            if (chuna && jile.includes(chuna)) selD.value = chuna;
+        }
+
+        function fillLocalityFromTree() {
+            const selS = document.getElementById('leadFilterState');
+            const selD = document.getElementById('leadFilterDistrict');
+            const selA = document.getElementById('leadFilterLocality');
+            if (!selS || !selD || !selA || !leadPlaces) return;
+            const st = selS.value, ji = selD.value;
+            const node = (st && ji) ? (leadPlaces[st] || {})[ji] : null;
+            const areas = node ? Object.keys(node.areas || {}).sort() : [];
+            const chuna = selA.value;
+            selA.innerHTML = '<option value="">Sabhi area</option>'
+                + areas.map(a => `<option value="${esc(a)}">${esc(a)} (${node.areas[a]})</option>`).join('');
+            if (chuna && areas.includes(chuna)) selA.value = chuna;
+        }
+
+        // Search box: har akshar par poora HTML dobara mat banao.
+        // Pehle "godavari" likhne par 8 baar 500 card bante the.
+        let _leadSearchTimer = null;
+        function leadSearchLater() {
+            clearTimeout(_leadSearchTimer);
+            _leadSearchTimer = setTimeout(renderLeads, 250);
+        }
+        let _auditFilterTimer = null;
+        function auditFilterLater() {
+            clearTimeout(_auditFilterTimer);
+            _auditFilterTimer = setTimeout(renderAuditRows, 250);
+        }
+
+        async function onDistrictChange() {
+            const selA = document.getElementById('leadFilterLocality');
+            if (selA) selA.value = '';
+            fillLocalityFromTree();
+            await refreshLeads();
+        }
+
         async function refreshLeads() {
             const box = document.getElementById('leadsListBox');
             box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Laa rahe hain…</p>';
