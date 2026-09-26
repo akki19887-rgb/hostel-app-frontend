@@ -4459,6 +4459,7 @@
                 const last = (l.contactLog && l.contactLog.length) ? l.contactLog[l.contactLog.length - 1] : null;
                 return `
                 <div class="p-4 bg-white border border-slate-200 rounded-2xl">
+                    ${l.orgType === 'seva-sadan' ? `<p class="-mt-1 mb-2 text-[11px] font-black text-white bg-red-600 rounded-lg px-2 py-1 tracking-wide">SEVA SADAN &mdash; dharmarth sanstha, kiraya lete hain ya nahi pehle poochhiye</p>` : ''}
                     <div class="flex justify-between items-start gap-3 mb-2">
                         <div class="min-w-0">
                             ${l.leadCode ? `<p class="text-[10px] font-mono font-black text-slate-400 tracking-wider">${esc(l.leadCode)}</p>` : ''}
