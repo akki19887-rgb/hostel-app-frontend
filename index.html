@@ -10225,14 +10225,21 @@
                 // work" even though the visual layout was fine. Now rebuilt from admin2DBlocks on
                 // every publish, preserving each room's existing photos where we have them.
                 const syncedRoomsAndBeds = admin2DBlocks.filter(b => b.type === 'room').map(block => {
-                    const existing = adminExistingRoomsAndBeds.find(r => r.id === block.id);
+                    const existing = adminExistingRoomsAndBeds.find(r => r.id === block.id) || {};
+                    // Pehle jo tha wo pehle rakho - warna jo khaana yahan likha nahi
+                    // hai wo publish karte hi ud jata hai. 'panorama360Url' isi tarah
+                    // gayab hota tha: owner 360 ka tour chadhata, admin Publish dabata,
+                    // aur guest ka "Explore in 360" button hamesha ke liye chala jata.
                     return {
+                        ...existing,
                         id: block.id, name: block.name, floor: block.floor,
-                        type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : (existing ? existing.type : '1-Seater'),
+                        type: block.beds && block.beds.length ? `${block.beds.length}-Seater` : (existing.type || '1-Seater'),
                         beds: block.beds || [],
-                        amenities: block.amenities || (existing ? existing.amenities : []),
-                        has_door: block.has_door !== undefined ? block.has_door : (existing ? existing.has_door : true),
-                        photos: existing ? existing.photos : ['', '']
+                        amenities: block.amenities || existing.amenities || [],
+                        has_door: block.has_door !== undefined ? block.has_door : (existing.has_door !== false),
+                        // Teen khaane - baaki poore app me teen hi hain. Yahan do likhe
+                        // the, to teesri photo publish par kat jati thi.
+                        photos: existing.photos || ['', '', '']
                     };
                 });
                 adminExistingRoomsAndBeds = syncedRoomsAndBeds; // keep in sync if published again without reloading
