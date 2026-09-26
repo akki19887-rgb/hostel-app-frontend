@@ -4389,13 +4389,14 @@
 
         async function refreshLeads() {
             const box = document.getElementById('leadsListBox');
-            box.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">Laa rahe hain…</p>';
             const q = new URLSearchParams();
             const st = document.getElementById('leadFilterState').value;
             if (st) q.set('state', st);
             const d = document.getElementById('leadFilterDistrict').value;
             const g = document.getElementById('leadFilterGender').value;
             const s = document.getElementById('leadFilterStatus').value;
+            const ar = (document.getElementById('leadFilterLocality') || {}).value || '';
+            if (ar) q.set('locality', ar);
             if (d) q.set('district', d);
             if (g) q.set('gender', g);
             if (s) q.set('status', s);
