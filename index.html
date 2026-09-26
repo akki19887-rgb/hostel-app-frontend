@@ -5106,6 +5106,14 @@
                 }
                 msg.textContent = added + ' naye chadhe, ' + skipped + ' pehle se the.';
                 msg.className = 'text-xs font-bold mt-2 text-green-600';
+                // SUCHI DOBARA MANGWANA ZAROORI HAI.
+                //
+                // Rajya/jila/area ki suchi 10 minute yaad rakhi jati hai. Import
+                // ke baad use taaza na karein to naye rajya dropdown me aate hi
+                // nahi - 421 Madhya Pradesh ke lead chadh jate aur dropdown me
+                // sirf "Chhattisgarh" dikhta rehta. Lagta ki import fail ho gaya.
+                // force=true server ko bhi apni cache chhodne ko kehta hai.
+                if (added > 0) await loadLeadPlaces(true);
                 await refreshLeads();
             } catch (e) {
                 msg.textContent = 'Nahi chadha: ' + e.message + ' (network toota ho to dobara Import dabaiye — jo chadh chuke hain wo dobara nahi banenge)';
