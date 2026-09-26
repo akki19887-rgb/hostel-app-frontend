@@ -4461,8 +4461,10 @@
                 <div class="p-4 bg-white border border-slate-200 rounded-2xl">
                     <div class="flex justify-between items-start gap-3 mb-2">
                         <div class="min-w-0">
+                            ${l.leadCode ? `<p class="text-[10px] font-mono font-black text-slate-400 tracking-wider">${esc(l.leadCode)}</p>` : ''}
                             <h4 class="font-black text-slate-800 leading-tight">${esc(l.name)}</h4>
-                            <p class="text-[11px] text-slate-500 mt-0.5">${esc(l.locality || '')}${l.locality && (l.landmark || l.address) ? ' · ' : ''}${esc(l.landmark || l.address || '')}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">${esc(l.locality || '')}${l.locality && l.address ? ' · ' : ''}${esc(l.address || '')}</p>
+                            ${l.landmark ? `<p class="text-[11px] text-indigo-700 font-bold mt-0.5">&#127891; ${esc(l.landmark)}</p>` : ''}
                             ${l.rating ? `<p class="text-[11px] mt-1">
                                 <b class="text-slate-700">${l.rating}&#9733;</b>
                                 <span class="text-slate-400"> ${l.reviewCount || 0} review</span>
