@@ -4499,6 +4499,9 @@
         function onStateChange() {
             const selD = document.getElementById('leadFilterDistrict');
             if (selD) selD.value = '';
+            const selA = document.getElementById('leadFilterLocality');
+            if (selA) selA.value = '';
+            if (leadPlaces) { fillDistrictFromTree(); fillLocalityFromTree(); }
             refreshLeads();
         }
 
