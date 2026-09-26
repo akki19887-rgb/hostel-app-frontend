@@ -4510,6 +4510,58 @@
             }).join('');
         }
 
+        // Card ka beech ka hissa. Alag function isliye ki renderLeads ka template
+        // pehle hi bahut lamba hai aur yahan chaar alag-alag cheezein sochni hain.
+        function leadFacts(l) {
+            let h = '';
+
+            // --- BED aur RATE. Ye Google se nahi milte - phone par poochhne padte
+            // hain. Isliye card khaali chhodne ke bajay saaf maangta hai; warna
+            // caller bhool jata hai aur baad me dobara phone karna padta hai.
+            const bed  = (l.beds     != null && l.beds     !== '') ? l.beds     : null;
+            const rate = (l.rentFrom != null && l.rentFrom !== '') ? l.rentFrom : null;
+            h += '<div class="flex flex-wrap gap-1.5 mb-2">'
+               + (bed !== null
+                    ? `<span class="text-[11px] font-black bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1">${esc(String(bed))} bed</span>`
+                    : '<span class="text-[11px] font-bold bg-amber-50 text-amber-700 rounded-lg px-2 py-1">Bed — poochhna baaki</span>')
+               + (rate !== null
+                    ? `<span class="text-[11px] font-black bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1">&#8377;${esc(String(rate))} se</span>`
+                    : '<span class="text-[11px] font-bold bg-amber-50 text-amber-700 rounded-lg px-2 py-1">Rate — poochhna baaki</span>')
+               + (l.kind ? `<span class="text-[11px] font-bold bg-slate-100 text-slate-600 rounded-lg px-2 py-1">${esc(l.kind)}</span>` : '')
+               + '</div>';
+
+            // --- Khulne ka samay: kab phone karein, kab visit karein.
+            if (l.hours) {
+                h += `<p class="text-[11px] text-slate-500 mb-2">&#128336; ${esc(l.hours)}</p>`;
+            }
+
+            // --- Nishaan. CHETAVNI wala hissa laal me alag, kyunki wahi sabse
+            // zaroori hai aur grey text me wo doob jata tha.
+            if (l.facilities) {
+                const cut = String(l.facilities).indexOf('CHETAVNI:');
+                if (cut >= 0) {
+                    const achha = l.facilities.slice(0, cut).trim();
+                    const bura  = l.facilities.slice(cut + 9).trim();
+                    if (achha) h += `<p class="text-[11px] text-slate-400 mb-1">${esc(achha)}</p>`;
+                    h += `<p class="text-[11px] font-bold text-red-600 bg-red-50 rounded-lg px-2 py-1 mb-2">&#9888; ${esc(bura)}</p>`;
+                } else {
+                    h += `<p class="text-[11px] text-slate-400 mb-2">${esc(l.facilities)}</p>`;
+                }
+            }
+
+            // --- GOOGLE REVIEW KA TEXT.
+            // Ye har lead me pehle se pada tha aur kabhi dikhta hi nahi tha. Caller
+            // ko sirf "4.3 star" dikhta, jabki review me saaf likha hota "security
+            // deposit wapas nahi karte". Band rakha hai taaki card chhota rahe.
+            if (l.review) {
+                h += '<details class="mb-2">'
+                   + '<summary class="text-[11px] font-black text-blue-700 cursor-pointer">Google review padhein</summary>'
+                   + `<p class="text-[11px] text-slate-600 mt-1 bg-slate-50 rounded-lg px-2 py-1.5 whitespace-pre-line">${esc(l.review)}</p>`
+                   + '</details>';
+            }
+            return h;
+        }
+
         // MALIK KA NUMBER — listing ki jaan.
         //
         // Ye ek jagah isliye hai ki hostel aur flat/house dono raste isi se guzrein.
