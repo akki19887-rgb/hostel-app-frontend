@@ -9999,7 +9999,13 @@
             mappedBedsData.forEach(bed => { const overlay = document.createElement('div'); overlay.className = 'absolute border-2 border-red-500 bg-red-200/80 flex items-center justify-center text-red-900 font-bold text-[10px] rounded shadow-sm cursor-pointer'; overlay.style.top = bed.top; overlay.style.left = bed.left; overlay.style.width = bed.width; overlay.style.height = bed.height; overlay.innerHTML = `B${bed.id.split('-')[2]} <span class="text-[8px] ml-1">✖</span>`; overlay.onclick = (e) => { e.stopPropagation(); mappedBedsData = mappedBedsData.filter(b => b.id !== bed.id); renderAdminBeds(); }; container.appendChild(overlay); });
         }
         function addBedMarker(event) { if (mappedBedsData.length >= adminExpectedBeds && adminExpectedBeds > 0) return; const rect = event.currentTarget.getBoundingClientRect(); const xPercent = ((event.clientX - rect.left) / rect.width) * 100; const yPercent = ((event.clientY - rect.top) / rect.height) * 100; mappedBedsData.push({ id: 'IMG-BED-' + bedCounter, price: 5000, top: (yPercent-4) + '%', left: (xPercent-6) + '%', width: '12%', height: '8%', status: 'available' }); bedCounter++; renderAdminBeds(); }
-        async function approveAndPublishAdminMap() { if(mappedBedsData.length === 0) return; const btn = document.getElementById('dynamicMappingPublishBtn'); btn.innerText = "Publishing..."; await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved", mapImageUrl: aiGeneratedMapUrl, imageMapBeds: mappedBedsData }); alert('Approved!'); uploadedMapDataUrl = aiGeneratedMapUrl; goTo('screenAdminDashboard'); }
+        async function approveAndPublishAdminMap() { if(mappedBedsData.length === 0) return; const btn = document.getElementById('dynamicMappingPublishBtn'); btn.innerText = "Publishing..."; // 'approved' NAHI - 'approved_2d'.
+            //
+            // Guest ki dono query sirf approved_2d maangti hain (10403, 10496).
+            // 'approved' likhne par listing admin dashboard me "Live" dikhti thi
+            // aur alert bhi "Approved!" bolta tha - par guest ko wo kabhi milti
+            // hi nahi. Chup-chaap hamesha ke liye chhup jati thi.
+            await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", mapImageUrl: aiGeneratedMapUrl, imageMapBeds: mappedBedsData }); alert('Approved!'); uploadedMapDataUrl = aiGeneratedMapUrl; goTo('screenAdminDashboard'); }
 
         async function startAdmin2DFlow(docId) {
             await loadScriptOnce(FABRIC_CDN);
