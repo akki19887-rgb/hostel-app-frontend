@@ -1281,7 +1281,7 @@
             <button type="button" onclick="openAuditLog()" class="w-10 h-10 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 shrink-0 transition">🔄</button>
         </div>
 
-        <input type="text" id="auditFilter" oninput="renderAuditRows()" placeholder="Filter by name, action or booking ID"
+        <input type="text" id="auditFilter" oninput="auditFilterLater()" placeholder="Filter by name, action or booking ID"
             class="w-full mt-4 p-3.5 bg-slate-50 border-2 border-slate-200 rounded-2xl font-bold text-sm outline-none focus:border-indigo-400 transition">
 
         <div id="auditList" class="mt-4 space-y-2"></div>
