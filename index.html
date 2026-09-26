@@ -1216,8 +1216,11 @@
             <select id="leadFilterState" onchange="onStateChange()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Sabhi rajya</option>
             </select>
-            <select id="leadFilterDistrict" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+            <select id="leadFilterDistrict" onchange="onDistrictChange()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Sabhi jile</option>
+            </select>
+            <select id="leadFilterLocality" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
+                <option value="">Sabhi area</option>
             </select>
             <select id="leadFilterGender" onchange="refreshLeads()" class="px-3 py-2 rounded-xl border border-slate-200 text-sm font-bold">
                 <option value="">Girls + Boys + Co-ed</option>
