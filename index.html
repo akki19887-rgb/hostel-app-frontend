@@ -4304,7 +4304,8 @@
             document.getElementById('leadsMaintBox').classList.remove('hidden');
             const mineBox = document.getElementById('leadOnlyMine');
             if (mineBox) mineBox.checked = false;
-            await refreshLeads();
+            await loadLeadPlaces();
+            await refreshLeads();      // yahan koi chhaant nahi - "rajya chuniye" dikhega
         }
 
         // Rajya -> jila -> area ki suchi. Isme lead ka data NAHI hai, sirf naam
