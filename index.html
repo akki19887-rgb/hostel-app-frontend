@@ -4520,10 +4520,16 @@
         };
 
         function renderLeads() {
-            // Jile ki list HAATH SE nahi likhi jaati — jo lead aaye, unhi se ban jaati hai.
-            // Pehle 'Raipur' aur 'Durg-Bhilai' code me likhe the, isliye Bilaspur, Rajnandgaon
-            // aur Ambikapur chhaante hi nahi ja sakte the. Ab naya jila aane par kuch nahi karna.
-            (function fillDistricts() {
+            // Jile ki dropdown ab SUCHI se bharti hai (fillDistrictFromTree), lead se nahi.
+            //
+            // Ye purana hissa lead se bharta tha. Ab wo ULTA nuksan karta hai: ye
+            // renderLeads ke andar hai, yani suchi se bharne ke BAAD chalta hai aur
+            // usi ko mita deta hai. Natija - "Madhya Pradesh" chunne par bhi dropdown
+            // me sirf wahi jila bachta hai jo abhi load hua ho, aur Indore chuna hi
+            // nahi ja sakta.
+            //
+            // Suchi na aa payi ho (server ne mana kar diya) to purana tarika hi chalega.
+            if (!leadPlaces) (function fillDistricts() {
                 const sel = document.getElementById('leadFilterDistrict');
                 if (!sel) return;
                 const found = [...new Set(leadsCache.map(l => (l.district || '').trim()).filter(Boolean))].sort();
