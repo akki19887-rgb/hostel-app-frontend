@@ -13140,8 +13140,9 @@
             qeRefreshAll();
             if (!currentAdminDocId) return; // nothing to sync yet (still onboarding, not published) — local change is enough
             try {
-                const snap = await window.getDocs(window.query(window.collection(window.db, "businesses")));
-                let docData = null; snap.forEach(d => { if (d.id === currentAdminDocId) docData = d.data(); });
+                // Pehle yahan SAARI listing padhi jati thi aur JS me apni wali chhaanti
+                // jati thi - ek bed ke liye poora platform. getBiz sirf ek document padhta hai.
+                const docData = await getBiz(currentAdminDocId);
                 if (!docData || !Array.isArray(docData.roomsAndBeds)) return;
                 const room = docData.roomsAndBeds.find(r => r.id === blockId);
                 if (room && Array.isArray(room.beds)) {
