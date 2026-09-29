@@ -12366,17 +12366,28 @@
             if (depositBox) depositBox.classList.toggle('hidden', currentBookingPlan.type !== 'monthly');
 
             const belowMin = qty < currentBookingPlan.min;
+            // UPAR KI HADD BHI. Server 60 period se zyada mana kar deta hai
+            // (security.py: _MAX_QTY). Client par koi hadd nahi thi, to
+            // 100 mahine likhne par guest ko total dikh jata, Pay dabata, aur
+            // order banne par "Online payment temporarily unavailable" milta -
+            // ek galat message jo asli wajah chhupa deta hai. Ab yahin saaf
+            // likh dete hain.
+            const MAX_QTY = 60;
+            const aboveMax = qty > MAX_QTY;
             if (errorEl) {
                 if (belowMin) {
                     errorEl.classList.remove('hidden');
                     errorEl.innerText = `⚠️ Minimum stay is ${currentBookingPlan.min} ${bookingUnitLabels[currentBookingPlan.type].unit}. Please increase the quantity.`;
+                } else if (aboveMax) {
+                    errorEl.classList.remove('hidden');
+                    errorEl.innerText = `⚠️ Maximum ${MAX_QTY} ${bookingUnitLabels[currentBookingPlan.type].unit} in one booking. Please reduce the quantity.`;
                 } else {
                     errorEl.classList.add('hidden');
                 }
             }
 
             currentSelectedPlanPrice = total;
-            if (belowMin) {
+            if (belowMin || aboveMax) {
                 selected2DBeds = []; // invalid quantity — treat as nothing selected so Book stays disabled
             } else {
                 selected2DBeds = [{ id: currentSelectedBedId, price: total, plan: currentBookingPlan.type, qty, messSelection: window.currentMessSelection ? { ...window.currentMessSelection } : null }];
