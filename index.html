@@ -3449,15 +3449,6 @@
             }
         }
 
-        function toggleUserMap() {
-            const mapWrap = document.getElementById('userMapWrapper');
-            if(mapWrap.classList.contains('hidden')) {
-                mapWrap.classList.remove('hidden');
-                initUserMap();
-            } else {
-                mapWrap.classList.add('hidden');
-            }
-        }
 
         async function initUserMap() {
             if(!userMapInstance) {
