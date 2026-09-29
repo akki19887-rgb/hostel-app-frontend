@@ -11857,6 +11857,75 @@
             try { trackPropertyView(name || '', 'streetview'); } catch (e) {}
         }
 
+        // Guest jo page khole baitha hai, us hostel ka haal - ek chhoti si chhaap.
+        //
+        // Isme sirf wahi cheezein hain jo guest ko dikhti hain ya jinpar paisa bantaa
+        // hai. Photo ya lastEditedAt jaisi cheez daalte to har chhoti si cheez par
+        // bekaar ki patti aa jati.
+        function propertyFingerprint(p) {
+            if (!p) return '';
+            try {
+                return JSON.stringify({
+                    s: p.status || '',
+                    n: p.businessName || '',
+                    r: p.rules || {},
+                    b: (p.roomsAndBeds || []).map(rm => [rm.id, (rm.beds || []).map(bd =>
+                        [bd.id, bd.status, bd.priceMonthly, bd.priceWeekly, bd.priceDaily])]),
+                });
+            } catch (e) { return ''; }
+        }
+
+        // Khula hua page kis hostel ka hai aur kis haal me khula tha.
+        let openPropertyId = null;
+        let openPropertyPrint = '';
+        let livePropertyChangeMode = '';     // 'gayab' | 'badla'
+
+        function hideLivePropertyChangeBar() {
+            const bar = document.getElementById('livePropertyChangeBar');
+            if (bar) bar.classList.add('hidden');
+            livePropertyChangeMode = '';
+        }
+
+        // Har snapshot ke baad chalta hai. Page dobara NAHI banata - sirf batata hai.
+        function livePropertyChangeCheck() {
+            const bar = document.getElementById('livePropertyChangeBar');
+            if (!bar || !openPropertyId) return;
+            const scr = document.getElementById('screenUser2DLayout');
+            if (!scr || scr.classList.contains('hidden')) return;   // guest yahan hai hi nahi
+            if (typeof isPreviewingAsUser !== 'undefined' && isPreviewingAsUser) return;  // admin ka preview
+
+            const taaza = (allApprovedProperties || []).find(p => p.id === openPropertyId);
+            const txt = document.getElementById('livePropertyChangeText');
+            const btn = document.getElementById('livePropertyChangeBtn');
+
+            if (!taaza) {
+                // Listing ab guest ki list me hai hi nahi - rok di gayi, hata di gayi,
+                // ya status badal gaya. Ye zyada zaroori haalat hai: guest wo bed book
+                // karne ki koshish karta rahega jo ab bikta hi nahi.
+                livePropertyChangeMode = 'gayab';
+                txt.innerText = 'Ye hostel abhi booking ke liye band kar diya gaya hai.';
+                btn.innerText = 'Wapas';
+                bar.classList.remove('hidden');
+                return;
+            }
+
+            const ab = propertyFingerprint(taaza);
+            if (ab && openPropertyPrint && ab !== openPropertyPrint) {
+                livePropertyChangeMode = 'badla';
+                txt.innerText = 'Is hostel ki jaankari abhi badli hai (daam ya bed).';
+                btn.innerText = 'Naya dekhein';
+                bar.classList.remove('hidden');
+            }
+        }
+
+        window.livePropertyChangeAct = function() {
+            const mode = livePropertyChangeMode;
+            const id = openPropertyId;
+            hideLivePropertyChangeBar();
+            if (mode === 'gayab') { openPropertyId = null; goTo('screenUserDashboard'); return; }
+            if (id) openUser2DLayout(id);      // taaza data ke saath dobara
+        };
+
         async function openUser2DLayout(docId) {
             // Counted here as well as on the button, so a guest arriving from a saved link or
             // a notification is not missed.
