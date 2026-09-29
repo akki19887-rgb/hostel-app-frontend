@@ -7385,7 +7385,7 @@
             await user.reload();
             if (user.emailVerified) {
                 try { localStorage.setItem('hostelom_user', JSON.stringify({ uid: user.uid, email: user.email, loggedInAt: new Date().toISOString() })); } catch(e) {}
-                goTo('screenProfileCompletion');
+                await afterLoginNextScreen();
             } else {
                 showEmailAuthError('Not verified yet — open the link in your inbox first, then tap this button again.');
             }
