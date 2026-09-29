@@ -5743,13 +5743,6 @@
             location.reload();
         };
 
-        // Numbers are shown masked until the agent taps Reveal, and every reveal is logged
-        // server-side. A support agent leaving with 500 owner numbers is the one theft that
-        // otherwise leaves no trace at all.
-        function maskPhone(p) {
-            const d = String(p || '').replace(/\D/g, '');
-            return d.length === 10 ? `${d.slice(0, 5)} XXXXX` : '—';
-        }
 
         window.revealSupportPhone = async function(bookingId, btn) {
             btn.disabled = true; btn.innerText = '...';
