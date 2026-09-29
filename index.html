@@ -10205,7 +10205,22 @@
         }
 
         async function publishAdmin2DMap() {
-            const btn = document.getElementById('btnPublish2D'); btn.innerText = "⏳ Syncing to Cloud..."; btn.disabled = true;
+            const btn = document.getElementById('btnPublish2D');
+            // PUBLISH SE PEHLE ROK.
+            //
+            // Editor teen aisi haalat bana leta tha jo guest ki taraf tootti
+            // hain, aur dono publish raste unhe chup-chaap chadha dete the:
+            // zero bed wala kamra, bina ID ka bed, aur ek hi ID ke do bed
+            // (jisme guest se DUGNA paisa katta hai). Yahan rukna us se bahut
+            // sasta hai ki guest ke saamne toote.
+            const _gadbad = (typeof layoutProblems === 'function') ? layoutProblems() : [];
+            if (_gadbad.length) {
+                alert('Publish nahi kar sakte - pehle ye theek kijiye:\n\n'
+                    + _gadbad.map((x, i) => (i + 1) + '. ' + x).join('\n\n'));
+                if (btn) { btn.disabled = false; btn.innerText = 'Publish 2D Map'; }
+                return;
+            }
+            btn.innerText = "⏳ Syncing to Cloud..."; btn.disabled = true;
             try {
                 // FIX: switching floors takes ~350ms to fully load/render (async) — publishing right
                 // after tapping a floor tab could snapshot a stale or half-loaded canvas. Wait here
