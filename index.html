@@ -9626,6 +9626,17 @@
 
             loadedBusinessData = busData; globalDynamicRooms = busData.roomsAndBeds || []; admin2DBlocks = busData.layout2D || [];
 
+            // NIYAM, NAAM AUR PRAKAAR BHI WAPAS.
+            //
+            // Ye teenon yahan load nahi hote the. businessRules startNewProperty() me
+            // {} kar diya jata hai, aur edit ka rasta niyam wale form se guzarta hi
+            // nahi - to malik ke apne niyam uske paas the hi nahi. Isi wajah se save
+            // par unhe likha bhi nahi ja sakta tha (khaali {} likhne ka matlab hota:
+            // guest ke liye mess ka daam 0, deposit 0, minimum stay 1).
+            businessRules = busData.rules || {};
+            selectedPropertyType = busData.propertyType || selectedPropertyType || '';
+            if (busData.businessName) { globalBizProfile = globalBizProfile || {}; globalBizProfile.company = busData.businessName; }
+
             // The edit flow skips the map screen, so businessCity/businessCoordinates would still hold
             // whatever the last "add property" run left behind — and saving would overwrite this
             // listing's real values with those. Restore them from the document first.
