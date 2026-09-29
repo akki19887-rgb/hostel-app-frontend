@@ -12280,7 +12280,29 @@
                 if (testViewEditModeActive && isPreviewingAsUser) {
                     setBedGridHTML(container, `<div class="p-10 text-center"><p class="text-slate-400 font-bold mb-4">No rooms on this floor yet.</p><button onclick="qeAddRoom()" class="text-xs bg-indigo-50 border-2 border-indigo-200 text-indigo-600 font-black px-4 py-2 rounded-xl hover:bg-indigo-100 transition">➕ Add Room</button></div>`);
                 } else {
-                    setBedGridHTML(container, `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`);
+                    // Do alag baatein hain, aur pehle dono ek jaisi dikhti thin:
+                    //   (a) is manzil par bed nahi, doosri manzil par hain
+                    //   (b) is listing me kahin bhi bed nahi - purani image-map wali
+                    //       listing, jo approved_2d to hai par book ho hi nahi sakti
+                    // (b) me guest safed dabba dekh kar chala jata tha. Lead gayab.
+                    // Ab usse saaf bata kar owner se baat karne ka rasta diya jata hai.
+                    const kahinBhiBed = (admin2DBlocks || []).some(b => b && b.type === 'room' && ((b.beds || []).length));
+                    if (kahinBhiBed) {
+                        setBedGridHTML(container, `<p class="text-slate-400 font-bold text-center p-10">No beds on this floor.</p>`);
+                    } else {
+                        const pd = window.currentPropertyData || {};
+                        // onclick ke ANDAR ja raha hai - esc() nahi, jsq(). esc() apostrophe
+                        // ko &#39; banata hai, jo attribute me wapas ' ban kar JS string tod deta
+                        // hai ("Shri Ram's PG" jaisa naam pade to button chalta hi nahi).
+                        const naam = jsq(pd.businessName || 'this property');
+                        setBedGridHTML(container, `<div class="p-8 text-center flex flex-col items-center justify-center h-full">
+                            <div class="text-4xl mb-3">&#128679;</div>
+                            <p class="font-black text-slate-700 text-sm mb-1">Bed ki list abhi taiyar nahi hai</p>
+                            <p class="text-[12px] font-semibold text-slate-500 leading-relaxed mb-5 max-w-xs">Is hostel ne apne kamre aur bed abhi app par nahi dale hain, isliye yahan se booking nahi ho sakti. Owner se seedha poochh lijiye &mdash; jagah ho to wo bata denge.</p>
+                            <button type="button" onclick="messageOwnerAboutProperty('${jsq(pd.id || '')}', '${naam}')"
+                                class="btn-gradient text-white font-black text-xs px-6 py-3 rounded-2xl shadow-lg">Owner se poochhiye</button>
+                        </div>`);
+                    }
                 }
                 return;
             }
