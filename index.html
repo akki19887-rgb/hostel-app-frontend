@@ -3427,23 +3427,6 @@
             adminFabricCanvasInstance.add(bedGroup);
             attachAdminCanvasTooltips();
         }
-        function addFabricRoom() {
-            if(!adminFabricCanvasInstance) return;
-            let roomRect = new fabric.Rect({ left: 0, top: 0, width: 280, height: 180, fill: '#ffffff', stroke: '#e2e8f0', strokeWidth: 3, rx: 16, ry: 16 });
-            let roomTitleBg = new fabric.Rect({ left: 0, top: 0, width: 280, height: 40, fill: '#f8fafc', rx: 16, ry: 16 });
-            let roomTitle = new fabric.IText('PREMIUM ROOM', { left: 140, top: 20, fontSize: 14, fontWeight: '900', fill: '#334155', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 2 });
-            let titleLine = new fabric.Line([0, 40, 280, 40], { stroke: '#cbd5e1', strokeWidth: 2 });
-            let roomGroup = new fabric.Group([roomRect, roomTitleBg, roomTitle, titleLine], { left: 200, top: 150, selectable: true, isRoom: true, roomSlotIndex: 0, roomId: 'CROOM-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
-            adminFabricCanvasInstance.add(roomGroup);
-            adminLastActiveRoom = roomGroup; // this new room becomes the auto-placement target for the very next bed/bath/table you add
-            adminFabricCanvasInstance.setActiveObject(roomGroup);
-            attachAdminCanvasTooltips();
-            // Auto-fill: a brand-new room is empty, so drop in one starter bed right away instead
-            // of making you press "Bed" separately every single time.
-            addFabricBed();
-        }
-        function addFabricVerticalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 65, height: 450, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 32, top: 225, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', angle: -90, fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
-        function addFabricHorizontalCorridor() { if(!adminFabricCanvasInstance) return; let rect = new fabric.Rect({ left: 0, top: 0, width: 450, height: 65, fill: '#f8fafc', stroke: '#cbd5e1', strokeWidth: 2, strokeDashArray: [8, 8], rx: 8, ry: 8 }); let text = new fabric.IText('W A L K W A Y', { left: 225, top: 32, fontSize: 14, fill: '#94a3b8', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans', letterSpacing: 4 }); let group = new fabric.Group([rect, text], { left: 50, top: 50, selectable: true }); adminFabricCanvasInstance.add(group); }
 
         function initMap() {
             const bizMapEl = document.getElementById("map");
