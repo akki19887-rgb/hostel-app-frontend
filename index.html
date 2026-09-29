@@ -7034,6 +7034,44 @@
 
 
 
+        // LOGIN KE BAAD AGLA KADAM.
+        //
+        // Pehle har rasta seedha screenProfileCompletion kholta tha - chahe naam
+        // pehle se bhara ho ya nahi. Naam bhara hota bhi tha
+        // (validateAndSubmitProfile use users/{uid}.fullName me likhta hai) par
+        // use padhta koi nahi tha. Isliye roz OTP se aane wale user ko roz apna
+        // naam dobara likhna padta tha.
+        //
+        // Ab ek hi jagah faisla hota hai, aur chaaron login raste yahin se guzarte hain.
+        async function afterLoginNextScreen() {
+            const user = window.auth && window.auth.currentUser;
+            if (!user) { goTo('screenProfileCompletion'); return; }   // quick/test login - koi uid hi nahi
+
+            let saved = null;
+            try {
+                const s = await window.getDoc(window.doc(window.db, 'users', user.uid));
+                saved = s.exists() ? (s.data() || {}) : null;
+            } catch (e) {
+                // Padh nahi paye. Aise me naam poochh lena hi surakshit hai - bina
+                // naam ke aage badhne se ek baar aur poochh lena behtar hai.
+                console.warn('profile padh nahi paye, naam poochh rahe hain:', e);
+                goTo('screenProfileCompletion');
+                return;
+            }
+
+            const naam = saved ? String(saved.fullName || '').trim() : '';
+            if (naam.length >= 2) {
+                // getLoggedInIdentityLabel() isi khaane se naam uthata hai. Screen
+                // chhod rahe hain to value yahin bhar dena zaroori hai, warna label
+                // "Unknown (Quick Test Login)" par gir jata hai.
+                const el = document.getElementById('profileName');
+                if (el && !el.value) el.value = naam;
+                await routeToDashboard();
+                return;
+            }
+            goTo('screenProfileCompletion');
+        }
+
         async function selectMethod(method) {
             currentMethod = method;
             if (method === 'Mobile') { resetOtpFlow(); goTo('screenOtpVerification'); return; }
