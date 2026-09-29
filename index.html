@@ -11888,26 +11888,6 @@
             }
             return null;
         }
-        function toggleUserTestSimpleView() {
-            userTestSimpleViewActive = !userTestSimpleViewActive;
-            const grid = document.getElementById('userSimpleBedGrid');
-            const canvasEl = document.getElementById('userFabricCanvas');
-            const snapImg = document.getElementById('userLayoutSnapshotImg');
-            const btn = document.getElementById('btnUserTestSimpleView');
-            if (!grid) return;
-            if (userTestSimpleViewActive) {
-                grid.classList.remove('hidden');
-                if (canvasEl) canvasEl.style.visibility = 'hidden';
-                if (snapImg) snapImg.style.visibility = 'hidden';
-                if (btn) btn.innerText = '🖼️ Photo View';
-                renderUserSimpleBedGrid();
-            } else {
-                grid.classList.add('hidden');
-                if (canvasEl) canvasEl.style.visibility = 'visible';
-                if (snapImg) snapImg.style.visibility = 'visible';
-                if (btn) btn.innerText = '🧪 Test View';
-            }
-        }
         // ==========================================================================
         // BED GRID ZOOM / PAN
         //
