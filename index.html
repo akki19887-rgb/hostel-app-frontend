@@ -2592,6 +2592,15 @@
             <button type="button" id="btnTestViewEditMode" onclick="toggleTestViewEditMode()" style="display:none;" class="text-xs bg-amber-50 border-2 border-amber-300 text-amber-700 font-black px-4 py-2.5 rounded-xl shadow-sm hover:bg-amber-100 transition whitespace-nowrap">✏️ Edit Here</button>
         </div>
 
+        <!-- Owner ne is hostel me kuch badla to yahan batata hai. Page apne aap
+             dobara nahi banta - guest ke chune hue bed mit jate. -->
+        <div id="livePropertyChangeBar" class="hidden shrink-0 bg-amber-500 text-white px-4 py-2.5 flex items-center gap-3">
+            <span class="text-base leading-none">&#128276;</span>
+            <p id="livePropertyChangeText" class="text-[12px] font-black leading-snug flex-1"></p>
+            <button type="button" id="livePropertyChangeBtn" onclick="livePropertyChangeAct()"
+                class="bg-white text-amber-700 font-black text-[11px] px-3 py-1.5 rounded-xl shrink-0"></button>
+        </div>
+
         <div id="userFloorTabsContainer" class="bg-white/90 backdrop-blur px-8 py-3 border-b border-slate-200/60 flex gap-3 overflow-x-auto layout-scroll empty:hidden"></div>
 
         <div class="flex-1 flex flex-col lg:flex-row gap-6 p-3 lg:p-6 overflow-y-auto layout-scroll bg-slate-50/40 pb-40 lg:pb-44">
