@@ -10901,6 +10901,9 @@
                     updateHtmlPreservingScroll(container, htmlContent);
                     applyDiscoverFilters();
                     initUserMap(); // map is now shown by default on the dashboard, no toggle needed — refresh markers whenever the property list updates
+                    // Guest kisi ek hostel ka page khole baitha ho to use bhi bata do.
+                    // Ye list ke saath apne aap chalta hai - alag se koi listener nahi.
+                    try { livePropertyChangeCheck(); } catch (e) { console.warn('live check', e); }
                 });
             } catch(e) {
                 console.error('refreshUserDash failed:', e);
