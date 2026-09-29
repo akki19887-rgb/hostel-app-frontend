@@ -8977,6 +8977,8 @@
         function startNewProperty(openedFrom) {
             listingHomeScreen = openedFrom || 'screenBusinessDashboard';
             editingBusinessDocId = null;
+            { const rb = document.getElementById('btnEditRules'); if (rb) rb.classList.add('hidden'); }
+            rulesEditReturnScreen = null; rulesEditLockedGender = '';
             globalDynamicRooms = []; admin2DBlocks = []; floorMaps = [];
             uploadedMapDataUrl = null; uploadedMapFile = null; currentSelectedFloor = '';
 
