@@ -8928,7 +8928,9 @@
                 if (gEl) gEl.focus();
                 return;
             }
-            businessRules.genderType = gVal;
+            // Edit me gender par taala hai (sirf admin badal sakta hai). Form me
+            // kuch bhi ho, Firestore wali purani value hi wapas jayegi.
+            businessRules.genderType = (_rulesEditMode && rulesEditLockedGender) ? rulesEditLockedGender : gVal;
 
             businessRules.bathType = document.getElementById('formBathType') ? document.getElementById('formBathType').value : 'Attached';
             businessRules.parking = document.getElementById('formParking') ? document.getElementById('formParking').value : 'Bike Only';
