@@ -11094,20 +11094,6 @@
             grfCurrentStep = 1; grfRenderStepUI();
         }
 
-        // Asks for the browser's location permission and returns { lat, lng, accuracy } if granted,
-        // or null if denied / unavailable / times out — booking always continues either way, this
-        // is purely best-effort extra data for the hostel owner/admin.
-        function captureGuestLocation() {
-            return new Promise((resolve) => {
-                if (!navigator.geolocation) { resolve(null); return; }
-                const timer = setTimeout(() => resolve(null), 8000); // don't let booking hang if the user ignores the permission prompt
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }); },
-                    () => { clearTimeout(timer); resolve(null); }, // denied or unavailable
-                    { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 }
-                );
-            });
-        }
 
         async function submitGuestRegistrationForm() {
             const required = ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
