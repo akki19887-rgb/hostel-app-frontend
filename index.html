@@ -10758,14 +10758,6 @@
             }
         }
 
-        async function openRedbusLayout(docId) {
-            let propertyData = null;
-            if(docId) { propertyData = (await getBiz(docId)) || propertyData; }
-
-            else { propertyData = window.currentPropertyData; }
-            if(propertyData && propertyData.imageMapBeds && propertyData.imageMapBeds.length > 0 && propertyData.mapImageUrl) { mappedBedsData = propertyData.imageMapBeds; uploadedMapDataUrl = propertyData.mapImageUrl; buildImageBasedLayout(); goTo('screenUserImageRedbus'); }
-            else { alert('No image mapped property found. Admin needs to map images first.'); }
-        }
 
         function buildImageBasedLayout() {
             document.getElementById('userCleanMapImage').src = uploadedMapDataUrl; document.getElementById('userBedOverlays').innerHTML = '';
