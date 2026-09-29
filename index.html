@@ -7254,7 +7254,7 @@
                 // needs it at login time.
                 await saveMobileUserToFirestore(user);
                 notifyAdminOfNewLogin(user.phoneNumber || fullFormattedMobile);
-                goTo('screenProfileCompletion');
+                await afterLoginNextScreen();
             } catch (err) {
                 console.error('OTP verify failed', err);
                 showOtpError(err.message || 'Incorrect OTP. Please try again.');
