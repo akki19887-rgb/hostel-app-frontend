@@ -8701,8 +8701,19 @@
             // can't create a real order, we now stop and show an error instead of faking success.
             let orderInfo = null;
             try {
-                const bedIdsForOrder = ((pending.bookingContext && pending.bookingContext.beds) || []).map(b => b.id);
-                orderInfo = await createRazorpayOrder(pending.propertyId, bedIdsForOrder);
+                const bedsForOrder = (pending.bookingContext && pending.bookingContext.beds) || [];
+                const bedIdsForOrder = bedsForOrder.map(b => b.id);
+                // Plan/qty/mess bed ke saath hi rakhe jate hain (selected2DBeds
+                // banate waqt) - bas ab tak server tak bheje nahi jate the.
+                const first = bedsForOrder[0] || {};
+                const messSel = first.messSelection || {};
+                orderInfo = await createRazorpayOrder(
+                    pending.propertyId, bedIdsForOrder,
+                    first.plan || 'monthly',
+                    first.qty || 1,
+                    // 'meal' ek baar khane ka daam hai, plan nahi - server use
+                    // nahi jaanta aur bhejne par poora order fail ho jata.
+                    (messSel.period && messSel.period !== 'meal') ? messSel.period : '');
             } catch (err) {
                 console.error('Backend order creation failed — refusing to fall back to test mode.', err);
                 showPayError('Online payment is temporarily unavailable. Please use the UPI payment option instead, or try again shortly.');
