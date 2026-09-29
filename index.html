@@ -8808,6 +8808,79 @@
             }
         }
 
+        // Niyam ka form edit se khula hai to kis screen par wapas jana hai.
+        // null = onboarding (aage badho, jaisa pehle hota tha).
+        let rulesEditReturnScreen = null;
+        // Gender sirf admin badal sakta hai. Edit ke waqt jo value Firestore me
+        // padi thi, wahi wapas likhni hai - form me kuch bhi ho.
+        let rulesEditLockedGender = '';
+
+        // Firestore me jo niyam pade hain, unse form bhar do.
+        //
+        // Ab tak ye kaam kisi ne kiya hi nahi tha - form sirf PADHA jata tha
+        // (saveLegalAndNext), bhara kabhi nahi gaya. Isliye edit me malik ko
+        // apne hi niyam khaali dikhte the.
+        function fillRulesForm(rules) {
+            const R = rules || {};
+            // Select me wahi value tabhi baithti hai jab uska option maujood ho.
+            // Warna browser chup-chaap value '' kar deta hai - aur save par wo khaali
+            // Firestore me chala jata, yaani purani listing ka mess/AC/laundry mit
+            // jata bina kisi ko bataye. (Option ki list kabhi badli ho, ya listing
+            // purani shakal me likhi ho, to yahi hota hai.)
+            // Isliye anjaan value ko option bana kar joda jata hai - malik ko dikhta
+            // hai ki abhi kya set hai, aur chhua na jaye to wahi wapas save hota hai.
+            const setVal = (id, v) => {
+                const e = document.getElementById(id);
+                if (!e || v === undefined || v === null || v === '') return;
+                if (e.tagName === 'SELECT' && !Array.from(e.options).some(o => o.value === v)) {
+                    const o = document.createElement('option');
+                    o.value = v; o.text = v + ' (pehle se set)';
+                    e.insertBefore(o, e.firstChild);
+                }
+                e.value = v;
+            };
+            const setNum = (id, v) => { const e = document.getElementById(id); if (e) e.value = (v === undefined || v === null) ? '' : v; };
+            const setChk = (id, v) => { const e = document.getElementById(id); if (e && v !== undefined) e.checked = !!v; };
+
+            const st = R.stayTypes || {};
+            setChk('stayDaily', st.daily); setChk('stayWeekly', st.weekly); setChk('stayMonthly', st.monthly);
+            setNum('formDeposit', R.securityDeposit);
+            setNum('formMinStayMonths', R.minStayMonths);
+            setNum('formMinStayDays', R.minStayDays);
+            setNum('formMinStayWeeks', R.minStayWeeks);
+            setVal('formAcType', R.acType);
+            setVal('formGenderType', R.genderType);
+            setVal('formBathType', R.bathType);
+            setVal('formParking', R.parking);
+            setVal('formLaundry', R.laundry);
+            setNum('formLaundryCharge', R.laundryCharge);
+            setChk('formWifi', R.wifi);
+            setChk('formStudyTable', R.studyTable);
+            setChk('formCctv', R.cctv);
+            setChk('formNoRestriction', R.noRestriction);
+            setVal('formMess', R.mess);
+            const MP = R.messPrices || {};
+            setNum('formMessDaily', MP.daily); setNum('formMessWeekly', MP.weekly);
+            setNum('formMessMonthly', MP.monthly); setNum('formMessMeal', MP.meal);
+            try { if (typeof toggleDeposit === 'function') toggleDeposit(); } catch (e) {}
+        }
+
+        // Edit ke beech me niyam ka form kholna.
+        window.openRulesForEdit = function() {
+            if (!editingBusinessDocId) { alert('Pehle koi listing kholiye.'); return; }
+            rulesEditReturnScreen = 'screenBusinessBedConfig';
+            rulesEditLockedGender = (businessRules && businessRules.genderType) || '';
+            fillRulesForm(businessRules);
+            // Gender par taala - code me pehle se tay hai ki ise sirf admin badal
+            // sakta hai. Form me dikhta rahe taaki malik ko pata rahe kya set hai.
+            const gEl = document.getElementById('formGenderType');
+            if (gEl) { gEl.disabled = !!rulesEditLockedGender; gEl.title = rulesEditLockedGender ? 'Ise sirf admin badal sakta hai' : ''; }
+            // Legal wale khaane edit me load nahi hote - unki rok bhi nahi lagegi.
+            const lbl = document.getElementById('legalSectionNote');
+            if (lbl) lbl.classList.remove('hidden');
+            goTo('screenBusinessSecureForm');
+        };
+
         function saveLegalAndNext() {
             // JHOOTHE DEFAULT HATA DIYE.
             //
