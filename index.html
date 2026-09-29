@@ -10909,18 +10909,6 @@
         }
 
 
-        function buildImageBasedLayout() {
-            document.getElementById('userCleanMapImage').src = uploadedMapDataUrl; document.getElementById('userBedOverlays').innerHTML = '';
-            userSelectedImageBeds = []; updateImageBookingButton();
-            mappedBedsData.forEach(bed => {
-                let overlay = document.createElement('div'); overlay.id = `user-map-bed-${bed.id}`;
-                overlay.style.top = bed.top; overlay.style.left = bed.left; overlay.style.width = bed.width; overlay.style.height = bed.height;
-                overlay.className = `absolute border-[2px] border-slate-400 bg-white/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center text-slate-700 cursor-pointer shadow-sm hover:border-indigo-500 transition`;
-                overlay.innerHTML = `<span class="text-sm">🛏️</span><span class="text-[8px] font-black">₹${bed.price}</span>`;
-                overlay.onclick = () => toggleImageBedSelection(bed.id, bed.price);
-                document.getElementById('userBedOverlays').appendChild(overlay);
-            });
-        }
 
         function toggleImageBedSelection(bedId, price) {
             const index = userSelectedImageBeds.findIndex(b => b.bedId === bedId); const bedOverlay = document.getElementById(`user-map-bed-${bedId}`);
