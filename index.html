@@ -3853,14 +3853,6 @@
             }
         }
 
-        // Drop-in for <img src=...> on a private file: sets the image once the signed link arrives.
-        async function setPrivateImageSrc(imgElOrId, storagePath, propertyId) {
-            const el = (typeof imgElOrId === 'string') ? document.getElementById(imgElOrId) : imgElOrId;
-            if (!el) return;
-            const url = await getPrivateFileUrl(storagePath, propertyId);
-            if (url) { el.src = url; el.classList.remove('hidden'); }
-            else { el.classList.add('hidden'); }
-        }
 
         // Opens a private file in a new tab. Because the link has to be fetched from the backend
         // first, we open the tab immediately (so the browser doesn't treat it as a popup) and then
