@@ -9189,6 +9189,99 @@
             renderAttractive2DPlan();
         }
 
+        // POORE LAYOUT KE SAARE BED - dono list se, bina dohraye.
+        //
+        // Do list rakhi jaati hain: globalDynamicRooms (form wali) aur
+        // admin2DBlocks (naksha wali). Aam taur par ek hi beds array dono me
+        // hota hai, par qeDeleteBed kabhi naya array bana deta tha - us pal ke
+        // baad dono alag. ID dete waqt DONO dekhni padti hain, warna ek list
+        // me khaali dikhne wali ID doosri me pehle se maujood ho sakti hai.
+        function allBedsEverywhere() {
+            // EK HI BED KO DO BAAR MAT GINO.
+            //
+            // Aam haalat me dono list me BILKUL EK HI beds array hota hai (ek
+            // hi object, do jagah se ishaara). Seedha ghoom kar push karne par
+            // har bed do baar gina jata tha - aur phir layoutProblems() har
+            // saadhaaran layout par "ye ID do-do baar hai" ki jhoothi shikayat
+            // karta. Set object ki pehchaan par chalta hai, to ek hi object
+            // do baar nahi aata.
+            //
+            // Asli dohraav tab hai jab DO ALAG object ki ek hi id ho - wo yahan
+            // dono bach kar aate hain, aur layoutProblems unhe pakad leta hai.
+            const dekhe = new Set();
+            const lists = [];
+            if (typeof globalDynamicRooms !== 'undefined' && Array.isArray(globalDynamicRooms)) lists.push(globalDynamicRooms);
+            if (typeof admin2DBlocks !== 'undefined' && Array.isArray(admin2DBlocks)) lists.push(admin2DBlocks);
+            for (const list of lists) {
+                for (const blk of list) {
+                    if (!blk || !Array.isArray(blk.beds)) continue;
+                    for (const b of blk.beds) if (b) dekhe.add(b);
+                }
+            }
+            return [...dekhe];
+        }
+
+        // Nayi bed ki ID. GINTI SE NAHI.
+        //
+        // Pehle `${room.id}-B${room.beds.length + 1}` tha. 3 bed me se beech
+        // wala hata dijiye - ginti 2 ho gayi, agli ID -B3 banegi, aur -B3
+        // pehle se maujood hai. Do bed, ek ID.
+        //
+        // Ab: jo sabse bada number is room me pada hai, usse ek aage. Phir bhi
+        // kahin milti ho to aage badhte jaate hain - to takkar ho hi nahi sakti.
+        function mintBedId(roomId) {
+            const liye = new Set(allBedsEverywhere().map(b => String(b.id || '')));
+            const pre = String(roomId || 'R') + '-B';
+            let sabseBada = 0;
+            for (const id of liye) {
+                if (!id.startsWith(pre)) continue;
+                const n = parseInt(id.slice(pre.length), 10);
+                if (!isNaN(n) && n > sabseBada) sabseBada = n;
+            }
+            let n = sabseBada + 1;
+            while (liye.has(pre + n)) n++;      // kisi aur shakal se bhi takraye to aage
+            return pre + n;
+        }
+
+        // Publish se pehle ki jaanch. Jo bhi galat mile, uski list lautata hai.
+        //
+        // Ye teenon haalat editor aaj bana sakta hai, aur teenon guest ki taraf
+        // toot-ti hain - isliye publish yahin rukna chahiye, guest ke saamne
+        // nahi.
+        function layoutProblems() {
+            const p = [];
+            const beds = allBedsEverywhere();
+
+            if (!beds.length) {
+                p.push('Ek bhi bed nahi hai. Bina bed ke listing guest ko "No beds" dikhati hai.');
+            }
+
+            const binaId = beds.filter(b => !b.id || !String(b.id).trim()).length;
+            if (binaId) {
+                p.push(binaId + ' bed ki koi ID nahi hai. Guest unpar tap karega to kuch nahi khulega.');
+            }
+
+            const ginti = {};
+            for (const b of beds) {
+                const id = String(b.id || '');
+                if (!id) continue;
+                ginti[id] = (ginti[id] || 0) + 1;
+            }
+            const dohre = Object.keys(ginti).filter(k => ginti[k] > 1);
+            if (dohre.length) {
+                p.push('Ye ID do-do baar hai: ' + dohre.slice(0, 5).join(', ')
+                     + '. Aisi booking par guest se DUGNA paisa katta hai aur do bed ek saath bik jate hain.');
+            }
+
+            const lists = (typeof admin2DBlocks !== 'undefined' && Array.isArray(admin2DBlocks)) ? admin2DBlocks : [];
+            const khaaliKamre = lists.filter(b => b && b.type === 'room' && (!b.beds || !b.beds.length));
+            if (khaaliKamre.length) {
+                p.push(khaaliKamre.length + ' kamre me ek bhi bed nahi: '
+                     + khaaliKamre.slice(0, 4).map(r => r.name || r.id).join(', '));
+            }
+            return p;
+        }
+
         function addBedToRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; const newBed = {id: `${room.id}-B${room.beds.length + 1}`, status: 'available', priceDaily: 0, priceWeekly: 0, priceMonthly: 5000, price: 5000}; room.beds.push(newBed); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.push(newBed); } renderBusinessConfig(); renderAttractive2DPlan(); }
         function removeBedFromRoom(roomIndex) { const room = globalDynamicRooms[roomIndex]; if(room.beds.length > 1) { room.beds.pop(); room.type = `${room.beds.length}-Seater`; const block = admin2DBlocks.find(b => b.id === room.id); if(block && block.beds !== room.beds) { block.beds.pop(); } renderBusinessConfig(); renderAttractive2DPlan(); } else { alert("At least 1 bed required!"); } }
         async function saveRoomImageLocally(roomIndex, slotIndex, inputElement) { let file = inputElement.files[0]; if(file) { inputElement.parentElement.innerHTML = "⏳ Wait..."; file = await compressImage(file, 1080, 0.85); if(!globalDynamicRooms[roomIndex].rawFiles) globalDynamicRooms[roomIndex].rawFiles = []; globalDynamicRooms[roomIndex].rawFiles[slotIndex] = file; globalDynamicRooms[roomIndex].photos[slotIndex] = URL.createObjectURL(file); inputElement.parentElement.innerHTML = "✅ Saved!"; propagateRoomSync(roomIndex, 'photo'); renderBusinessConfig(); } }
