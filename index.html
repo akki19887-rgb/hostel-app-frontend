@@ -13474,7 +13474,15 @@
             // Extra-clear confirm text so a fast tap can't be mistaken for confirming a status
             // change — this permanently removes the bed, unlike "Mark Occupied/Available".
             if (!confirm(`Permanently DELETE this bed${priceLabel}?\n\nThis cannot be undone. If you just want to mark it as booked/occupied, use the "MARK OCCUPIED" button instead — do not use this ✕ button for that.`)) return;
-            block.beds = block.beds.filter(b => b.id !== bedId);
+            // SPLICE, filter NAHI.
+            //
+            // filter NAYA array banata tha aur use block.beds par chipka deta
+            // tha. globalDynamicRooms wali list ka beds usi pal se alag ho
+            // jata - editor me bed hata hua dikhta, par doosri list me pada
+            // rehta, aur publish me wapas aa jata. splice usi array ko badalta
+            // hai, to dono taraf ek saath hatta hai.
+            const idx = block.beds.findIndex(b => b && b.id === bedId);
+            if (idx >= 0) block.beds.splice(idx, 1);
             qeRefreshAll();
         }
         function qeDeleteIcon(blockId, iconIndex) {
