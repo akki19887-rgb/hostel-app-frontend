@@ -7214,23 +7214,6 @@
                 }, { merge: true });
             } catch (e) { console.warn('Could not save user to directory (continuing):', e); }
         }
-        // Asks the browser for location permission right after login. Best-effort: if the user denies
-        // or the browser can't get a fix, we just leave location unset — never blocks the login flow.
-        function requestUserLocationAndSave(uid) {
-            if (!navigator.geolocation) return;
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    try {
-                        await window.setDoc(window.doc(window.db, 'users', uid), {
-                            location: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-                            locationUpdatedAt: new Date().toISOString()
-                        }, { merge: true });
-                    } catch (e) { console.warn('Could not save location (continuing):', e); }
-                },
-                (err) => { console.warn('Location permission denied or unavailable (continuing):', err); },
-                { timeout: 8000 }
-            );
-        }
 
         // Best-effort: pings the backend to email the admin every time a user signs in via mobile
         // OTP, so the number reaches the admin directly (in addition to the dashboard's Users tab).
