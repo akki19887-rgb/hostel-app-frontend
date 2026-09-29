@@ -9897,7 +9897,35 @@
                     delete cleanRoom.rawFiles; if (cleanRoom.raw360File) { const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`; cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360); delete cleanRoom.raw360File; } cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
                 if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
-                if(editingBusinessDocId) { await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData, coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() }); alert('Updates synced live to users!'); }
+                if(editingBusinessDocId) {
+                    // "Updates synced live to users!" ab sach hai.
+                    //
+                    // Pehle sirf layout2D, roomsAndBeds aur coverPhotoUrl jate the. Naam,
+                    // pata, city, state, pin aur NIYAM (mess ka daam, deposit, minimum
+                    // stay) chup-chaap chhoot jate the - aur alert phir bhi "synced live"
+                    // bol deta tha.
+                    //
+                    // Jo YAHAN JAAN-BOOJH KAR NAHI hai:
+                    //   status        - edit se listing approve/un-approve nahi honi chahiye
+                    //   ownerId       - pehli baar ka record
+                    //   dateSubmitted / uploadedAt - wahi
+                    //   imageMapBeds / mapImageUrl - admin ke mapping tool se aate hain;
+                    //                   edit me mappedBedsData khaali hota hai, likhte to mit jate
+                    const patch = { layout2D: admin2DBlocks, roomsAndBeds: cleanRoomsData,
+                                    coverPhotoUrl: uploadedCoverUrl, lastEditedAt: new Date().toISOString() };
+                    // Har khaana tabhi jayega jab uske paas sach me value ho. Khaali
+                    // variable se live data mitana isse bhi badi galti hoti.
+                    if (businessRules && Object.keys(businessRules).length) patch.rules = businessRules;
+                    if (globalBizProfile && globalBizProfile.company) patch.businessName = globalBizProfile.company;
+                    if (selectedPropertyType) patch.propertyType = selectedPropertyType;
+                    if (businessCity) patch.city = businessCity;
+                    if (businessState) patch.state = businessState;
+                    if (businessAddress) patch.pinAddress = businessAddress;
+                    if (businessCoordinates && businessCoordinates.lat) patch.coordinates = businessCoordinates;
+                    if (floorMapUrlsObj && Object.keys(floorMapUrlsObj).length) patch.floorMapUrls = floorMapUrlsObj;
+                    await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), patch);
+                    alert('Updates synced live to users!');
+                }
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
                     currentAdminDocId = newDocId;
