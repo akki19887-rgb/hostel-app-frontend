@@ -3431,21 +3431,6 @@
             adminFabricCanvasInstance.on('selection:updated', (opt) => { if (opt.selected && opt.selected[0] && opt.selected[0].isRoom) adminLastActiveRoom = opt.selected[0]; });
         }
 
-        function addFabricBed() {
-            if(!adminFabricCanvasInstance) return;
-            let currentPrice = Number(document.getElementById('adminCanvasSetPrice').value) || 5000;
-            const w = 70, h = 80;
-            let bedBg = new fabric.Rect({ left: 0, top: 0, width: w, height: h, fill: '#ffffff', stroke: '#cbd5e1', strokeWidth: 2, rx: 12, ry: 12 });
-            let bedTopAccent = new fabric.Rect({ left: 0, top: 0, width: w, height: 8, fill: '#10b981', rx: 12, ry: 12 });
-            let bedIcon = new fabric.Text('🛌', { left: 35, top: 32, fontSize: 26, originX: 'center', originY: 'center' });
-            let priceBg = new fabric.Rect({ left: 8, top: 54, width: 54, height: 18, fill: '#f8fafc', rx: 6, ry: 6 });
-            let priceTxt = new fabric.Text('₹' + currentPrice, { left: 35, top: 63, fontSize: 11, fill: '#0f172a', fontWeight: '900', originX: 'center', originY: 'center', fontFamily: 'Plus Jakarta Sans' });
-            const room = getActiveOrLastRoom();
-            const pos = room ? getNextRoomSlot(room, w, h) : { left: 150, top: 100 };
-            let bedGroup = new fabric.Group([bedBg, bedTopAccent, bedIcon, priceBg, priceTxt], { left: pos.left, top: pos.top, selectable: true, isBed: true, bedId: 'NEW-B' + Date.now(), bedPrice: currentPrice, hoverCursor: 'pointer', tooltipLabel: 'Bed — ₹' + currentPrice });
-            adminFabricCanvasInstance.add(bedGroup);
-            attachAdminCanvasTooltips();
-        }
 
         function initMap() {
             const bizMapEl = document.getElementById("map");
