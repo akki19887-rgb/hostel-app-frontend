@@ -11934,6 +11934,10 @@
             let propertyData = allApprovedProperties.find(p => p.id === docId);
             if(propertyData) { window.currentPropertyData = propertyData; admin2DBlocks = propertyData.layout2D || []; }
             else { alert("Property not found!"); return; }
+            // Jis haal me page khula tha, wo yaad rakho - baad me isi se milaya jayega.
+            openPropertyId = docId;
+            openPropertyPrint = propertyFingerprint(propertyData);
+            hideLivePropertyChangeBar();
             // SAFETY: this is the REAL booking flow for an actual customer — make absolutely sure no
             // admin-only editing state or controls can leak in from a previous Preview & Test session.
             blueprintEditMode = true;
