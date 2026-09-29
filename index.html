@@ -9659,7 +9659,11 @@
             currentSelectedFloor = uniqueFloors[0] || 'Ground Floor';
             wakeUpAIBackend();
             floorMaps = uniqueFloors.map(f => ({ floorName: f, dataUrl: busData.floorMapUrls ? busData.floorMapUrls[f] : busData.mapImageUrl })); uploadedMapDataUrl = floorMaps.find(f => f.floorName === currentSelectedFloor)?.dataUrl || '';
-            document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES"; goTo('screenBusinessBedConfig');
+            document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; refreshRoomsLabel(); renderFloorTabs(); renderBusinessConfig(); renderAttractive2DPlan(); document.getElementById('submitAdminBtn').innerText = "💾 SAVE LIVE UPDATES";
+            // Niyam wala button sirf edit me. Nayi listing me wo form waise bhi
+            // raste me aata hai, to wahan ye sirf uljhan banata.
+            { const rb = document.getElementById('btnEditRules'); if (rb) rb.classList.remove('hidden'); }
+            goTo('screenBusinessBedConfig');
         }
 
         // ==========================================
