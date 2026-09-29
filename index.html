@@ -12350,8 +12350,14 @@
             const qty = Math.max(1, parseInt(input.value) || 1);
             const roomTotal = currentBookingPlan.rate * qty;
             // Mess/food charge (if the guest selected one) gets added on top of the room total.
+            //
+            // MESS BHI QTY SE GUNA HOTA HAI. Pehle ye ek hi baar juda tha, to
+            // 6 mahine ki booking par mess sirf EK mahine ka lagta tha - guest
+            // se kam paisa liya jata. Server (security.py) shuru se
+            // (rate + mess) x qty karta aaya hai, isliye dono ka jawab alag
+            // aata aur payment "price changed" keh kar ruk jata.
             const messAmount = (window.currentMessSelection && window.currentMessSelection.amount) || 0;
-            const total = roomTotal + messAmount;
+            const total = (currentBookingPlan.rate + messAmount) * qty;
             if (totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
 
             // Security deposit is a one-time, Monthly-only charge — show it only when Monthly is
