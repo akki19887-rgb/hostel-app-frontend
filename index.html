@@ -8491,11 +8491,27 @@
         // WHICH beds — never an amount. Previously the browser sent the amount and the server
         // trusted it, so a DevTools edit could turn a ₹7,000 advance into ₹1 and still produce a
         // signature-verified booking with the bed marked occupied.
-        async function createRazorpayOrder(propertyId, bedIds) {
+        async function createRazorpayOrder(propertyId, bedIds, plan, qty, messPlan) {
+            // Plan, kitne period aur mess ka naam bhi jana chahiye.
+            //
+            // Pehle sirf propertyId aur bedIds jate the, to server har booking
+            // ko "1 mahina, bina mess" maan leta tha. Client apna asli total
+            // usse milata hai (neeche serverAdvance wali jaanch) aur alag
+            // nikalne par payment rok deta tha - yani 2 mahine ki, mess wali,
+            // aur daily/weekly har booking fail hoti thi.
+            //
+            // Yahan se koi RUPAYA nahi jata - sirf naam aur ginti. Har daam
+            // server Firestore se khud padhta hai.
             const res = await apiFetch('/razorpay/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ propertyId: propertyId, bedIds: bedIds })
+                body: JSON.stringify({
+                    propertyId: propertyId,
+                    bedIds: bedIds,
+                    plan: plan || 'monthly',
+                    qty: qty || 1,
+                    messPlan: messPlan || ''
+                })
             });
             if (!res.ok) {
                 let msg = 'Order creation failed';
