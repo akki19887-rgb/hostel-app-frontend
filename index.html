@@ -12996,7 +12996,9 @@
             if (!block.beds) block.beds = [];
             const priceInput = document.getElementById('adminCanvasSetPrice');
             const price = Number(priceInput && priceInput.value) || 5000;
-            block.beds.push({ id: 'QE-B' + Date.now(), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0, status: 'available' });
+            // 'QE-B' + Date.now() par do bed ek hi millisecond me bane to takkar
+            // ho jati thi, aur wo ID room se juda hua naam bhi nahi deti thi.
+            block.beds.push({ id: mintBedId(block.id), price: price, priceMonthly: price, priceDaily: 0, priceWeekly: 0, status: 'available' });
             qeRefreshAll();
         }
         function qeAddIcon(blockId, type) {
