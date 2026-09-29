@@ -8898,7 +8898,11 @@
             businessLegalData.portalNameMatch = gv('formPortalMatch') || 'unchecked';
             businessLegalData.upiNameMatch    = gv('formUpiMatch') || 'unchecked';
 
-            if (!businessLegalData.propertyId) {
+            // EDIT ka rasta: ye do jaanch onboarding ki hain. Un khaano ka data
+            // businessContacts me ja chuka hai aur edit ke waqt load hi nahi hota,
+            // isliye yahan rok lagana matlab malik apne daam kabhi badal hi na paye.
+            const _rulesEditMode = !!rulesEditReturnScreen;
+            if (!_rulesEditMode && !businessLegalData.propertyId) {
                 alert('Property ID bhariye.\n\nGhar ke bahar lagi neeli plate par "Property ID" likha hota hai — jaise RPR569H00006.\n\nIsi se pata chalta hai ki listing kis makaan ki hai.');
                 const el = document.getElementById('formPropertyId'); if (el) el.focus();
                 return;
