@@ -8907,7 +8907,7 @@
                 const el = document.getElementById('formPropertyId'); if (el) el.focus();
                 return;
             }
-            if (!businessLegalData.personRole) {
+            if (!_rulesEditMode && !businessLegalData.personRole) {
                 alert('Bataiye ki saamne khada vyakti kaun hai — malik, parivaar ka, ya manager/kirayedar.\n\nIsse pata chalta hai ki listing par bharosa kitna karna hai.');
                 const el = document.getElementById('formPersonRole'); if (el) el.focus();
                 return;
