@@ -10226,6 +10226,38 @@
             // 'approved' likhne par listing admin dashboard me "Live" dikhti thi
             // aur alert bhi "Approved!" bolta tha - par guest ko wo kabhi milti
             // hi nahi. Chup-chaap hamesha ke liye chhup jati thi.
+            // PUBLISH SE PEHLE ROK.
+            //
+            // Ye rasta sirf imageMapBeds likhta hai. Guest ki screen aur server ka
+            // hisaab, dono roomsAndBeds se chalte hain (security.py:288). Jis listing
+            // me roomsAndBeds khaali hai use approved_2d kar dene ka matlab hai: guest
+            // ko safed dabba, aur booking ka koi rasta nahi. Pehle ye chup-chaap ho
+            // jata tha aur "Approved!" likh kar aa jata tha.
+            try {
+                // getBiz() seedha istemal nahi kar sakte: wo error nigal kar null
+                // deta hai, to "listing me bed nahi" aur "listing padhi hi nahi gayi"
+                // dono ek jaise dikhte hain - aur admin ko network ki gadbad par
+                // "Architect Mode se layout banao" wala galat message mil jata.
+                const snap = await window.getDoc(window.doc(window.db, 'businesses', currentAdminDocId));
+                const live = snap.exists() ? (snap.data() || {}) : {};
+                const kulBeds = ((live && live.roomsAndBeds) || [])
+                    .reduce((n, r) => n + (((r && r.beds) || []).length), 0);
+                if (!kulBeds) {
+                    btn.innerText = 'PUBLISH';
+                    alert('Ye listing publish nahi ho sakti.\n\n'
+                        + 'Image par bed mark karna kaafi nahi hai - guest ki screen aur '
+                        + 'booking ka hisaab, dono kamre-aur-bed ki list se chalte hain, '
+                        + 'aur is listing me wo khaali hai.\n\n'
+                        + 'Pehle ARCHITECT MODE se kamre aur bed banaiye, phir publish kijiye.');
+                    return;
+                }
+            } catch (e) {
+                // Padh hi na paye to publish rok dena hi theek hai - andhere me
+                // approved_2d likhne se guest ko khaali listing mil sakti hai.
+                btn.innerText = 'PUBLISH';
+                alert('Listing padhi nahi ja saki, isliye publish nahi kiya. Ek baar aur koshish kijiye.');
+                return;
+            }
             await window.updateDoc(window.doc(window.db, "businesses", currentAdminDocId), { status: "approved_2d", mapImageUrl: aiGeneratedMapUrl, imageMapBeds: mappedBedsData }); alert('Approved!'); uploadedMapDataUrl = aiGeneratedMapUrl; goTo('screenAdminDashboard'); }
 
         async function startAdmin2DFlow(docId) {
