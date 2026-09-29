@@ -6307,7 +6307,17 @@
             const open = Array.from(document.querySelectorAll('.zoom-modal'))
                               .filter(el => !el.classList.contains('hidden'));
             if (!open.length) return;
-            open[open.length - 1].classList.add('hidden');   // the topmost one
+            const top = open[open.length - 1];               // the topmost one
+            // Sirf chhupa dena kaafi nahi. Kuch modal kuch yaad rakhte hain (kaun sa
+            // bed, kaun sa guest) - wo yaad Escape ke baad bhi pada reh jata tha aur
+            // agli baar galat cheez utha sakta tha. Jo modal apna close function
+            // batata hai, uska wahi chalao; baaki ko pehle ki tarah chhupa do.
+            const closeFn = top.getAttribute && top.getAttribute('data-close-fn');
+            if (closeFn && typeof window[closeFn] === 'function') {
+                try { window[closeFn](); } catch (e) { top.classList.add('hidden'); }
+            } else {
+                top.classList.add('hidden');
+            }
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
         });
 
