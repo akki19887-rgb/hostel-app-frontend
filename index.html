@@ -535,6 +535,44 @@
         <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-xs font-bold bg-black/40 px-4 py-2 rounded-full">👆 Drag to look around · Pinch/scroll to zoom</div>
     </div>
 
+    <!-- BED OCCUPY MODAL - pehle ye browser ka confirm() tha.
+         confirm() me sirf OK/Cancel hote hain, aur skip ko "Cancel" ke peeche
+         chhupana padta tha - owner samajhta tha ki Cancel se kuch nahi hoga.
+         Ab teenon raste apne naam se dikhte hain. -->
+    <div id="modalBedOccupy" class="zoom-modal hidden" data-close-fn="closeBedOccupy" onclick="if(event.target===this) closeBedOccupy()">
+        <div class="bg-white p-7 rounded-[2rem] max-w-md w-full relative">
+            <button type="button" onclick="closeBedOccupy()" class="absolute top-4 right-4 w-9 h-9 bg-slate-100 rounded-full font-bold text-slate-600 hover:bg-slate-200 transition">&#10005;</button>
+
+            <div class="flex items-center gap-3 mb-1">
+                <div class="w-11 h-11 rounded-2xl btn-gradient flex items-center justify-center text-white text-lg shadow-lg">&#128716;</div>
+                <div>
+                    <h3 class="display-font text-xl font-black text-slate-900 leading-tight">Bed occupied karein?</h3>
+                    <p id="bedOccupyLabel" class="text-[11px] font-bold text-indigo-600"></p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 font-semibold mt-4 mb-3 leading-relaxed">
+                Guest ki detail bharenge to rent, check-out aur occupancy sab apne aap chalte
+                hain. Nahi bharna hai to bhi chalega &mdash; bed occupied ho jayega.
+            </p>
+
+            <button type="button" id="bedOccupyDetailBtn" onclick="bedOccupyWithGuest()"
+                class="w-full py-3.5 btn-gradient text-white font-black text-sm rounded-2xl shadow-lg transition">
+                Guest ki detail bharo
+            </button>
+            <p class="text-[10px] font-bold text-slate-400 text-center mt-1.5">Naam, rent, joining date &mdash; sujhaav yahi hai</p>
+
+            <button type="button" id="bedOccupySkipBtn" onclick="bedOccupySkip()"
+                class="w-full mt-3 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl transition">
+                Sirf occupied karo &mdash; detail nahi
+            </button>
+            <p class="text-[10px] font-bold text-slate-400 text-center mt-1.5">Bed band ho jayega, par kiska hai ye app ko pata nahi chalega</p>
+
+            <button type="button" onclick="closeBedOccupy()"
+                class="w-full mt-4 py-3 text-slate-500 font-black text-xs hover:text-slate-700 transition">Rehne do</button>
+        </div>
+    </div>
+
     <!-- ENQUIRY MODAL — replaces a browser prompt(). A native prompt shows "ho-om.in says",
          can't be styled, and looks like a phishing popup next to the rest of the app. -->
     <div id="modalEnquiry" class="zoom-modal hidden" onclick="if(event.target===this) closeEnquiryModal()">
