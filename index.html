@@ -8942,7 +8942,29 @@
             businessRules.noRestriction = document.getElementById('formNoRestriction') ? document.getElementById('formNoRestriction').checked : false;
             businessRules.mess = document.getElementById('formMess') ? document.getElementById('formMess').value : 'Not Available';
             businessRules.messPrices = { daily: document.getElementById('formMessDaily') ? parseInt(document.getElementById('formMessDaily').value) || 0 : 0, weekly: document.getElementById('formMessWeekly') ? parseInt(document.getElementById('formMessWeekly').value) || 0 : 0, monthly: document.getElementById('formMessMonthly') ? parseInt(document.getElementById('formMessMonthly').value) || 0 : 0, meal: document.getElementById('formMessMeal') ? parseInt(document.getElementById('formMessMeal').value) || 0 : 0 };
-            goTo('screenMapUploadPipeline');
+            // ONBOARDING: aage badho, jaisa pehle hota tha.
+            if (!_rulesEditMode) { goTo('screenMapUploadPipeline'); return; }
+
+            // EDIT: yahin likh do. Guest ki list aur admin ka dashboard dono
+            // onSnapshot par hain, to badla hua daam turant dikh jata hai - malik ko
+            // "SAVE LIVE UPDATES" dhoondhne ki zaroorat nahi.
+            const wapas = rulesEditReturnScreen;
+            rulesEditReturnScreen = null;
+            const gEl2 = document.getElementById('formGenderType');
+            if (gEl2) { gEl2.disabled = false; gEl2.title = ''; }
+            const note2 = document.getElementById('legalSectionNote');
+            if (note2) note2.classList.add('hidden');
+            (async () => {
+                try {
+                    await window.updateDoc(window.doc(window.db, 'businesses', editingBusinessDocId),
+                                           { rules: businessRules, lastEditedAt: new Date().toISOString() });
+                    showAppToast('Niyam aur daam live ho gaye.');
+                } catch (e) {
+                    console.error('niyam save nahi hue:', e);
+                    alert('Niyam save nahi ho paye: ' + (e.message || e) + '\n\nEk baar aur koshish kijiye.');
+                }
+                goTo(wapas);
+            })();
         }
 
         // PERF: the AI scan backend is hosted on a free tier that "sleeps" after inactivity and can
