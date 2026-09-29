@@ -7355,7 +7355,7 @@
                 const user = userCred.user;
                 if (user.emailVerified) {
                     try { localStorage.setItem('hostelom_user', JSON.stringify({ uid: user.uid, email: user.email, loggedInAt: new Date().toISOString() })); } catch(e) {}
-                    goTo('screenProfileCompletion');
+                    await afterLoginNextScreen();
                     return;
                 }
                 await sendCustomVerificationEmail(user);
