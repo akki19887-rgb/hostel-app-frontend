@@ -9720,7 +9720,22 @@
         }
 
         async function submitToAdmin() {
-            const btn = document.getElementById('submitAdminBtn'); btn.innerText = "⏳ Saving & Syncing..."; btn.disabled = true;
+            const btn = document.getElementById('submitAdminBtn');
+            // PUBLISH SE PEHLE ROK.
+            //
+            // Editor teen aisi haalat bana leta tha jo guest ki taraf tootti
+            // hain, aur dono publish raste unhe chup-chaap chadha dete the:
+            // zero bed wala kamra, bina ID ka bed, aur ek hi ID ke do bed
+            // (jisme guest se DUGNA paisa katta hai). Yahan rukna us se bahut
+            // sasta hai ki guest ke saamne toote.
+            const _gadbad = (typeof layoutProblems === 'function') ? layoutProblems() : [];
+            if (_gadbad.length) {
+                alert('Publish nahi kar sakte - pehle ye theek kijiye:\n\n'
+                    + _gadbad.map((x, i) => (i + 1) + '. ' + x).join('\n\n'));
+                if (btn) { btn.disabled = false; btn.innerText = 'Submit to Admin →'; }
+                return;
+            }
+            btn.innerText = "⏳ Saving & Syncing..."; btn.disabled = true;
             try {
                 // Hostel-name slug used to prefix Storage paths & (for new listings) the Firestore doc ID,
                 // so anyone browsing Firebase console can tell which hostel a file/document belongs to.
