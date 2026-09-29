@@ -13086,14 +13086,54 @@
             const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
 
             // Marking a bed occupied without saying WHO is in it is what produced the
-            // "2 occupied / no guests staying" screen. Offer to record the guest instead —
-            // then occupancy, rent and check-out all work for walk-ins too.
+            // "2 occupied / no guests staying" screen. So we ask — but the asking used to be
+            // a browser confirm() where skip hid behind "Cancel". Cancel means "do nothing"
+            // everywhere else, so the owner who only wanted the bed blocked pressed it and
+            // thought nothing had happened. Now all three choices are named buttons.
             if (bed.status !== 'occupied' && currentAdminDocId) {
-                if (confirm('Is a guest moving into this bed?\n\nOK  — add their name and rent (recommended)\nCancel — just mark it blocked, no guest')) {
-                    openWalkInGuest(currentAdminDocId, blockId, bedId, `${block.name || 'Room'} · Bed ${bedId}`);
-                    return;
-                }
+                _bedOccupyCtx = { blockId: blockId, bedId: bedId };
+                const lbl = document.getElementById('bedOccupyLabel');
+                if (lbl) lbl.innerText = `${block.name || 'Room'} · Bed ${bedId}`;
+                const m = document.getElementById('modalBedOccupy');
+                if (m) { m.classList.remove('hidden'); return; }
+                // modal hi na mile (bahut purana cache) to rukna galat hai - seedha kar do
             }
+
+            await qeApplyBedStatus(blockId, bedId);
+        }
+
+        // Kaunsa bed puchh raha hai - modal ke button ko yahi se pata chalta hai.
+        let _bedOccupyCtx = null;
+
+        window.closeBedOccupy = function() {
+            const m = document.getElementById('modalBedOccupy');
+            if (m) m.classList.add('hidden');
+            _bedOccupyCtx = null;
+        };
+
+        // "Guest ki detail bharo" - walk-in form kholta hai. Bed ka status wahin
+        // form ke save par badalta hai, yahan nahi.
+        window.bedOccupyWithGuest = function() {
+            const c = _bedOccupyCtx;
+            closeBedOccupy();
+            if (!c || !currentAdminDocId) return;
+            const block = admin2DBlocks.find(b => b.id === c.blockId);
+            openWalkInGuest(currentAdminDocId, c.blockId, c.bedId,
+                            `${(block && block.name) || 'Room'} · Bed ${c.bedId}`);
+        };
+
+        // "Sirf occupied karo" - yahi wo SKIP hai jo pehle Cancel me chhupa tha.
+        window.bedOccupySkip = function() {
+            const c = _bedOccupyCtx;
+            closeBedOccupy();
+            if (!c) return;
+            qeApplyBedStatus(c.blockId, c.bedId);
+        };
+
+        // Status ka asli badlav - local me bhi, Firestore me bhi.
+        async function qeApplyBedStatus(blockId, bedId) {
+            const block = admin2DBlocks.find(b => b.id === blockId); if (!block || !block.beds) return;
+            const bed = block.beds.find(b => b.id === bedId); if (!bed) return;
 
             const newStatus = (bed.status === 'occupied') ? 'available' : 'occupied';
             bed.status = newStatus; // reflect immediately in the local edit view
