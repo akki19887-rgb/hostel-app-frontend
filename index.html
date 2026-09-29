@@ -2137,6 +2137,15 @@
                          aur jo listing ko ek asli, dhoondhe ja sakne wale makaan se bandhti hai.
                          Purana "Business Licence" khaana hata diya - zyadatar hostel ke paas
                          wo hota hi nahi tha, aur jo bhara jata tha wo kahin save bhi nahi hota tha. -->
+                    <!-- Sirf tab dikhta hai jab malik apni pehle se bani listing ke niyam
+                         badalne aaya ho. Us waqt neeche wale legal khaane Firestore se load
+                         nahi hote (wo businessContacts me jaate hain), isliye unhe dobara
+                         bharna zaroori nahi - warna malik apna mess ka daam kabhi badal hi
+                         nahi paata. -->
+                    <div id="legalSectionNote" class="hidden md:col-span-2 bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 flex items-start gap-2">
+                        <span class="text-sm leading-none mt-0.5">&#9998;</span>
+                        <p class="text-[11px] font-bold text-amber-800 leading-relaxed">Aap apne <b>niyam aur daam</b> badal rahe hain. Neeche ke kagaz wale khaane khaali chhod sakte hain &mdash; wo pehle hi jama ho chuke hain. Gender policy sirf admin badal sakta hai.</p>
+                    </div>
                     <div>
                         <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Property ID <span class="text-red-500">*</span></label>
                         <input type="text" id="formPropertyId" placeholder="jaise RPR569H00006"
