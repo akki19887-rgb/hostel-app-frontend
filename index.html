@@ -11311,8 +11311,13 @@
         const GRF_SKIP_REQUIRED = ['grfFullName', 'grfDob', 'grfJoiningDate'];
 
         function grfSkipToShortForm() {
+            // Vaada wahi karna chahiye jo poora ho sake. Declaration ka tick aur
+            // dastkhat kanooni hain - wo hat nahi sakte - isliye ab unka bhi zikr
+            // hai. Pehle popup "sirf teen cheez" kehta tha aur form paanch maangta.
             if (!confirm('SKIP FOR NOW\n\n'
-                + 'You only need three things now — your name, date of birth and joining date.\n\n'
+                + 'You only need three things now — your name, date of birth and joining date.\n'
+                + '(Plus the declaration tick and typing your name as signature at the end.)\n\n'
+                + 'Everything will be on ONE page — you will not have to go back.\n\n'
                 + 'The rest, including your ID, has to be given AT THE HOSTEL when you check in.\n'
                 + 'Hostels do not allow check-in without an ID.\n\n'
                 + 'Continue?')) return;
