@@ -11220,7 +11220,10 @@
         const GRF_STEP_LABELS = { 1: 'Your Details & ID Proof', 2: 'Guardian, Preferences & Confirm' };
         let grfCurrentStep = 1;
         function grfRenderStepUI() {
-            document.querySelectorAll('.grf-step').forEach(el => { el.classList.toggle('hidden', Number(el.dataset.step) !== grfCurrentStep); });
+            // Skip mode me step batna band - sab kuch ek panne par. Bhaari khaane
+            // pehle hi chhupaye ja chuke hain, to guest ko sirf wahi teen cheezein
+            // dikhti hain jinka vaada hua tha.
+            document.querySelectorAll('.grf-step').forEach(el => { el.classList.toggle('hidden', !grfSkipMode && Number(el.dataset.step) !== grfCurrentStep); });
             document.querySelectorAll('.grf-dot').forEach(dot => { dot.classList.toggle('bg-indigo-500', Number(dot.dataset.dot) <= grfCurrentStep); dot.classList.toggle('bg-slate-200', Number(dot.dataset.dot) > grfCurrentStep); });
             document.getElementById('grfStepLabel').innerText = `Step ${grfCurrentStep} of ${GRF_TOTAL_STEPS} — ${GRF_STEP_LABELS[grfCurrentStep]}`;
             document.getElementById('grfBackBtn').style.visibility = grfCurrentStep === 1 ? 'hidden' : 'visible';
