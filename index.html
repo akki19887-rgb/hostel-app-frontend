@@ -10219,7 +10219,11 @@
                             <span class="text-[10px] font-semibold text-slate-400">Admin only — changes the safety badge guests see</span>
                         </div></div></div>`;
                     }
-                    if (data.status === 'pending_approval') pendingHtml += cardHtml; else if (data.status === 'approved_2d' || data.status === 'approved' || data.status === 'paused_by_admin') liveHtml += cardHtml;
+                    // 'approved' ab LIVE me NAHI jaati. Wo guest ko dikhti hi nahi,
+                    // to use "Live" ke saath rakhna jhooth tha. Pending me rahegi,
+                    // laal patti ke saath, taaki nazar padte hi theek ho jaye.
+                    if (data.status === 'pending_approval' || data.status === 'approved') pendingHtml += cardHtml;
+                    else if (data.status === 'approved_2d' || data.status === 'paused_by_admin') liveHtml += cardHtml;
                 });
                 updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`);
                 updateHtmlPreservingScroll(liveContainer, liveHtml || `<p class="text-slate-500 font-black text-center mt-6">No Live Properties Yet</p>`);
