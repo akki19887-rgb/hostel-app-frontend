@@ -6921,7 +6921,8 @@
                     return;
                 }
                 rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                container.innerHTML = rows.map(b => renderBookingCard(b, 'loadConfirmedBookings')).join('');
+                container.innerHTML = capNoticeHTML(rows.length, 'booking')
+                                    + rows.map(b => renderBookingCard(b, 'loadConfirmedBookings')).join('');
             } catch (err) {
                 console.error('Failed to load confirmed bookings', err);
                 container.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs">Could not load confirmed bookings.</div>`;
