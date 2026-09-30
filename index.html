@@ -11291,7 +11291,17 @@
         const GRF_HEAVY_FIELDS = ['grfAadharPhotoFront', 'grfAadharPhotoBack', 'grfAadharNumber',
                                   'grfPassportPhoto', 'grfFatherName', 'grfMotherName',
                                   'grfCollegeName', 'grfCourseYear', 'grfBloodGroup',
-                                  'grfOccupationType'];
+                                  'grfOccupationType',
+                                  // Ye do pehle chhupte nahi the. Skip ka popup kehta tha
+                                  // "sirf teen cheez chahiye" aur phir agle panne par
+                                  // Emergency Contact aur Permanent Address maang leta tha.
+                                  // Vaada wahi karna chahiye jo poora ho sake.
+                                  'grfEmergencyContact', 'grfAddress'];
+
+        // Skip mode me SIRF ye teen cheezein zaroori hain - wahi jinka vaada kiya
+        // gaya hai. (Declaration ka tick aur dastkhat alag se jaanche jate hain;
+        // wo kanooni hain aur hat nahi sakte, isliye popup me unka bhi zikr hai.)
+        const GRF_SKIP_REQUIRED = ['grfFullName', 'grfDob', 'grfJoiningDate'];
 
         function grfSkipToShortForm() {
             if (!confirm('SKIP FOR NOW\n\n'
