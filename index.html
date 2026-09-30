@@ -6032,10 +6032,11 @@
 
         async function confirmUpiPayment(bookingDocId) {
             try {
-                const bSnap = await getDocs(query(collection(db, 'bookings')));
-                let bData = null;
-                let allBookings = [];
-                bSnap.forEach(d => { allBookings.push({ id: d.id, ...d.data() }); if (d.id === bookingDocId) bData = d.data(); });
+                // EK BOOKING CHAHIYE THI, SAARI PADHI JA RAHI THIN.
+                // Pehle poore platform ki har booking neeche aati thi aur phir JS me
+                // se `d.id === bookingDocId` wali chhaanti jati thi.
+                const bOne = await getDoc(doc(db, 'bookings', bookingDocId));
+                const bData = bOne.exists() ? bOne.data() : null;
                 if (!bData) { alert('Booking not found.'); return; }
 
                 // DUPLICATE UTR CHECK: someone could submit the same real UTR/payment-screenshot
