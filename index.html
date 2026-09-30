@@ -10357,7 +10357,10 @@
                     if (data.status === 'pending_approval' || data.status === 'approved') pendingHtml += cardHtml;
                     else if (data.status === 'approved_2d' || data.status === 'paused_by_admin') liveHtml += cardHtml;
                 });
-                updateHtmlPreservingScroll(pendingContainer, pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`);
+                // Hadd lagi ho to sabse upar bata do - warna admin samajhta hai
+                // ki platform par bas itni hi listing hai.
+                const capMsgBiz = capNoticeHTML(querySnapshot.size, 'listing');
+                updateHtmlPreservingScroll(pendingContainer, capMsgBiz + (pendingHtml || `<p class="text-slate-500 font-black text-center mt-6">No Pending Verifications</p>`));
                 updateHtmlPreservingScroll(liveContainer, liveHtml || `<p class="text-slate-500 font-black text-center mt-6">No Live Properties Yet</p>`);
             });
         }
