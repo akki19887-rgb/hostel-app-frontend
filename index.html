@@ -3795,7 +3795,9 @@
             // Re-compressing an already-compressed file wastes time and re-encodes the JPEG a second
             // time at a LOWER quality than the first pass, degrading it further for no benefit.
             const ALREADY_SMALL_THRESHOLD = 2 * 1024 * 1024; // 2MB
-            const toUpload = (file.size && file.size <= ALREADY_SMALL_THRESHOLD) ? file : await compressImage(file);
+            const toUpload = (file.size && file.size <= ALREADY_SMALL_THRESHOLD)
+                ? file
+                : await compressImage(file, maxDimension || 1280, maxDimension ? 0.85 : 0.75);
             const storageRef = window.ref(window.storage, path); await window.uploadBytes(storageRef, toUpload); return await window.getDownloadURL(storageRef);
         }
 
