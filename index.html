@@ -11226,9 +11226,13 @@
             document.querySelectorAll('.grf-step').forEach(el => { el.classList.toggle('hidden', !grfSkipMode && Number(el.dataset.step) !== grfCurrentStep); });
             document.querySelectorAll('.grf-dot').forEach(dot => { dot.classList.toggle('bg-indigo-500', Number(dot.dataset.dot) <= grfCurrentStep); dot.classList.toggle('bg-slate-200', Number(dot.dataset.dot) > grfCurrentStep); });
             document.getElementById('grfStepLabel').innerText = `Step ${grfCurrentStep} of ${GRF_TOTAL_STEPS} — ${GRF_STEP_LABELS[grfCurrentStep]}`;
-            document.getElementById('grfBackBtn').style.visibility = grfCurrentStep === 1 ? 'hidden' : 'visible';
-            document.getElementById('grfNextBtn').classList.toggle('hidden', grfCurrentStep === GRF_TOTAL_STEPS);
-            document.getElementById('grfSubmitBtn').classList.toggle('hidden', grfCurrentStep !== GRF_TOTAL_STEPS);
+            // Skip mode me sab kuch ek panne par hai, to Next/Back ka koi matlab nahi.
+            document.getElementById('grfBackBtn').style.visibility = (grfSkipMode || grfCurrentStep === 1) ? 'hidden' : 'visible';
+            document.getElementById('grfNextBtn').classList.toggle('hidden', grfSkipMode || grfCurrentStep === GRF_TOTAL_STEPS);
+            document.getElementById('grfSubmitBtn').classList.toggle('hidden', !grfSkipMode && grfCurrentStep !== GRF_TOTAL_STEPS);
+            document.getElementById('grfStepLabel').innerText = grfSkipMode
+                ? 'Bas teen cheezein — naam, janm-tithi, aane ki tareekh'
+                : document.getElementById('grfStepLabel').innerText;
             document.getElementById('screenGuestRegistrationForm').scrollTop = 0;
         }
         // Which fields must be filled before leaving each step. Without this the guest could
