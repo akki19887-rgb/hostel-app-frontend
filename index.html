@@ -13413,10 +13413,21 @@
             // a browser confirm() where skip hid behind "Cancel". Cancel means "do nothing"
             // everywhere else, so the owner who only wanted the bed blocked pressed it and
             // thought nothing had happened. Now all three choices are named buttons.
-            if (bed.status !== 'occupied' && currentAdminDocId) {
+            if (currentAdminDocId) {
+                // PEHLE SIRF KHAALI BED PAR POOCHHA JATA THA.
+                //
+                // Occupied bed par tap karne se wo SEEDHA khaali ho jata tha. Matlab
+                // Skip dabane ke baad ("abhi detail nahi") guest ki detail baad me
+                // bharne ka koi rasta hi nahi bachta tha - malik ko bed khaali karke
+                // dobara occupied karna padta, aur us beech me wo bed guest ko bikne
+                // ke liye khul jata.
                 _bedOccupyCtx = { blockId: blockId, bedId: bedId };
                 const lbl = document.getElementById('bedOccupyLabel');
                 if (lbl) lbl.innerText = `${block.name || 'Room'} · Bed ${bedId}`;
+                // occupiedBookingId hone ka matlab: is bed par ASLI booking judi hai.
+                // Waise bed par "detail bharo" dena galat hoga - ek hi bed par doosri
+                // booking ban jayegi.
+                bedOccupyModalMode(bed.status === 'occupied' ? (bed.occupiedBookingId ? 'booked' : 'skipped') : 'free');
                 const m = document.getElementById('modalBedOccupy');
                 if (m) { m.classList.remove('hidden'); return; }
                 // modal hi na mile (bahut purana cache) to rukna galat hai - seedha kar do
