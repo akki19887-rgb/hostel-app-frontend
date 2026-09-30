@@ -3254,7 +3254,7 @@
                 items.sort((a, b) => (b.lastLoginAt || '').localeCompare(a.lastLoginAt || ''));
                 const capMsgUsers = capNoticeHTML(items.length, 'user');
                 if (items.length === 0) { box.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-10">No mobile logins yet</p>`; return; }
-                box.innerHTML = `<div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100"><h4 class="text-xs font-black text-indigo-700 uppercase tracking-widest">👥 Users signed in via Mobile OTP (${items.length})</h4></div>` +
+                box.innerHTML = capMsgUsers + `<div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100"><h4 class="text-xs font-black text-indigo-700 uppercase tracking-widest">👥 Users signed in via Mobile OTP (${items.length})</h4></div>` +
                     items.map(u => {
                         const loc = u.location ? `<a href="https://maps.google.com/?q=${u.location.lat},${u.location.lng}" target="_blank" class="text-indigo-600 underline">📍 ${u.location.lat.toFixed(4)}, ${u.location.lng.toFixed(4)}</a>` : `<span class="text-slate-400">Not shared</span>`;
                         return `<div class="p-4 border-b border-slate-100 last:border-0 flex items-center justify-between gap-4">
