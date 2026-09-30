@@ -9959,7 +9959,17 @@
                     if (businessCoordinates && businessCoordinates.lat) patch.coordinates = businessCoordinates;
                     if (floorMapUrlsObj && Object.keys(floorMapUrlsObj).length) patch.floorMapUrls = floorMapUrlsObj;
                     await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), patch);
-                    alert('Updates synced live to users!');
+                    // 360 ka hisaab bhi batao. Bina iske owner ko pata hi nahi
+                    // chalta tha ki uska tour gaya ya raste me gir gaya.
+                    let msg360 = '';
+                    if (failed360.length) {
+                        msg360 = '\n\n360 ka tour in kamron me NAHI chadha:\n- '
+                               + failed360.join('\n- ')
+                               + '\n\nBaaki sab save ho gaya hai. Dobara koshish kijiye.';
+                    } else if (live360) {
+                        msg360 = '\n\n360 ka tour ' + live360 + ' kamre me live hai.';
+                    }
+                    alert('Updates synced live to users!' + msg360);
                 }
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
