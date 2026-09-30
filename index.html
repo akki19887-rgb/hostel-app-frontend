@@ -10184,7 +10184,17 @@
                     }
                     let publishedAtHtml = data.layout2DPublishedAt ? `<p class="text-[10px] font-bold text-emerald-600 -mt-2">📅 2D Layout finalized: ${new Date(data.layout2DPublishedAt).toLocaleString('en-IN')}</p>` : '';
                     const isPaused = data.status === 'paused_by_admin';
-                    const pausedBadgeHtml = (isPaused ? `<span class="chip" style="background:#fef3c7; border-color:#fcd34d; color:#92400e;">⏸️ PAUSED — hidden from users</span>` : '') + '${verifyBadgeHtml}';
+                    // PURANI 'approved' WALI LISTING - GUEST KO DIKHTI HI NAHI.
+                    //
+                    // Guest ki dono query sirf approved_2d maangti hain. 'approved'
+                    // wali listing kahin nahi dikhti, par admin dashboard use "Live"
+                    // ke khaane me rakhta tha - to kisi ko shak bhi nahi hota tha.
+                    // Malik booking ka intezaar karta rehta.
+                    const chhupiHuiListing = (data.status === 'approved');
+                    const chhupiBadgeHtml = chhupiHuiListing
+                        ? `<span class="chip" style="background:#fee2e2; border-color:#fca5a5; color:#991b1b;">⚠️ GUEST KO NAHI DIKH RAHI — purana 'approved' status. Architect Mode se dobara Publish kijiye.</span>`
+                        : '';
+                    const pausedBadgeHtml = (isPaused ? `<span class="chip" style="background:#fef3c7; border-color:#fcd34d; color:#92400e;">⏸️ PAUSED — hidden from users</span>` : '') + chhupiBadgeHtml + '${verifyBadgeHtml}';
                     // The Verified badge is this product's core promise, so it has to be granted
                     // here — by you, after actually seeing the place — not by the owner pressing
                     // their own Publish button.
