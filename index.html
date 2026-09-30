@@ -9891,7 +9891,40 @@
                     finalPhotos = finalPhotos.map(u =>
                         (typeof u === 'string' && (u.startsWith('blob:') || u.startsWith('data:'))) ? '' : (u || ''));
                     cleanRoom.photos = finalPhotos;
-                    delete cleanRoom.rawFiles; if (cleanRoom.raw360File) { const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`; cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360); delete cleanRoom.raw360File; } cleanRoomsData.push(cleanRoom); }
+                    delete cleanRoom.rawFiles;
+
+                    // 360 KA TOUR - ab photo jaisa hi pehra.
+                    //
+                    // Pehle yahan koi try/catch nahi tha. Storage ka niyam
+                    // `panorama360/` folder par mana kar de (photo alag folder me
+                    // jati hai) to ye POORA save gira deta tha - kamre, daam,
+                    // photo sab - aur owner ko bas ek aam sa error milta.
+                    if (cleanRoom.raw360File) {
+                        const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`;
+                        try {
+                            // 4000 pixel - panorama me detail chahiye. Bina ye bataye
+                            // uploader ise 1280 par nichod deta tha.
+                            cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360, 4000);
+                        } catch (e360) {
+                            console.warn('360 upload fail:', cleanRoom.id, e360);
+                            failed360.push((cleanRoom.name || cleanRoom.id) + ': ' + (e360.message || e360));
+                            cleanRoom.panorama360Url = '';
+                        }
+                        delete cleanRoom.raw360File;
+                    }
+                    // MARA HUA blob: LINK KABHI SAVE NA HO.
+                    //
+                    // Photo ke liye ye niyam pehle se hai. 360 ke liye tha hi nahi -
+                    // to upload na ho paane par ek blob: link Firestore me chala jata,
+                    // guest ko "Explore in 360" ka button dikhta, aur dabane par kuch
+                    // nahi khulta. blob: link us browser tab ke band hote hi mar jata hai.
+                    if (typeof cleanRoom.panorama360Url === 'string'
+                        && (cleanRoom.panorama360Url.startsWith('blob:')
+                            || cleanRoom.panorama360Url.startsWith('data:'))) {
+                        cleanRoom.panorama360Url = '';
+                    }
+                    if (cleanRoom.panorama360Url) live360++;
+                    cleanRoomsData.push(cleanRoom); }
                 const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
                 if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
                 if(editingBusinessDocId) {
