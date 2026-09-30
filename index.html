@@ -11373,7 +11373,12 @@
                 const el = document.getElementById(id);
                 if (el) { const w = el.closest('div'); if (w) w.style.display = ''; }
             });
-            grfCurrentStep = 1; grfRenderStepUI();
+            grfCurrentStep = 1;
+            // grfRenderStepUI skip mode me label nahi chhuta, isliye yahan haath se
+            // wapas lagana padta hai - warna nayi booking par purana label reh jata.
+            const lbl = document.getElementById('grfStepLabel');
+            if (lbl) lbl.innerText = `Step 1 of ${GRF_TOTAL_STEPS} — ${GRF_STEP_LABELS[1]}`;
+            grfRenderStepUI();
         }
 
 
