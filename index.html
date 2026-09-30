@@ -3368,25 +3368,6 @@
         // its own simple internal grid of used slots.
         // ==========================================
         let adminLastActiveRoom = null; // updated whenever a room group is selected/added
-        function getActiveOrLastRoom() {
-            const active = adminFabricCanvasInstance && adminFabricCanvasInstance.getActiveObject();
-            if (active && active.isRoom) { adminLastActiveRoom = active; return active; }
-            return adminLastActiveRoom;
-        }
-        // Returns the next free {left, top} (absolute canvas coords) inside a room for a new
-        // item of the given pixel size, filling left-to-right, top-to-bottom below the title bar.
-        function getNextRoomSlot(room, itemW, itemH) {
-            if (!room.roomSlotIndex) room.roomSlotIndex = 0;
-            const pad = 14, topOffset = 50; // below the room's title bar
-            const cols = Math.max(1, Math.floor(((room.width * room.scaleX) - pad) / (itemW + pad)));
-            const col = room.roomSlotIndex % cols;
-            const row = Math.floor(room.roomSlotIndex / cols);
-            room.roomSlotIndex++;
-            return {
-                left: room.left + pad + col * (itemW + pad),
-                top: room.top + topOffset + row * (itemH + pad)
-            };
-        }
         // Small floating label shown on hover (mouse) or a brief tap (touch) for icon-only objects —
         // so a bath/table icon doesn't need a permanent text caption cluttering the room, but the
         // admin can still always find out what it is.
