@@ -13072,6 +13072,20 @@
                     const bedCount = room.beds.length;
                     const priceRange = room.beds.length ? `₹${Math.min(...room.beds.map(b => b.priceMonthly || b.price || 0))}${room.beds.length > 1 ? '+' : ''}/mo` : 'No beds';
                     const photoCount = (room.photos || []).filter(Boolean).length;
+                    // 360 KA HAAL - teen alag baatein, teen alag rang.
+                    //
+                    // Pehle card par 360 ka koi nishaan hi nahi tha. Owner tour
+                    // chadhata, card waisa hi dikhta, aur use pata hi nahi chalta
+                    // ki wo abhi sirf uske browser me hai - Firestore me nahi.
+                    // blob:/data: se shuru hone wala link matlab "abhi save hona baaki".
+                    const p360 = String(room.panorama360Url || '');
+                    const is360Live = p360 && !p360.startsWith('blob:') && !p360.startsWith('data:');
+                    const is360Pending = !!room.raw360File || (p360 && !is360Live);
+                    const badge360 = is360Live
+                        ? `<span class="text-emerald-600">&#127909; 360 live</span>`
+                        : (is360Pending
+                            ? `<span class="text-amber-600 font-black">&#127909; 360 &mdash; SAVE dabana baaki</span>`
+                            : `<span class="text-slate-300">&#127909; 360 nahi</span>`);
                     container.innerHTML += ` <div onclick="openRoomEditorPage(${index})" class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col gap-1 relative overflow-hidden cursor-pointer active:scale-[0.98]"> <div class="absolute top-0 left-0 w-2 h-full" style="background: linear-gradient(180deg, #6366f1, #ec4899);"></div> <div class="flex justify-between items-center pl-2"> <div><h4 class="display-font font-black text-slate-800 text-base">${room.name} <span class="text-slate-300 text-sm ml-1">›</span></h4><span class="chip chip-primary text-[8px] px-2 py-0.5">${room.type}</span>${syncBadge}</div> <span class="text-[9px] bg-slate-50 text-slate-500 font-black px-2.5 py-1 rounded-lg uppercase tracking-widest">Edit</span> </div> <div class="pl-2 mt-1 flex items-center gap-3 text-[10px] font-bold text-slate-400"><span>🛏️ ${bedCount} bed${bedCount !== 1 ? 's' : ''}</span><span>💰 ${priceRange}</span><span>📷 ${photoCount}/2 photos</span></div> </div>`;
                 }
             });
