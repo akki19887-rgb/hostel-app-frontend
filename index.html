@@ -3785,7 +3785,11 @@
             });
         }
 
-        async function uploadFileToStorage(file, path) {
+        // maxDimension: 2MB se badi file dobara compress hoti hai. Pehle yahan
+        // compressImage(file) tha - bina maap ke, yaani 1280 pixel. Panorama ke
+        // liye wo tabaahi hai: 360 degree ka drishya 1280 me nichod dene par
+        // sab dhundhla ho jata hai. Ab bulane wala apni maap de sakta hai.
+        async function uploadFileToStorage(file, path, maxDimension) {
             // Skip re-compressing files that are already small (≈2MB or less) — these have almost
             // always already been compressed once by the caller (e.g. room photos at 1080px/85%).
             // Re-compressing an already-compressed file wastes time and re-encodes the JPEG a second
