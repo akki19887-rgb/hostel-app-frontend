@@ -3245,9 +3245,14 @@
             if (!box) return;
             box.innerHTML = `<div class="flex justify-center py-8"><div class="loader"></div></div>`;
             try {
-                const snap = await window.getDocs(window.collection(window.db, 'users'));
+                // 500 ki hadd - wahi jo staff aur audit ki list par lagi hai.
+                // Bina hadd ke ye screen poore platform ke har user ko neeche
+                // kheenchti thi. Niche bata diya jata hai ki aur bhi hain.
+                const snap = await window.getDocs(window.query(
+                    window.collection(window.db, 'users'), window.limit(ADMIN_LIST_CAP)));
                 const items = []; snap.forEach(d => items.push({ id: d.id, ...d.data() }));
                 items.sort((a, b) => (b.lastLoginAt || '').localeCompare(a.lastLoginAt || ''));
+                const capMsgUsers = capNoticeHTML(items.length, 'user');
                 if (items.length === 0) { box.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-10">No mobile logins yet</p>`; return; }
                 box.innerHTML = `<div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100"><h4 class="text-xs font-black text-indigo-700 uppercase tracking-widest">👥 Users signed in via Mobile OTP (${items.length})</h4></div>` +
                     items.map(u => {
