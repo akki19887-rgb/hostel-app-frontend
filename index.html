@@ -9857,6 +9857,11 @@
                 let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
                 if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
                 let cleanRoomsData = [];
+                // 360 ka hisaab - save ke baad owner ko saaf bataya jayega.
+                // Pehle uske paas jaanne ka koi tarika hi nahi tha ki 360 gaya
+                // ya nahi; app "synced live" bol deta tha aur bas.
+                let live360 = 0;
+                const failed360 = [];
                 for (let room of globalDynamicRooms) {
                     let cleanRoom = { ...room };
                     let finalPhotos = [...(cleanRoom.photos || [])];
