@@ -3002,10 +3002,30 @@
         async function saveRoom360Locally(roomIndex, inputElement) {
             let file = inputElement.files[0]; if (!file) return;
             inputElement.parentElement.innerHTML = "⏳ Wait...";
-            file = await compressImage(file, 4000, 0.85); // higher resolution than normal photos — panoramas need the detail
-            globalDynamicRooms[roomIndex].raw360File = file;
-            globalDynamicRooms[roomIndex].panorama360Url = URL.createObjectURL(file);
+            // "Wait..." LAGA KAR CHHOD DENA SABSE BURA ANJAAM THA.
+            //
+            // Yahan koi pehra nahi tha. Compress ya blob banane me kuch bhi phate
+            // (panorama ki file aam photo se kai guna badi hoti hai) to label
+            // hamesha ke liye "Wait..." par atak jata, 360 juda hi nahi hota, aur
+            // owner ko lagta ki chadh gaya. Guest ko wo kabhi nahi milta.
+            try {
+                file = await compressImage(file, 4000, 0.85); // panorama me detail chahiye
+                globalDynamicRooms[roomIndex].raw360File = file;
+                globalDynamicRooms[roomIndex].panorama360Url = URL.createObjectURL(file);
+            } catch (e) {
+                console.error('360 nahi juda:', e);
+                globalDynamicRooms[roomIndex].raw360File = null;
+                globalDynamicRooms[roomIndex].panorama360Url = null;
+                renderRoomEditorPage(roomIndex);   // label wapas theek ho jaye
+                alert('Ye 360 ki photo nahi judi: ' + (e.message || e)
+                    + '\n\nEk baar aur koshish kijiye, ya doosri photo lijiye.');
+                return;
+            }
             renderRoomEditorPage(roomIndex);
+            // Yahan tak 360 SIRF is browser me hai. Screen par wo poori tarah
+            // lag chuka dikhta tha, isliye owner samajhta tha kaam ho gaya -
+            // aur SAVE dabaye bina nikal jata. Firestore me kuch nahi jata tha.
+            try { showAppToast('360 chun liya — ab "SAVE LIVE UPDATES" dabana zaroori hai, tabhi guest ko dikhega.'); } catch (e) {}
         }
         function remove360Panorama(roomIndex) {
             globalDynamicRooms[roomIndex].panorama360Url = null;
