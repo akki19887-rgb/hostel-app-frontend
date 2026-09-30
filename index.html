@@ -13439,6 +13439,45 @@
         // Kaunsa bed puchh raha hai - modal ke button ko yahi se pata chalta hai.
         let _bedOccupyCtx = null;
 
+        // Modal ek hi hai, par teen haalat me alag dikhta hai. Alag-alag modal
+        // banane se teen jagah ek hi cheez sudhaarni padti - aur ek jagah chhoot
+        // jati.
+        function bedOccupyModalMode(mode) {
+            const t = document.getElementById('bedOccupyTitle');
+            const p = document.getElementById('bedOccupyHelp');
+            const bDetail = document.getElementById('bedOccupyDetailBtn');
+            const bDetailNote = document.getElementById('bedOccupyDetailNote');
+            const bSkip = document.getElementById('bedOccupySkipBtn');
+            const bSkipNote = document.getElementById('bedOccupySkipNote');
+            if (!t) return;
+
+            if (mode === 'free') {
+                t.innerText = 'Bed occupied karein?';
+                p.innerHTML = 'Guest ki detail bharenge to rent, check-out aur occupancy sab apne aap chalte hain. Nahi bharna hai to bhi chalega &mdash; bed occupied ho jayega.';
+                bDetail.classList.remove('hidden'); bDetailNote.classList.remove('hidden');
+                bDetail.innerText = 'Guest ki detail bharo';
+                bDetailNote.innerText = 'Naam, rent, joining date — sujhaav yahi hai';
+                bSkip.innerText = 'Sirf occupied karo — detail nahi';
+                bSkipNote.innerText = 'Bed band ho jayega, par kiska hai ye app ko pata nahi chalega';
+            } else if (mode === 'skipped') {
+                // Yahi wo haalat hai jo pehle dead-end thi.
+                t.innerText = 'Ye bed occupied hai';
+                p.innerHTML = 'Is bed par kisi guest ki detail nahi bhari gayi hai. Ab bhar denge to rent aur check-out apne aap chalne lagenge.';
+                bDetail.classList.remove('hidden'); bDetailNote.classList.remove('hidden');
+                bDetail.innerText = 'Ab guest ki detail bharo';
+                bDetailNote.innerText = 'Bed occupied hi rahega — bas uska guest jud jayega';
+                bSkip.innerText = 'Bed khaali karo';
+                bSkipNote.innerText = 'Bed dobara guest ko dikhne aur bikne lagega';
+            } else {
+                // booking judi hai - yahan detail ka button dena hi nahi chahiye
+                t.innerText = 'Is bed par booking hai';
+                p.innerHTML = 'Is bed par ek booking judi hui hai. Guest ki detail wahin se aati hai, isliye yahan dobara nahi bhari ja sakti &mdash; warna ek hi bed par do booking ban jayengi.';
+                bDetail.classList.add('hidden'); bDetailNote.classList.add('hidden');
+                bSkip.innerText = 'Bed khaali karo';
+                bSkipNote.innerText = 'Sirf tab jab guest sach me ja chuka ho';
+            }
+        }
+
         window.closeBedOccupy = function() {
             const m = document.getElementById('modalBedOccupy');
             if (m) m.classList.add('hidden');
