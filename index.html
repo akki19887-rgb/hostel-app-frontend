@@ -10905,11 +10905,6 @@
 
 
 
-        function updateImageBookingButton() {
-            const btn = document.getElementById('btnImageBookNow');
-            if(userSelectedImageBeds.length > 0) { document.getElementById('redbusTotalAmountLabel').innerText = `₹${userSelectedImageBeds.reduce((sum, b) => sum + b.price, 0)}`; btn.disabled = false; btn.innerText = `Book ${userSelectedImageBeds.length} Seat(s)`; btn.className = "btn-gradient px-10 py-4 text-white font-black rounded-2xl shadow-xl tracking-wider cursor-pointer"; }
-            else { document.getElementById('redbusTotalAmountLabel').innerText = `₹0`; btn.disabled = true; btn.innerText = `Select Seat`; btn.className = "px-10 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed transition"; }
-        }
 
         // ==========================================
         // HOSTEL / GUEST REGISTRATION FORM (Point 6)
