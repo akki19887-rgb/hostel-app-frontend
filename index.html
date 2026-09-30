@@ -6043,8 +6043,28 @@
                 // against several different bookings, hoping each gets confirmed off the same real
                 // payment. Block that here — if this exact UTR is already attached to a DIFFERENT
                 // booking that's already paid_verified, refuse and make the admin investigate.
-                if (bData.utrRef) {
-                    const clash = allBookings.find(b => b.id !== bookingDocId && b.utrRef === bData.utrRef && b.status === 'paid_verified');
+                // Pehle ye jaanch us poori list par chalti thi jo upar kheenchi gayi
+                // thi. Ab seedha usi UTR ki booking poochhi jati hai - ek khaane par
+                // barabari, jiska index Firestore khud banata hai.
+                //
+                // `if (utr)` sirf shakal ki jaanch nahi hai, ye pehra hai: khaali UTR
+                // par query chalti to har wo booking mil jaati jiska utrRef khaali
+                // hai, aur ek saaf-suthri booking "duplicate" keh kar rok di jaati.
+                const utr = String(bData.utrRef || '').trim();
+                if (utr) {
+                    let clash = null;
+                    try {
+                        const cSnap = await getDocs(query(collection(db, 'bookings'),
+                            where('utrRef', '==', utr), where('status', '==', 'paid_verified')));
+                        cSnap.forEach(d => { if (d.id !== bookingDocId && !clash) clash = { id: d.id, ...d.data() }; });
+                    } catch (qErr) {
+                        // Index na ho to jaanch chhoot jayegi - par chup nahi rehna.
+                        // Ye paisa bachane wali jaanch hai, ise chup-chaap girne dena
+                        // usse bura hai ki admin ko pata chale aur wo khud dekh le.
+                        console.warn('UTR duplicate jaanch nahi chali:', qErr);
+                        alert('Dhyan dijiye: yahi UTR kisi aur booking par laga hai ya nahi, '
+                            + 'ye jaancha nahi ja saka. Aage badhne se pehle khud dekh lijiye.');
+                    }
                     if (clash) {
                         alert(`⚠️ Blocked: this UTR (${bData.utrRef}) is already used on a different confirmed booking (${clash.bookingId || clash.id}). This looks like the same payment screenshot/UTR being reused — do not confirm without checking your bank statement directly.`);
                         return;
