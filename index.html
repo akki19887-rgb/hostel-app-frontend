@@ -6947,7 +6947,7 @@
                 // Newest first
                 bookings.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
 
-                container.innerHTML = bookings.map(b => {
+                container.innerHTML = capNoticeHTML(bookings.length, 'registration') + bookings.map(b => {
                     const beds = (b.bookingContext && b.bookingContext.beds) || [];
                     const bedLabel = beds.length ? beds.map(bd => bd.id).join(', ') : (b.roomType || 'N/A');
                     const totalPrice = (b.bookingContext && b.bookingContext.totalPrice) || 0;
