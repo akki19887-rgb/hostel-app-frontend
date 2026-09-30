@@ -10904,12 +10904,6 @@
 
 
 
-        function toggleImageBedSelection(bedId, price) {
-            const index = userSelectedImageBeds.findIndex(b => b.bedId === bedId); const bedOverlay = document.getElementById(`user-map-bed-${bedId}`);
-            if(index > -1) { userSelectedImageBeds.splice(index, 1); bedOverlay.className = `absolute border-[2px] border-slate-400 bg-white/95 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center text-slate-700 cursor-pointer shadow-sm hover:border-indigo-500 transition`; bedOverlay.innerHTML = `<span class="text-sm">🛏️</span><span class="text-[8px] font-black">₹${price}</span>`; }
-            else { userSelectedImageBeds.push({ bedId, price }); bedOverlay.className = `absolute border-2 border-indigo-600 bg-indigo-500 rounded-lg flex flex-col items-center justify-center text-white cursor-pointer shadow-lg transform scale-105 transition`; bedOverlay.innerHTML = `<span class="text-xs font-black">✓</span><span class="text-[8px] font-black mt-0.5">₹${price}</span>`; }
-            updateImageBookingButton();
-        }
 
         function updateImageBookingButton() {
             const btn = document.getElementById('btnImageBookNow');
