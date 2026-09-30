@@ -10260,7 +10260,12 @@
             const pendingContainer = document.getElementById('adminPendingContainer'); const liveContainer = document.getElementById('adminLiveContainer');
             pendingContainer.innerHTML = skeletonCards(2, 'h-48'); liveContainer.innerHTML = skeletonCards(2, 'h-48');
             if(adminUnsubscribe) adminUnsubscribe();
-            adminUnsubscribe = window.onSnapshot(window.collection(window.db, "businesses"), (querySnapshot) => {
+            // YE onSnapshot HAI - yaani LIVE. Kisi bhi listing me koi bhi chhota
+            // badlav ho (ek bed occupied bhi), to poori collection dobara aati
+            // hai aur poora dashboard dobara banta hai. Bina hadd ke ye sabse
+            // bhaari cheez ban jati.
+            adminUnsubscribe = window.onSnapshot(window.query(
+                window.collection(window.db, "businesses"), window.limit(ADMIN_LIST_CAP)), (querySnapshot) => {
                 let pendingHtml = ''; let liveHtml = '';
                 querySnapshot.forEach((doc) => {
                     const data = doc.data(); let totalBeds = 0; if(data.roomsAndBeds) data.roomsAndBeds.forEach(r => totalBeds += r.beds.length);
