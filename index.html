@@ -11366,7 +11366,16 @@
 
 
         async function submitGuestRegistrationForm() {
-            const required = ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
+            // SKIP MODE ME YAHI SABSE BADA CHHED THA.
+            //
+            // Skip 'grfAadharNumber' ko chhupa deta hai aur uski value khaali kar
+            // deta hai - par ye list use phir bhi maangti thi. Guest Submit par
+            // hamesha ruk jata, aur jis khaane par ruka wo screen par tha hi nahi.
+            // focus() bhi chhupe khaane par kuch nahi karta. Nikalne ka koi rasta
+            // nahi tha.
+            const required = grfSkipMode
+                ? GRF_SKIP_REQUIRED
+                : ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
             const errBox = document.getElementById('grfFormError');
             for (const id of required) {
                 if (!document.getElementById(id).value.trim()) {
