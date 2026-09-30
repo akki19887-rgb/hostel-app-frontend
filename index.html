@@ -6936,7 +6936,8 @@
             if (!container) return;
             container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400"><div class="loader mb-4"></div><p class="font-bold text-sm">Loading bookings...</p></div>`;
             try {
-                const snap = await getDocs(collection(db, 'guestRegistrations'));
+                // 500 ki hadd - ye list kabhi ghatti nahi, sirf badhti hai.
+                const snap = await getDocs(query(collection(db, 'guestRegistrations'), limit(ADMIN_LIST_CAP)));
                 if (snap.empty) {
                     container.innerHTML = `<div class="flex flex-col items-center justify-center py-16 text-slate-400 text-center"><span class="text-4xl mb-3">📭</span><p class="font-bold text-sm">No bookings yet</p><p class="text-xs mt-1">New guest registrations will show up here automatically.</p></div>`;
                     return;
