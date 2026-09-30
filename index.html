@@ -9829,8 +9829,13 @@
                 // Commission rate — per-business override (businesses/{id}.commissionPercent) if set,
                 // otherwise the platform default.
                 let commissionPercent = DEFAULT_COMMISSION_PERCENT;
-                const bizSnapForRate = await window.getDocs(window.query(window.collection(window.db, "businesses")));
-                bizSnapForRate.forEach(d => { if (d.id === docId) { const v = d.data().commissionPercent; if (typeof v === 'number' && v >= 0) commissionPercent = v; } });
+                // Sirf ek listing ka commission chahiye tha - poore platform ki
+                // har listing padhi ja rahi thi.
+                const bizForRate = await getBiz(docId);
+                if (bizForRate) {
+                    const v = bizForRate.commissionPercent;
+                    if (typeof v === 'number' && v >= 0) commissionPercent = v;
+                }
                 document.getElementById('pyCommissionLabel').innerText = `Platform Commission (${commissionPercent}%)`;
 
                 // Total Collected — sum of successfully paid bookings for this property
