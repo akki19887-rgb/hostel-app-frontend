@@ -9575,6 +9575,25 @@
         }
         function toggleBizNotifications() { document.getElementById('bizNotifPanel').classList.toggle('hidden'); }
 
+        // Admin ki list kitni lambi ho sakti hai.
+        //
+        // Admin ko sach me sab dekhna hota hai, to yahan chhanne ke liye koi
+        // khaana nahi hai - hadd hi ek raasta hai. 500 wahi ginti hai jo staff
+        // aur audit ki list par pehle se lagi hai.
+        //
+        // Hadd lagakar CHUP rehna sabse bura hota: admin ko lagta ki bas itne hi
+        // hain. Isliye jahan bhi ye lagti hai, wahan "aur bhi hain" bhi likha jata hai.
+        const ADMIN_LIST_CAP = 500;
+
+        // Hadd lag gayi ho to saaf likho. Chup rehne par admin samajhta hai ki
+        // bas itne hi hain - aur wahi sabse bura anjaam hai.
+        function capNoticeHTML(kitne, kya) {
+            if (kitne < ADMIN_LIST_CAP) return '';
+            return `<div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 my-3 text-center">
+                <p class="text-[11px] font-black text-amber-800">Sabse naye ${ADMIN_LIST_CAP} ${kya} dikhaye ja rahe hain &mdash; isse zyada maujood hain.</p>
+            </div>`;
+        }
+
         let businessUnsubscribe = null;
         function skeletonCards(count, heightClass) {
             let html = '';
