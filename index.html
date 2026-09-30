@@ -11382,7 +11382,9 @@
                     if (id === 'grfJoiningDate') {
                         errBox.innerText = 'Date of Joining is empty — please go back and pick a check-in date first, then reopen this form.';
                     } else {
-                        errBox.innerText = 'Please fill all required fields (Name, DOB, Aadhar Number, Emergency Contact, Address, Date of Joining).';
+                        errBox.innerText = grfSkipMode
+                            ? 'Please fill all three: Name, Date of Birth, Date of Joining.'
+                            : 'Please fill all required fields (Name, DOB, Aadhar Number, Emergency Contact, Address, Date of Joining).';
                     }
                     errBox.classList.remove('hidden');
                     document.getElementById(id).focus();
