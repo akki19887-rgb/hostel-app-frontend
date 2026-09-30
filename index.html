@@ -6078,8 +6078,8 @@
                 // before the admin trusts the stored amount.
                 if (bData.propertyId && bData.bookingContext && bData.bookingContext.beds && bData.bookingContext.beds.length) {
                     try {
-                        const bizSnap = await getDocs(query(collection(db, 'businesses')));
-                        let bizData = null; bizSnap.forEach(d => { if (d.id === bData.propertyId) bizData = d.data(); });
+                        // Yahan bhi ek listing ke liye saari padhi ja rahi thin.
+                        const bizData = await getBiz(bData.propertyId);
                         if (bizData) {
                             const bedIdsForCheck = bData.bookingContext.beds.map(bd => bd.id);
                             let liveTotal = 0;
