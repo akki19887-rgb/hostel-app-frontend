@@ -6909,7 +6909,8 @@
             if (!container) return;
             container.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400"><div class="loader mb-3"></div><p class="font-bold text-xs">Loading confirmed bookings...</p></div>`;
             try {
-                const snap = await getDocs(collection(db, 'bookings'));
+                // 500 ki hadd. Ye screen har confirmed booking neeche kheenchti thi.
+                const snap = await getDocs(query(collection(db, 'bookings'), limit(ADMIN_LIST_CAP)));
                 const rows = [];
                 snap.forEach(d => {
                     const data = d.data();
