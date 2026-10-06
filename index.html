@@ -53,7 +53,15 @@
     <meta name="twitter:image" content="https://ho-om.in/og-logo.png">
     <!-- PERF: Tailwind stays eager (needed for first paint since there's no build step yet).
          Fabric.js, jsPDF and Google Maps are loaded on-demand now — see loadScriptOnce() below. -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind ki CSS. Pehle yahan Tailwind ke Play CDN ka script tha -
+         ~400 KB JavaScript jo browser me CSS banata tha, har baar, har
+         phone par. Tab tak screen khaali rehti thi. Ye file wahi CSS hai,
+         pehle se bani hui: 51 KB, gzip ke baad 9 KB.
+
+         YE FILE index.html SE BANTI HAI. Nayi class jodo to ise dobara
+         banana zaroori hai, warna wo hissa bina design ke dikhega.
+         check_twcss.py har test par yahi milata hai. -->
+    <link rel="stylesheet" href="/tw.css">
     <!-- SENTRY ERROR LOGGING: paste your DSN below (from sentry.io project settings). Leave as-is until you have one — it just won't send anything. -->
     <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
     <script>
