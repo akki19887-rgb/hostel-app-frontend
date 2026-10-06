@@ -14764,7 +14764,14 @@
                 html += `</div>`;
                 finalHtml = html;
             }
-            containers.forEach(c => { c.innerHTML = finalHtml; });
+            // Naksha ek parat ke andar jata hai jise zoom kiya ja sake. Pehle
+            // seedha innerHTML me jata tha, to use bada karne ka koi rasta nahi tha -
+            // phone par bade hostel ka naksha padha hi nahi ja sakta tha.
+            containers.forEach(c => {
+                c.innerHTML = '<div class="naksha-zoom-layer" style="width:900px; transform-origin:0 0;">'
+                            + finalHtml + '</div>';
+                try { nakshaZoomJodo(c.id); } catch (e) { console.warn('naksha zoom', e); }
+            });
         }
         // Rooms stack vertically, one per row, in their original order (Room 1, 2, 3 top-to-bottom)
         // instead of an auto-fit grid that could reorder/wrap them depending on bed count — same
