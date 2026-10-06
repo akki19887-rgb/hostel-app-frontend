@@ -6255,6 +6255,10 @@
                     // matches the agreed scope: no messaging before a real booking exists.
                     const canChat = b.status === 'paid_verified' || b.status === 'checked_in';
                     const chatBtn = canChat ? `<button type="button" onclick="openBookingChat('${b.id}', 'guest')" class="mt-2 ml-3 text-[10px] font-black text-indigo-600 underline">💬 Message Host</button>` : '';
+                    // Rasid tabhi jab paisa sach me ja chuka ho. Pending booking ki
+                    // rasid dena jhootha kagaz hota - usme "diya" wala ankda sach nahi hai.
+                    const rasidBtn = (b.status === 'paid_verified' || b.status === 'checked_in' || b.status === 'checked_out')
+                        ? `<button type="button" onclick="rasidBookingSe('${b.id}', this)" class="mt-2 ml-3 text-[10px] font-black text-emerald-700 underline">📄 Rasid</button>` : '';
                     // Per-booking Help. The footer button carries the newest booking; a guest with
                     // two stays needs to be able to ask about the older one without explaining which.
                     const helpBtn = `<a href="${supportWaLink(SUPPORT_WHATSAPP_NUMBER, [
