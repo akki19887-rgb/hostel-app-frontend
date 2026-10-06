@@ -9770,6 +9770,35 @@
         }
         // Har listener apna maal yahan rakhta hai; dono milkar ek hi list bante hain.
         let _bizNotifStore = {};
+        // Kaun si suchna "paisa aa gaya" wali hai. Ghanti ka roop isi se badalta hai.
+        const NOTIF_PAISA = ['new_payment', 'new_booking', 'rent_received'];
+        // Kaun si khatre wali hai - ise malik ko turant kholna chahiye.
+        const NOTIF_KHATRA = ['occupy_failed', 'cancellation_requested', 'no_show'];
+        // Jo suchna ek baar dikh chuki, uska toast dobara nahi aana chahiye.
+        const _notifDekheHue = {};
+        // Page khulte hi purani suchnaon ka dhher toast me nahi girna chahiye.
+        let _notifPehlaDaur = true;
+
+        // Har suchna ka apna rang aur nishaan. Rang hi pehla sandesh hai:
+        // malik door se dekh kar hi samajh jaye ki kholna zaroori hai ya nahi.
+        function notifKaRoop(n) {
+            const t = (n && n.type) || '';
+            if (NOTIF_PAISA.indexOf(t) >= 0) {
+                return { card: 'bg-emerald-50', patti: '#34d399',
+                         shirshak: 'text-emerald-800', nishaan: '\u{1F4B0}' };
+            }
+            if (NOTIF_KHATRA.indexOf(t) >= 0) {
+                return { card: 'bg-red-50', patti: '#f87171',
+                         shirshak: 'text-red-700', nishaan: '\u{26A0}\u{FE0F}' };
+            }
+            if (n && n.audience === 'allOwners') {
+                return { card: 'bg-amber-50', patti: '#fcd34d',
+                         shirshak: 'text-amber-800', nishaan: '\u{1F4E2}' };
+            }
+            return { card: 'bg-white', patti: '#e2e8f0',
+                     shirshak: 'text-slate-500', nishaan: '\u{1F4CC}' };
+        }
+
         function listenBizNotifications() {
             if (bizNotifUnsubscribe) bizNotifUnsubscribe();
             _bizNotifStore = {};
