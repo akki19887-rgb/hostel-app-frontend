@@ -9823,8 +9823,16 @@
                     items.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
                     const clearAllBtn = items.length > 0 ? `<div class="p-2 border-b border-slate-100 flex justify-end"><button type="button" onclick="clearAllBizNotifications()" class="text-[10px] font-black text-red-500 hover:text-red-700">🗑️ Clear All</button></div>` : '';
                     items.slice(0, 20).forEach(n => {
-                        const cardCls = (n.audience === 'allOwners') ? 'p-3 border-b border-slate-100 last:border-0 relative bg-amber-50' : 'p-3 border-b border-slate-100 last:border-0 relative';
-                        html += `<div class="${cardCls}"><button type="button" onclick="deleteNotification('${escAudit(n._docId)}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button>${n.title ? `<p class="text-[10px] font-black text-slate-500 uppercase tracking-wide pr-6">${escAudit(n.title)}</p>` : ''}<p class="text-xs font-bold text-slate-700 pr-6">${escAudit(n.message)}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
+                        // Rang hi pehla sandesh hai. Pehle sab ek jaise safed card the,
+                        // to paisa aane wali suchna aur ek saadharan khabar me koi fark
+                        // nahi dikhta tha - malik ko har baar padhna padta tha.
+                        const roop = notifKaRoop(n);
+                        // Baayein kinare ki patti aur kuch rang Tailwind me to hain par hamari tw.css me
+                        // nahi - unke liye poori CSS dobara banani padti. Wahi rang yahan
+                        // seedhe style se laga diya hai; dikhne me koi fark nahi.
+                        const cardCls = 'p-3 border-b border-slate-100 last:border-0 relative ' + roop.card;
+                        const cardStyle = 'border-left:4px solid ' + roop.patti + ';';
+                        html += `<div class="${cardCls}" style="${cardStyle}"><button type="button" onclick="deleteNotification('${escAudit(n._docId)}')" class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-red-500 hover:text-white text-slate-400 rounded-full text-[10px] font-black transition">✕</button>${n.title ? `<p class="text-[10px] font-black uppercase tracking-wide pr-6 ${roop.shirshak}">${roop.nishaan} ${escAudit(n.title)}</p>` : ''}<p class="text-xs font-bold text-slate-700 pr-6">${escAudit(n.message)}</p><p class="text-[10px] text-slate-400 font-semibold mt-1">${n.createdAt ? new Date(n.createdAt).toLocaleString('en-IN') : ''}</p>${n.pdfUrl ? `<a href="javascript:void(0)" onclick="openPrivateFile('${n.pdfUrl}','${n.propertyId || ''}')" class="text-[10px] font-black text-indigo-600 underline">📄 View Registration PDF</a>` : ''}</div>`;
                     });
                     const badge = document.getElementById('bizNotifBadge');
                     if (unread > 0) { badge.innerText = unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
