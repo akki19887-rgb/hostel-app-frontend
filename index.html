@@ -11356,6 +11356,31 @@
             // Aakhri step par le jao — wahin joining date aur submit hai
             grfCurrentStep = GRF_TOTAL_STEPS;
             grfRenderStepUI();
+
+            // KHAALI SHIRSHAK BHI CHHUPAO.
+            //
+            // Upar wala loop sirf khaane chhupata hai. Unke upar ka shirshak
+            // ("ID Proof", "Parent / Guardian Details") khada reh jata tha aur
+            // uske neeche kuch nahi hota - guest ko lagta ki form adhoora
+            // load hua hai. Jis shirshak ke neeche kuch bacha hi nahi, wo bhi
+            // chhup jaye. Jahan kuch bacha hai, wahan shirshak rahega.
+            const grfForm = document.getElementById('screenGuestRegistrationForm');
+            if (grfForm) {
+                grfForm.querySelectorAll('h5').forEach(head => {
+                    let kuchBacha = false;
+                    let el = head.nextElementSibling;
+                    while (el && el.tagName !== 'H5') {
+                        // style.display dekhna kaafi nahi: bhaari khaane apne
+                        // andar ke wrapper par chhupte hain, par unka bahari
+                        // grid div khula rehta hai. Isliye naap kar dekho -
+                        // chhupe hue subtree ki oonchai 0 hoti hai.
+                        if (el.getBoundingClientRect().height > 2) { kuchBacha = true; break; }
+                        el = el.nextElementSibling;
+                    }
+                    head.dataset.grfHidden = kuchBacha ? '' : '1';
+                    if (!kuchBacha) head.style.display = 'none';
+                });
+            }
         }
 
         function grfNextStep() {
