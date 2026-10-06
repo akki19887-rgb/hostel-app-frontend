@@ -11398,6 +11398,10 @@
                 const el = document.getElementById(id);
                 if (el) { const w = el.closest('div'); if (w) w.style.display = ''; }
             });
+            // Chhupe hue shirshak wapas lao - warna agli booking me wo gayab
+            // hi rahenge, kyunki ye screen dobara nahi banti.
+            document.querySelectorAll('#screenGuestRegistrationForm h5[data-grf-hidden="1"]')
+                .forEach(h => { h.style.display = ''; h.dataset.grfHidden = ''; });
             grfCurrentStep = 1;
             // grfRenderStepUI skip mode me label nahi chhuta, isliye yahan haath se
             // wapas lagana padta hai - warna nayi booking par purana label reh jata.
