@@ -10898,7 +10898,10 @@
                 // "Saved" is a filter over the same cards rather than a separate screen — a guest
                 // comparing three hostels can flip it on, see just those three, and flip it off.
                 if (showOnlySaved && !getWishlist().includes(id)) show = false;
-                if (search && !(prop.propertyType || '').toLowerCase().includes(search) && !(prop.businessProfile?.company || '').toLowerCase().includes(search)) show = false;
+                // Pehle yahan sirf DO khaane the: propertyType aur company ka naam.
+                // Isliye "Pandri" ya "AIIMS ke paas" likhne par kuch nahi milta tha -
+                // jabki pata aur mohalla document me pehle se pade hain.
+                if (search && !propMatchesSearch(prop, search)) show = false;
                 if (discoverFilters.type !== 'all' && prop.propertyType !== discoverFilters.type) show = false;
                 if (discoverFilters.gender && discoverFilters.gender !== 'all' && (prop.rules?.genderType || 'Co-ed') !== discoverFilters.gender) show = false;
                 if (discoverFilters.stay !== 'all') { if(!prop.rules?.stayTypes?.[discoverFilters.stay]) show = false; }
