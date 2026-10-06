@@ -4044,7 +4044,32 @@
         // The listing flow is opened from three places — the owner's dashboard, the Field Desk,
         // and a lead. It has to come back to whichever one opened it.
         let listingHomeScreen = 'screenBusinessDashboard';
+        // Abhi koi adhoora kaam pada hai ya nahi - aur kitna.
+        //
+        // Ginti isliye nikalte hain ki "pakka?" akela kisi ko nahi rokta. "7 kamre,
+        // 14 bed mit jayenge" rokta hai.
+        function adhooraKaam() {
+            try {
+                const kamre = (typeof globalDynamicRooms !== 'undefined' && globalDynamicRooms) ? globalDynamicRooms.length : 0;
+                if (!kamre) return null;
+                let bed = 0;
+                globalDynamicRooms.forEach(r => { bed += ((r && r.beds) ? r.beds.length : 0); });
+                return { kamre: kamre, bed: bed };
+            } catch (e) { return null; }
+        }
+
         function exitListing() {
+            // EK TAP ME SAB MIT JATA THA.
+            //
+            // Is screen par wapas jaane ka ek hi button hai - Cancel - aur wo seedha
+            // goTo kar deta tha. Malik ya staff 20 minute lagakar kamre aur bed banata,
+            // ek galat tap karta, aur sab chala jata. Na poochha jata tha, na kuch bachta.
+            const k = adhooraKaam();
+            if (k && !confirm('Adhoori listing chhod kar jaa rahe hain.\n\n'
+                    + k.kamre + ' kamre aur ' + k.bed + ' bed abhi tak save nahi hue hain. '
+                    + 'Yahan se nikalne par ye mit jayenge.\n\n'
+                    + 'Pakka jaana hai?')) return;
+
             // Neeli "lead se bhara ja raha hai" patti body me fixed hai, kisi screen-panel
             // me nahi - isliye goTo use kabhi nahi chhupata tha. Adhoora chhod kar wapas
             // aane par wo har screen par tangi rehti thi, aur leadBeingBuilt set rehne se
@@ -4052,6 +4077,19 @@
             if (typeof clearLeadBanner === 'function') clearLeadBanner(true);
             goTo(listingHomeScreen || 'screenBusinessDashboard');
         }
+
+        // PAGE BAND YA RELOAD HONE PAR BHI.
+        //
+        // Poore app me `beforeunload` ek baar bhi nahi tha. Sasta phone dusra app
+        // khulte hi browser ka tab khaali kar deta hai, aur wapas aane par page
+        // dobara load hota hai - adhoori listing ke saath. Ab browser apni chetavni
+        // dikhata hai. (Browser apna hi text dikhate hain; hamara likha hua wo nahi
+        // maante - isliye yahan sirf rokna hai, samjhana nahi.)
+        window.addEventListener('beforeunload', function (e) {
+            if (!adhooraKaam()) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
         let currentStaffName = '';
         let _staffIdleTimer = null;
 
