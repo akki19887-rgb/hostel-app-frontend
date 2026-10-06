@@ -9303,7 +9303,181 @@
         // the server a head start waking up, so by the time they hit the real AI request it's often
         // already warm. This never blocks anything — failures are silently ignored.
         function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
+        // ==========================================================
+        // MALIK AUR HOSTELOM KA SAMAJHAUTA
+        // ==========================================================
+        //
+        // Sanskaran badalne par malik se dobara manzoori leni padegi - isiliye
+        // number rakha hai. Jo malik purana sanskaran maan chuka hai, usse naya
+        // apne aap nahi chipakta.
+        const OWNER_AGREEMENT_VERSION = '1.0';
+
+        // Shartein ek jagah, taaki badalne par do jagah na dhoondhna pade.
+        // Bhasha wahi rakhi hai jo malik bolta hai - kanooni angrezi me likhne
+        // se wo padhta hi nahi, aur bina padhe tick lagana kisi kaam ka nahi.
+        const OWNER_AGREEMENT = [
+            ['HostelOM kya hai', [
+                'HostelOM (HOSTEL OM-F, Shanti Vihar Colony, Daganiya, Raipur, Chhattisgarh 492013) ek online jagah hai jahan hostel aur PG ke malik apne bed dikhate hain aur guest unhe book karte hain.',
+                'Hum hostel chalate nahi hain. Aapka hostel aapka hai - kamre, kiraya, niyam aur guest ko rakhna, sab aapke haath me hai.',
+            ]],
+            ['Booking kaise hoti hai', [
+                'Guest app par aapka hostel dekhta hai - photo, 360 tour, kamron ka naksha aur bed.',
+                'Wo ek bed chunta hai aur kitne din/hafte/mahine rukna hai wo batata hai.',
+                'Kul kiraya aapke apne daam se banta hai. HostelOM usme kuch jodta nahi.',
+                'Guest us kul kiraye ka 20% HostelOM ko online deta hai. Baaki 80% wo AAPKO seedha deta hai, check-in ke waqt.',
+                'Booking hote hi aapko suchna jati hai - guest ka naam, bed, aane ki tareekh, aur aapko kitna lena hai.',
+            ]],
+            ['Paisa - saaf-saaf', [
+                'Maan lijiye bed ka kiraya Rs 5,000 hai. Guest kul Rs 5,000 hi deta hai - ek rupya zyada nahi.',
+                'Usme se Rs 1,000 (20%) HostelOM ko online jata hai. Yahi HostelOM ki booking fees hai.',
+                'Baaki Rs 4,000 guest aapko hostel par seedha deta hai.',
+                'HostelOM aapko alag se koi paisa nahi bhejta, kyunki aapka hissa guest se seedha aapke paas aata hai.',
+                'Guest se wahi 20% dobara mat maangiye. Wo de chuka hai, aur uske paas rasid hoti hai.',
+            ]],
+            ['Aapko kya nibhana hai', [
+                'Bed ka haal sach rakhiye. Koi bed bhar jaye to app me turant occupied kijiye - warna guest paisa dekar aayega aur bed nahi milega.',
+                'Jo daam aur niyam app me likhe hain, wahi guest se lijiye. Pahunchne par daam badalna sabse badi shikayat banti hai.',
+                'Jis guest ki booking pakki ho chuki hai, uska bed usi ko dijiye.',
+                'Photo apne hi hostel ki lagaiye, aur aaj ki.',
+                'Gender policy (Boys / Girls / Co-ed) galat mat likhiye. Ye suraksha ki baat hai, isiliye use sirf HostelOM badal sakta hai.',
+                'Guest ki jaankari sirf uske rukne ke kaam me laiye. Kisi aur ko mat dijiye.',
+            ]],
+            ['HostelOM kya karega', [
+                'Aapki listing guest tak pahunchayega, aur booking aane par aapko turant batayega.',
+                'Jaanch ke baad "Verified" ka nishaan dega - wo HostelOM deta hai, malik khud nahi laga sakta.',
+                'Guest ka sawaal ya shikayat aaye to beech me aakar suljhane ki koshish karega.',
+                'Aapka phone number guest ko seedha nahi dikhayega. Baat app ke andar hoti hai.',
+            ]],
+            ['Booking cancel hone par', [
+                'Guest khud cancel kare to uska advance wapas nahi hota.',
+                'Aap bed na de payein, ya hostel band ho, to guest ko poora advance wapas milta hai.',
+                'Baar-baar aisa hone par aapki listing kuch samay ke liye rok di ja sakti hai.',
+            ]],
+            ['Listing rokne ya hatane ke baare me', [
+                'Aap jab chahein apni listing rok ya hata sakte hain. Par jo booking pehle se pakki hai, use nibhana hoga.',
+                'Jhoothi jaankari, galat photo, ya guest ke saath bura vyavhaar mile to HostelOM listing rok sakta hai.',
+            ]],
+            ['Kuch cheezein saaf kar den', [
+                'HostelOM aapka maalik ya saajhedaar nahi hai. Aap apna kaam khud chalate hain.',
+                'Hostel me kuch hota hai - chori, nuksaan, jhagda - to uski zimmedari hostel ki hai.',
+                'Aap bata rahe hain ki aap is hostel ke malik hain ya malik ki taraf se iska kaam dekhte hain.',
+                'Ye shartein badal sakti hain. Badalne par aapse dobara poochha jayega.',
+            ]],
+        ];
+
+        function ownerAgreementKholo(aageKaKaam) {
+            const box = document.getElementById('ownerAgreementBody');
+            const modal = document.getElementById('modalOwnerAgreement');
+            if (!box || !modal) { if (aageKaKaam) aageKaKaam(); return; }   // modal hi na mile to rokna galat hai
+            let html = '';
+            OWNER_AGREEMENT.forEach((hissa, i) => {
+                html += '<p class="font-black text-slate-900 text-[14px] mt-4 mb-1">'
+                      + (i + 1) + '. ' + hissa[0] + '</p><ul class="list-disc space-y-1" style="padding-left:1.25rem;">';
+                hissa[1].forEach(line => { html += '<li>' + line + '</li>'; });
+                html += '</ul>';
+            });
+            html += '<p class="text-[11px] font-bold text-slate-400 mt-5">Sanskaran '
+                  + OWNER_AGREEMENT_VERSION + '  &middot;  HOSTEL OM-F  &middot;  Gumasta No. RPR/2026/44022952</p>';
+            box.innerHTML = html;
+            box.scrollTop = 0;
+            _ownerAgreementAage = aageKaKaam || null;
+            const tick = document.getElementById('ownerAgreeTick'); if (tick) tick.checked = false;
+            const naam = document.getElementById('ownerAgreeName');
+            if (naam) {
+                // Jo naam pehle se pata hai wahi bhar do - malik ko dobara likhne ki
+                // zaroorat nahi, par wo badal sakta hai.
+                naam.value = (globalBizProfile && globalBizProfile.firstName)
+                    ? ((globalBizProfile.firstName || '') + ' ' + (globalBizProfile.lastName || '')).trim()
+                    : '';
+            }
+            const err = document.getElementById('ownerAgreeError'); if (err) err.classList.add('hidden');
+            modal.classList.remove('hidden');
+        }
+
+        let _ownerAgreementAage = null;
+
+        window.closeOwnerAgreement = function() {
+            const m = document.getElementById('modalOwnerAgreement');
+            if (m) m.classList.add('hidden');
+            _ownerAgreementAage = null;
+        };
+
+        window.ownerAgreementManzoor = async function(btn) {
+            const tick = document.getElementById('ownerAgreeTick');
+            const naamEl = document.getElementById('ownerAgreeName');
+            const err = document.getElementById('ownerAgreeError');
+            const naam = (naamEl && naamEl.value || '').trim();
+            const dikhao = (m) => { if (err) { err.innerText = m; err.classList.remove('hidden'); } };
+
+            if (!tick || !tick.checked) { dikhao('Pehle tick lagaiye ki aapne padh liya hai.'); return; }
+            if (naam.length < 3) { dikhao('Apna poora naam likhiye - yahi dastkhat ki jagah hai.'); return; }
+
+            const purana = btn ? btn.innerText : '';
+            try {
+                if (btn) { btn.disabled = true; btn.innerText = 'Likh rahe hain...'; }
+                const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                if (!uid) throw new Error('Pehle login kijiye');
+                await window.setDoc(window.doc(window.db, 'users', uid), {
+                    agreement: {
+                        version: OWNER_AGREEMENT_VERSION,
+                        name: naam,
+                        acceptedAt: new Date().toISOString(),
+                    }
+                }, { merge: true });
+                _ownerAgreementSwikar = true;
+                const aage = _ownerAgreementAage;
+                window.closeOwnerAgreement();
+                if (aage) aage();
+            } catch (e) {
+                console.warn('agreement', e);
+                // CHUP-CHAAP AAGE MAT BADHO. Manzoori likhi nahi gayi to agli baar
+                // phir poochhna padega - par malik ka kaam rokna bhi theek nahi,
+                // isliye use saaf bata kar aage jaane dete hain.
+                dikhao('Manzoori save nahi ho payi (' + (e.message || e) + '). '
+                       + 'Aap aage badh sakte hain, par agli baar ye dobara poochha jayega.');
+                _ownerAgreementSwikar = false;
+                const aage = _ownerAgreementAage;
+                setTimeout(() => { window.closeOwnerAgreement(); if (aage) aage(); }, 2500);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = purana || 'Sehmat hoon'; }
+            }
+        };
+
+        // Ek hi session me baar-baar Firestore se mat poochho.
+        let _ownerAgreementSwikar = null;
+
+        async function ownerAgreementManaHai() {
+            if (_ownerAgreementSwikar !== null) return _ownerAgreementSwikar;
+            try {
+                const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
+                if (!uid) return false;
+                const snap = await window.getDoc(window.doc(window.db, 'users', uid));
+                const a = snap.exists() ? (snap.data().agreement || null) : null;
+                _ownerAgreementSwikar = !!(a && a.version === OWNER_AGREEMENT_VERSION);
+                return _ownerAgreementSwikar;
+            } catch (e) {
+                // PADH NA PAANE KA MATLAB "MAAN CHUKA HAI" NAHI HOTA - par malik ka
+                // kaam rok dena bhi galat hai. Isliye aage jaane dete hain aur agli
+                // baar dobara poochh lete hain.
+                console.warn('agreement padh nahi paye:', e);
+                return true;
+            }
+        }
+
         function startNewProperty(openedFrom) {
+            // PEHLI LISTING SE PEHLE SHARTEIN.
+            //
+            // Staff ke liye ye rok nahi hai - staff malik ki taraf se listing
+            // banata hai, aur shartein malik ko maanni hain, staff ko nahi.
+            // Malik se wo uske apne account par poochhi jati hain.
+            if (!currentStaffRole && accountMode === 'business' && !_ownerAgreementSwikar) {
+                ownerAgreementManaHai().then(maanLi => {
+                    if (maanLi) { _ownerAgreementSwikar = true; startNewProperty(openedFrom); }
+                    else ownerAgreementKholo(() => startNewProperty(openedFrom));
+                });
+                return;
+            }
+
             listingHomeScreen = openedFrom || 'screenBusinessDashboard';
             editingBusinessDocId = null;
             { const rb = document.getElementById('btnEditRules'); if (rb) rb.classList.add('hidden'); }
