@@ -9054,6 +9054,22 @@
                             joiningDate: (pending.formSnapshot && pending.formSnapshot.joiningDate) || '',
                             bookingId: verifyResult.bookingId
                         };
+                        // Rasid ke liye wahi saaman jo booking ke document me jata hai.
+                        // Success screen par document ki id haath me nahi hoti, isliye
+                        // yahin bacha liya jata hai.
+                        window._lastBookingReceipt = {
+                            bookingId: verifyResult.bookingId,
+                            hostelName: pending.hostelName,
+                            guestName: pending.guestName,
+                            guestPhone: pending.guestPhone,
+                            amount: (verifyResult.amount != null ? verifyResult.amount : pending.amount),
+                            totalStayAmount: pending.totalStayAmount || pending.amount,
+                            hostelBalanceDue: pending.hostelBalance || 0,
+                            bookingContext: pending.bookingContext,
+                            paymentMethod: 'razorpay',
+                            status: 'paid_verified',
+                            createdAt: new Date().toISOString()
+                        };
                         window._pendingPayment = null;
                         goTo('screenBookingSuccess');
                     } catch (err) {
