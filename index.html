@@ -7703,6 +7703,196 @@
             goTo('screenBusinessDashboard');
         }
 
+        // ==========================================================
+        // BOOKING KI RASID (PDF)
+        // ==========================================================
+        //
+        // Guest ke paas paisa dene ke baad kuch nahi bachta tha. Ye wahi kagaz
+        // hai jo wo hostel par dikha sake - aur jisse "maine to pehle hi 1,000
+        // de diya tha" wali baat sabit ho jaye.
+        //
+        // Ise "Tax Invoice" NAHI kaha gaya. Tax invoice sirf GST registration
+        // wala de sakta hai; HOSTEL OM-F ka abhi nahi hai. Bina GSTIN ke "Tax
+        // Invoice" likhna jhootha kagaz banana hota.
+        const RASID_FIRM = 'HOSTEL OM-F';
+        const RASID_PATA = 'Shanti Vihar Colony, Daganiya, CSEB Office ke peeche, Raipur, Chhattisgarh 492013';
+        const RASID_GUMASTA = 'Gumasta No. RPR/2026/44022952';
+
+        function _rasidRakam(n) {
+            const x = Math.round(Number(n) || 0);
+            return 'Rs ' + x.toLocaleString('en-IN');
+        }
+
+        function _rasidTareekh(d) {
+            if (!d) return '-';
+            const t = new Date(d);
+            if (isNaN(t.getTime())) return String(d);
+            return t.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        // Booking ke document se rasid ka saaman nikalo. Purani booking me kuch
+        // khaane na hon to bhi girna nahi chahiye - rasid tab bhi banni chahiye.
+        function rasidKaSaaman(b) {
+            const ctx = b.bookingContext || {};
+            const beds = (ctx.beds || []).map(x => x && x.id).filter(Boolean);
+            const kul = Number(b.totalStayAmount) || 0;
+            const diya = Number(b.amount) || 0;
+            // hostelBalanceDue purani booking me na ho to khud nikaal lo
+            let bakaya = b.hostelBalanceDue;
+            if (bakaya === undefined || bakaya === null) bakaya = Math.max(0, kul - diya);
+            return {
+                bookingId: b.bookingId || '-',
+                hostel: b.hostelName || 'Hostel',
+                guest: b.guestName || 'Guest',
+                phone: b.guestPhone || '',
+                beds: beds.length ? beds.join(', ') : '-',
+                room: ctx.roomName || '',
+                joining: ctx.joiningDate || b.joiningDate || '',
+                plan: ctx.stayType || ctx.plan || '',
+                kul: kul, diya: diya, bakaya: Number(bakaya) || 0,
+                utr: b.utrRef || '',
+                tareeka: b.paymentMethod === 'upi_manual' ? 'UPI' : (b.paymentMethod || ''),
+                status: b.status || '',
+                banayi: b.confirmedAt || b.createdAt || new Date().toISOString(),
+            };
+        }
+
+        async function rasidPdfBanao(b) {
+            if (!window.jspdf) { await loadScriptOnce(JSPDF_CDN); }
+            const { jsPDF } = window.jspdf;
+            const d = rasidKaSaaman(b);
+            const doc = new jsPDF();
+            let y = 18;
+
+            // ---- sabse upar firm ka naam
+            doc.setFont(undefined, 'bold'); doc.setFontSize(16);
+            doc.text(RASID_FIRM, 14, y); y += 6;
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
+            doc.setTextColor(110);
+            doc.text(RASID_PATA, 14, y, { maxWidth: 125 }); y += 4;
+            doc.text(RASID_GUMASTA + '  |  ho-om.in', 14, y);
+            doc.setTextColor(0);
+
+            // ---- daayein taraf rasid ka naam
+            doc.setFont(undefined, 'bold'); doc.setFontSize(13);
+            doc.text('PAYMENT RECEIPT', 196, 18, { align: 'right' });
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
+            doc.setTextColor(110);
+            doc.text('Booking ki rasid', 196, 23, { align: 'right' });
+            doc.text(_rasidTareekh(d.banayi), 196, 28, { align: 'right' });
+            doc.setTextColor(0);
+
+            y += 8;
+            doc.setDrawColor(200); doc.line(14, y, 196, y); y += 9;
+
+            // ---- booking ka byora
+            const jodi = (l1, v1, l2, v2) => {
+                doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(120);
+                doc.text(l1, 14, y); if (l2) doc.text(l2, 110, y);
+                doc.setFont(undefined, 'bold'); doc.setFontSize(10.5); doc.setTextColor(0);
+                doc.text(String(v1 || '-'), 14, y + 5, { maxWidth: 90 });
+                if (l2) doc.text(String(v2 || '-'), 110, y + 5, { maxWidth: 86 });
+                y += 13;
+            };
+            jodi('BOOKING ID', d.bookingId, 'HOSTEL', d.hostel);
+            jodi('GUEST', d.guest, 'PHONE', d.phone);
+            jodi('BED', d.beds + (d.room ? '  (' + d.room + ')' : ''), 'AANE KI TAREEKH', _rasidTareekh(d.joining));
+
+            // ---- paisa: yahi is kagaz ka asli kaam hai
+            y += 2;
+            doc.setFillColor(243, 246, 250);
+            doc.rect(14, y, 182, 46, 'F');
+            let ry = y + 9;
+            const line = (naam, rakam, mota, rang) => {
+                doc.setFont(undefined, mota ? 'bold' : 'normal');
+                doc.setFontSize(mota ? 11.5 : 10);
+                if (rang) doc.setTextColor(rang[0], rang[1], rang[2]); else doc.setTextColor(40);
+                doc.text(naam, 20, ry);
+                doc.text(_rasidRakam(rakam), 190, ry, { align: 'right' });
+                doc.setTextColor(0);
+                ry += 9;
+            };
+            line('Kul kiraya' + (d.plan ? '  (' + d.plan + ')' : ''), d.kul, true);
+            doc.setDrawColor(215); doc.line(20, ry - 5, 190, ry - 5);
+            line('HostelOM ko diya (booking advance)', d.diya, false, [4, 120, 87]);
+            line('Hostel par dena hai (check-in par)', d.bakaya, false, [180, 83, 9]);
+            y += 50;
+
+            // ---- wo ek line jo jhagda rokti hai
+            doc.setFont(undefined, 'bold'); doc.setFontSize(9.5);
+            doc.setTextColor(4, 120, 87);
+            doc.text(_rasidRakam(d.diya) + ' + ' + _rasidRakam(d.bakaya) + ' = ' + _rasidRakam(d.kul)
+                     + '  -  aapse koi extra paisa nahi liya gaya.', 14, y);
+            doc.setTextColor(0); y += 10;
+
+            // ---- payment ka byora
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(110);
+            const byora = [];
+            if (d.tareeka) byora.push('Tareeka: ' + d.tareeka);
+            if (d.utr) byora.push('UTR / Ref: ' + d.utr);
+            if (d.status) byora.push('Haal: ' + d.status);
+            if (byora.length) { doc.text(byora.join('   |   '), 14, y); y += 7; }
+            doc.setTextColor(0);
+
+            // ---- neeche kaam ki baatein
+            y += 4;
+            doc.setDrawColor(210); doc.line(14, y, 196, y); y += 7;
+            doc.setFont(undefined, 'bold'); doc.setFontSize(9);
+            doc.text('Check-in par saath laiye', 14, y); y += 5;
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(90);
+            doc.text('Apna Aadhaar ya koi sarkari pehchan patra. Bina ID ke koi hostel andar nahi jaane deta.', 14, y, { maxWidth: 182 });
+            y += 9;
+            doc.setTextColor(0);
+            doc.setFont(undefined, 'bold'); doc.setFontSize(9);
+            doc.text('Madad chahiye to', 14, y); y += 5;
+            doc.setFont(undefined, 'normal'); doc.setFontSize(8.5); doc.setTextColor(90);
+            doc.text('Guest helpline +91 91832 06742   |   support@ho-om.in   |   Shikayat: grievance@ho-om.in', 14, y);
+            y += 8;
+            doc.setFontSize(7.5); doc.setTextColor(140);
+            doc.text('Ye GST tax invoice nahi hai. Paisa wapas hone ke niyam ho-om.in/refund par likhe hain.', 14, y);
+
+            return { doc: doc, d: d };
+        }
+
+        // Screen par dikhaye bina seedha utaar do.
+        window.rasidUtaaro = async function(b, btn) {
+            const purana = btn ? btn.innerText : '';
+            try {
+                if (btn) { btn.disabled = true; btn.innerText = 'Bana rahe hain...'; }
+                const { doc, d } = await rasidPdfBanao(b);
+                doc.save('HostelOM-Rasid-' + (d.bookingId || 'booking') + '.pdf');
+            } catch (e) {
+                console.warn('rasid', e);
+                alert('Rasid nahi ban payi: ' + (e.message || e)
+                      + '\n\nInternet dekh lijiye aur dobara koshish kijiye.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = purana || 'Rasid utaariye'; }
+            }
+        };
+
+        // My Bookings se: pehle booking padho, phir rasid banao.
+        window.rasidBookingSe = async function(bookingDocId, btn) {
+            try {
+                if (btn) { btn.disabled = true; btn.innerText = 'Bana rahe hain...'; }
+                const snap = await window.getDoc(window.doc(window.db, 'bookings', bookingDocId));
+                if (!snap.exists()) throw new Error('Booking mili hi nahi');
+                await window.rasidUtaaro(snap.data(), null);
+            } catch (e) {
+                console.warn('rasid', e);
+                alert('Rasid nahi ban payi: ' + (e.message || e));
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = '📄 Rasid'; }
+            }
+        };
+
+        // Success screen ke liye - wahan booking ka document id haath me nahi hota,
+        // isliye payment ke waqt hi saaman alag rakh liya jata hai.
+        window.rasidSuccessScreenSe = function(btn) {
+            const b = window._lastBookingReceipt;
+            if (!b) { alert('Is booking ka byora is session me nahi hai. "Meri Booking" se rasid le lijiye.'); return; }
+            return window.rasidUtaaro(b, btn);
+        };
+
         // Generates a standard .ics calendar file for the guest's check-in date, downloadable and
         // openable by Google Calendar, Apple Calendar, Outlook — anything that reads the .ics format.
         function downloadBookingCalendarFile() {
