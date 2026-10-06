@@ -10889,6 +10889,37 @@
             applyDiscoverFilters();
         };
 
+        // Guest jo likhta hai wo in sab me dhoondha jata hai. Ek hi jagah rakha
+        // hai taaki koi naya khaana jodte waqt do jagah badalna na pade.
+        //
+        // pinAddress sabse kaam ka hai: Google ka poora pata hota hai, aur usi me
+        // mohalla, road aur aas-paas ki jagah aa jati hai.
+        const KHOJ_CHHOTE_SHABD = ['near', 'ke', 'paas', 'pass', 'me', 'mein', 'ka', 'ki',
+                                   'wala', 'wali', 'in', 'at', 'the'];
+
+        function propMatchesSearch(prop, needle) {
+            if (!needle) return true;
+            const r = prop.rules || {};
+            const khaane = [
+                prop.businessProfile && prop.businessProfile.company,
+                prop.businessName,
+                prop.propertyType,
+                prop.city,
+                prop.locality,
+                prop.pinAddress,
+                prop.landmark,
+                r.genderType,
+            ];
+            const sab = khaane.filter(Boolean).join(' ').toLowerCase();
+            // Ek se zyada shabd likhe hon ("girls pandri") to sabhi milne chahiye.
+            // Par "near NIT" ya "AIIMS ke paas" me "near"/"ke"/"paas" pate me hote
+            // hi nahi - unhe maangne par koi nateeja nahi aata. Isliye jodne wale
+            // chhote shabd chhod diye jate hain.
+            const shabd = needle.split(/\s+/).filter(w => w && KHOJ_CHHOTE_SHABD.indexOf(w) < 0);
+            if (!shabd.length) return true;
+            return shabd.every(w => sab.includes(w));
+        }
+
         window.applyDiscoverFilters = function() {
             updateDiscoverFilterCount();
             const search = (document.getElementById('discoverSearchInput')?.value || '').toLowerCase();
