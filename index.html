@@ -14543,6 +14543,158 @@
             qeRefreshAll();
         }
 
+        // ==========================================================
+        // NAKSHE KA ZOOM (malik + admin, dono ke liye ek hi)
+        // ==========================================================
+        //
+        // renderAttractive2DPlan ek hi naksha do dabbo me bharta hai -
+        // blueprintGrid (malik ka preview) aur architectBlueprintGrid (admin ka
+        // editor). Isliye yahan ek hi intezaam dono ko theek karta hai.
+        //
+        // Naksha apni poori chaudai me bana rehta hai aur sirf CSS transform se
+        // chhota/bada hota hai. Isse koi cheez apni jagah nahi badalti - wahi
+        // tarika guest ke bed-naksha par pehle se chalta hai.
+        const NAKSHA_ZOOM_ADHIKTAM = 3;      // isse zyada bada karne par log kho jate hain
+        const _nakshaZoomHaal = {};          // har dabbe ka apna haal
+
+        function _nakshaHaal(id) {
+            if (!_nakshaZoomHaal[id]) _nakshaZoomHaal[id] = { s: 1, tx: 0, ty: 0, fit: 1, binda: false };
+            return _nakshaZoomHaal[id];
+        }
+
+        function _nakshaLagao(id) {
+            const box = document.getElementById(id);
+            if (!box) return;
+            const layer = box.querySelector(':scope > .naksha-zoom-layer');
+            if (!layer) return;
+            const h = _nakshaHaal(id);
+            // Naksha dabbe se chhota ho to beech me rakho, bada ho to kinare se
+            // bahar na jaane do.
+            const vw = box.clientWidth, vh = box.clientHeight;
+            const cw = layer.offsetWidth * h.s, ch = layer.offsetHeight * h.s;
+            h.tx = (cw <= vw) ? (vw - cw) / 2 : Math.min(0, Math.max(vw - cw, h.tx));
+            h.ty = (ch <= vh) ? Math.max(0, (vh - ch) / 2) : Math.min(0, Math.max(vh - ch, h.ty));
+            layer.style.transformOrigin = '0 0';
+            layer.style.transform = 'translate(' + h.tx + 'px,' + h.ty + 'px) scale(' + h.s + ')';
+        }
+
+        window.nakshaZoom = function(id, guna) {
+            const h = _nakshaHaal(id);
+            h.s = Math.max(h.fit * 0.5, Math.min(NAKSHA_ZOOM_ADHIKTAM, h.s * guna));
+            _nakshaLagao(id);
+        };
+
+        window.nakshaFit = function(id) {
+            const box = document.getElementById(id);
+            if (!box) return;
+            const layer = box.querySelector(':scope > .naksha-zoom-layer');
+            if (!layer) return;
+            const h = _nakshaHaal(id);
+            const w = layer.offsetWidth || 1;
+            // DABBA CHHUPA HUA HO TO clientWidth 0 AATA HAI.
+            //
+            // renderAttractive2DPlan kabhi-kabhi tab chalta hai jab screen abhi
+            // dikhayi nahi gayi. Us waqt 0/900 = 0 nikalta tha aur naksha
+            // scale(0) par chala jata - yaani bilkul gayab. Test me yahi pakda
+            // gaya. Chaudai na mile to naap chhedna hi nahi; screen dikhne par
+            // ye function dobara chalta hai aur tab sahi naap lagta hai.
+            if (!box.clientWidth) { h.fit = 1; h.s = 1; h.tx = 0; h.ty = 0; _nakshaLagao(id); return; }
+            h.fit = Math.min(1, box.clientWidth / w);
+            h.s = h.fit; h.tx = 0; h.ty = 0;
+            _nakshaLagao(id);
+        };
+
+        // Button aur ungliyan - har dabbe par ek hi baar.
+        function nakshaZoomJodo(id) {
+            const box = document.getElementById(id);
+            if (!box) return;
+            const h = _nakshaHaal(id);
+            window.nakshaFit(id);
+
+            if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
+
+            // BUTTON HAR RENDER KE BAAD DOBARA LAGANE PADTE HAIN.
+            //
+            // renderAttractive2DPlan poora innerHTML badal deta hai, isliye
+            // button bhi mit jate hain. Pehle yahan ek flag tha ("ek baar laga
+            // diya, bas") - nateeja ye ki pehle render ke baad button hamesha
+            // ke liye gayab. Test ne yahi pakda.
+            //
+            // Ungliyon wale listener alag baat hain: wo DABBE par lage hain,
+            // andar ke HTML par nahi, isliye wo bachte hain - unhe sirf ek baar
+            // lagana hai, warna har render par ek aur jud jata aur zoom do guna
+            // tez ho jata.
+            const puraneBtn = box.querySelector(':scope > .naksha-zoom-btns');
+            if (puraneBtn) puraneBtn.remove();
+
+            const dabba = document.createElement('div');
+            dabba.className = 'naksha-zoom-btns';
+            dabba.style.cssText = 'position:absolute; right:12px; bottom:12px; z-index:30; '
+                                + 'display:flex; flex-direction:column; gap:8px;';
+            const b = (naam, kaam, chhota) =>
+                '<button type="button" onclick="event.stopPropagation(); ' + kaam + '" '
+                + 'style="width:44px; height:44px; border-radius:14px; background:#fff; '
+                + 'border:2px solid #e2e8f0; box-shadow:0 4px 14px -4px rgba(0,0,0,.25); '
+                + 'font-weight:900; font-size:' + (chhota ? '10px' : '19px') + '; '
+                + 'color:#1e293b; cursor:pointer;">' + naam + '</button>';
+            dabba.innerHTML = b('+', "nakshaZoom('" + id + "',1.25)")
+                            + b('−', "nakshaZoom('" + id + "',0.8)")
+                            + b('FIT', "nakshaFit('" + id + "')", true);
+            box.appendChild(dabba);
+
+            if (h.binda) return;      // ungliyan ek hi baar
+            h.binda = true;
+
+            // ---- ungliyan
+            let roop = null, sx = 0, sy = 0, stx = 0, sty = 0, sd = 0, ss = 1;
+            const doori = (t) => Math.hypot(t[0].clientX - t[1].clientX,
+                                            t[0].clientY - t[1].clientY);
+
+            box.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    roop = 'pinch'; sd = doori(e.touches) || 1; ss = h.s;
+                } else if (e.touches.length === 1 && h.s > h.fit + 0.001) {
+                    // Ek ungli se khiskana sirf tab jab naksha bada kiya ja chuka ho -
+                    // warna kamre par tap karna hi mushkil ho jata.
+                    roop = 'pan';
+                    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+                    stx = h.tx; sty = h.ty;
+                }
+            }, { passive: true });
+
+            box.addEventListener('touchmove', (e) => {
+                if (roop === 'pinch' && e.touches.length === 2) {
+                    e.preventDefault();
+                    h.s = Math.max(h.fit * 0.5, Math.min(NAKSHA_ZOOM_ADHIKTAM,
+                                                         ss * (doori(e.touches) / sd)));
+                    _nakshaLagao(id);
+                } else if (roop === 'pan' && e.touches.length === 1) {
+                    e.preventDefault();
+                    h.tx = stx + (e.touches[0].clientX - sx);
+                    h.ty = sty + (e.touches[0].clientY - sy);
+                    _nakshaLagao(id);
+                }
+            }, { passive: false });
+
+            box.addEventListener('touchend', (e) => { if (e.touches.length === 0) roop = null; },
+                                 { passive: true });
+
+            // ---- pehli baar ishaara
+            try {
+                if (window.innerWidth < 1024 && localStorage.getItem('hoomNakshaZoomDekha') !== '1') {
+                    const tip = document.createElement('div');
+                    tip.style.cssText = 'position:absolute; left:50%; transform:translateX(-50%); '
+                        + 'bottom:16px; z-index:31; background:rgba(15,23,42,.85); color:#fff; '
+                        + 'font-weight:800; font-size:11px; padding:7px 14px; border-radius:999px; '
+                        + 'pointer-events:none;';
+                    tip.innerText = 'Do ungli se zoom · bada karke khiskaiye';
+                    box.appendChild(tip);
+                    setTimeout(() => { try { tip.remove(); } catch (e) {} }, 5000);
+                    localStorage.setItem('hoomNakshaZoomDekha', '1');
+                }
+            } catch (e) { /* private mode - ishaara chhod do, zoom phir bhi chalega */ }
+        }
+
         function renderAttractive2DPlan() {
             const containers = ['blueprintGrid', 'architectBlueprintGrid'].map(id => document.getElementById(id)).filter(Boolean);
             if (containers.length === 0) return;
