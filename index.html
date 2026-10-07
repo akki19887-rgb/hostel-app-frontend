@@ -13851,14 +13851,37 @@
                 const src = globalDynamicRooms.find(r => r.id === room.syncRateFrom);
                 priceHTML += `<div class="flex items-center justify-between gap-2 mb-2 bg-indigo-50 border border-indigo-100 rounded-xl p-3"><span class="text-xs font-black text-indigo-600">🔗 Rate linked from ${src ? src.name : 'another room'}</span><button type="button" onclick="setRoomSyncLink(${index}, 'rate', null, false); renderRoomEditorPage(${index});" class="text-[10px] font-black text-red-500 bg-white px-2.5 py-1.5 rounded-lg border border-red-100">Unlink</button></div>`;
             }
+            // KAUNSA RATE ZAROORI HAI, YE WAHIN DIKHE JAHAN RATE BHARNA HAI.
+            //
+            // Malik rules me Daily/Weekly par tick lagata tha aur rate 0
+            // chhod deta tha. Nateeja: guest ko Daily/Weekly ka vikalp dikhta
+            // hi nahi tha (guest ki taraf shart hai `dPrice > 0`), yaani 15
+            // din ya 3 hafte ki booking namumkin - aur kisi ko pata nahi
+            // chalta tha.
+            //
+            // Publish par rok lagi hai, par rok hamesha der se aati hai.
+            // Behtar hai ki yahin dikh jaye: jo thehrav chuna hai uska khana
+            // "zaroori" likha aata hai, aur khaali rehne par laal ho jata hai.
+            const _chune = (typeof businessRules !== 'undefined' && businessRules && businessRules.stayTypes)
+                ? businessRules.stayTypes : { monthly: true };
+            const _rateHaal = (chahiye, rakam) => {
+                if (!chahiye) return { patti: '', dabba: 'border-white', kinara: '' };
+                if (Number(rakam) > 0) return { patti: ' ✓', dabba: 'border-white', kinara: '' };
+                return { patti: ' • ZAROORI', dabba: 'border-red-300',
+                         kinara: 'background:#fef2f2;' };
+            };
             room.beds.forEach((bed, bIndex) => {
+                const _hD = _rateHaal(_chune.daily, bed.priceDaily);
+                const _hW = _rateHaal(_chune.weekly, bed.priceWeekly);
+                const _hM = _rateHaal(_chune.monthly !== false,
+                                      bed.priceMonthly || bed.price);
                 priceHTML += `
                 <div class="w-full bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-2">
                     <label class="text-[10px] font-black text-slate-500 block text-center mb-3 uppercase tracking-widest border-b border-slate-200 pb-2">Bed ${bIndex+1}</label>
                     <div class="flex gap-2">
-                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Daily (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" class="w-full text-sm font-black text-center border-2 border-white rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
-                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Weekly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" class="w-full text-sm font-black text-center border-2 border-white rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
-                        <div class="flex-1"><label class="text-[9px] font-bold text-indigo-400 block mb-1 text-center">Monthly (₹)</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-sm font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-2 outline-none text-indigo-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Daily (₹)${_hD.patti}</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceDaily || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'daily', this.value)" style="${_hD.kinara}" class="w-full text-sm font-black text-center border-2 ${_hD.dabba} rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                        <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 block mb-1 text-center">Weekly (₹)${_hW.patti}</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceWeekly || 0}" onchange="updateBedPrice(${index}, ${bIndex}, 'weekly', this.value)" style="${_hW.kinara}" class="w-full text-sm font-black text-center border-2 ${_hW.dabba} rounded-lg bg-white py-2 outline-none text-slate-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
+                        <div class="flex-1"><label class="text-[9px] font-bold text-indigo-400 block mb-1 text-center">Monthly (₹)${_hM.patti}</label><input type="number" ${rateLocked ? 'disabled' : ''} value="${bed.priceMonthly || bed.price || 5000}" onchange="updateBedPrice(${index}, ${bIndex}, 'monthly', this.value)" class="w-full text-sm font-black text-center border-2 border-indigo-100 rounded-lg bg-indigo-50 py-2 outline-none text-indigo-700 shadow-sm ${rateLocked ? 'opacity-50 cursor-not-allowed' : ''}"></div>
                     </div>
                 </div>`;
             });
