@@ -8081,9 +8081,13 @@
             try {
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'checked_in', checkedInAt: new Date().toISOString() });
 
-                // Check-in is when the money actually becomes real for the owner (payout is
-                // counted from here) and when the guest's stay officially starts. Neither side
-                // was being told, so both had to take someone's word for the date.
+                // Check-in par malik ko baaki 80% kiraya guest se lena hota hai, aur
+                // guest ka rukna shuru hota hai. Dono ko bataya hi nahi jata tha,
+                // isliye tareekh par kisi ki baat maanni padti thi.
+                //
+                // Pehle yahan likha jata tha "Payout clock starts now" - jaise
+                // HostelOM ab malik ko paisa bhejne ki ginti shuru karega. Aisa
+                // kuch nahi hota.
                 const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
                 const bData = oneSnap.exists() ? oneSnap.data() : null;
                 if (bData) {
