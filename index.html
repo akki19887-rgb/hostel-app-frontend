@@ -8227,44 +8227,8 @@
         // ==========================================================================
         window.openPayoutsScreen = async function(docId) {
             currentPayoutsDocId = docId;
-            pyPendingChequeFile = null; pyPendingQrFile = null;
-            document.getElementById('pyFormError').classList.add('hidden');
-            document.getElementById('pySaveBtn').disabled = false;
-            document.getElementById('pySaveBtn').innerText = '💾 Save Payout Details';
-
-            // Load existing payout details from the PRIVATE collection. This used to scan the
-            // entire businesses collection (one read per hostel) to pull a field that should
-            // never have been in a world-readable document in the first place.
-            let pd = {};
-            try {
-                const paySnap = await window.getDoc(window.doc(window.db, "businessPayouts", docId));
-                if (paySnap.exists()) pd = paySnap.data();
-            } catch (e) { console.warn('Could not load payout details', e); }
-
-            document.getElementById('pyAccountHolder').value = pd.accountHolderName || '';
-            document.getElementById('pyAccountNumber').value = pd.accountNumber || '';
-            document.getElementById('pyAccountNumberConfirm').value = pd.accountNumber || '';
-            document.getElementById('pyIfsc').value = pd.ifsc || '';
-            document.getElementById('pyUpiId').value = pd.upiId || '';
-            await renderPayoutImageSlot('cheque', pd.chequePhotoUrl);
-            await renderPayoutImageSlot('qr', pd.qrCodeUrl);
-
-            const statusEl = document.getElementById('pyStatusBadge');
-            if (pd.status) {
-                statusEl.classList.remove('hidden');
-                const map = {
-                    pending_verification: ['⏳ Pending Verification', 'bg-amber-50 border-amber-200 text-amber-700'],
-                    verified: ['✅ Verified — payouts active', 'bg-emerald-50 border-emerald-200 text-emerald-700'],
-                    rejected: ['❌ Rejected — please re-check and re-submit', 'bg-red-50 border-red-200 text-red-700']
-                };
-                const [label, cls] = map[pd.status] || map.pending_verification;
-                statusEl.innerHTML = `<span class="chip ${cls} border-2 font-black">${label}</span>`;
-            } else {
-                statusEl.classList.add('hidden');
-            }
-
             goTo('screenPayoutsEarnings');
-            renderPayoutHistoryAndEarnings(docId);
+            kamaiDikhao(docId);
         };
 
         // ==========================================================================
