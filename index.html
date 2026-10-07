@@ -10298,122 +10298,84 @@
             }
         }
 
-        async function renderPayoutImageSlot(kind, pathOrUrl) {
-            const slot = document.getElementById(kind === 'cheque' ? 'pyChequeSlot' : 'pyQrSlot');
-            const url = await getPrivateFileUrl(pathOrUrl, currentPayoutsDocId);
-            if (url) {
-                slot.style.backgroundImage = `url('${url}')`;
-                slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
-                slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('${kind}', this)">`;
-            } else {
-                slot.style.backgroundImage = '';
-                slot.innerHTML = `<input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('${kind}', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>`;
-            }
-        }
-
-        async function savePayoutImageLocally(kind, inputEl) {
-            const file = inputEl.files[0];
-            if (!file) return;
-            if (kind === 'cheque') pyPendingChequeFile = file; else pyPendingQrFile = file;
-            renderPayoutImageSlot(kind, URL.createObjectURL(file)); // instant local preview; uploaded on Save
-        }
-
-        async function savePayoutDetails() {
-            const errBox = document.getElementById('pyFormError');
-            errBox.classList.add('hidden');
-            const accountHolderName = document.getElementById('pyAccountHolder').value.trim();
-            const accountNumber = document.getElementById('pyAccountNumber').value.trim();
-            const accountNumberConfirm = document.getElementById('pyAccountNumberConfirm').value.trim();
-            const ifsc = document.getElementById('pyIfsc').value.trim().toUpperCase();
-            const upiId = document.getElementById('pyUpiId').value.trim();
-
-            if (!accountHolderName) { errBox.innerText = 'Please enter the account holder name.'; errBox.classList.remove('hidden'); return; }
-            if (!/^\d{9,18}$/.test(accountNumber)) { errBox.innerText = 'Please enter a valid account number (digits only).'; errBox.classList.remove('hidden'); return; }
-            if (accountNumber !== accountNumberConfirm) { errBox.innerText = 'Account number and confirmation do not match.'; errBox.classList.remove('hidden'); return; }
-            if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { errBox.innerText = 'Please enter a valid 11-character IFSC code (e.g. SBIN0001234).'; errBox.classList.remove('hidden'); return; }
-
-            const btn = document.getElementById('pySaveBtn');
-            btn.disabled = true; btn.innerText = '⏳ Saving...';
+        // ==========================================================================
+        // AAPKI KAMAI
+        //
+        // Yahan pehle teen function the: renderPayoutImageSlot, savePayoutImageLocally
+        // aur savePayoutDetails - teeno malik ka bank account number, IFSC aur
+        // cancelled cheque leti thin aur businessPayouts me likh deti thin.
+        // Unke saath renderPayoutHistoryAndEarnings thi, jo 'payouts' collection
+        // se "HostelOM ne aapko kitna bheja" ka hisaab dikhati thi.
+        //
+        // HostelOM malik ko paisa bhejta hi nahi. Guest 20% HostelOM ko online
+        // deta hai aur 80% malik ko hostel par seedha. Isliye wo chaar function
+        // hata diye gaye aur unki jagah ye ek function hai, jo sirf booking se
+        // asli aankde nikalta hai.
+        // ==========================================================================
+        async function kamaiDikhao(docId) {
+            const suchi = document.getElementById('pyBookingList');
+            const rakam = (n) => '₹' + (Number(n) || 0).toLocaleString('en-IN');
             try {
-                // Was a scan of every business document to read one field.
-                const paySnap = await window.getDoc(window.doc(window.db, "businessPayouts", currentPayoutsDocId));
-                const existing = paySnap.exists() ? paySnap.data() : {};
-
-                let chequePhotoUrl = existing.chequePhotoUrl || null;
-                let qrCodeUrl = existing.qrCodeUrl || null;
-                if (pyPendingChequeFile) { btn.innerText = '⏳ Uploading cheque...'; chequePhotoUrl = await uploadPrivateFileToStorage(pyPendingChequeFile, `payoutDocs/${currentPayoutsDocId}/cheque_${Date.now()}.jpg`); }
-                if (pyPendingQrFile) { btn.innerText = '⏳ Uploading QR...'; qrCodeUrl = await uploadPrivateFileToStorage(pyPendingQrFile, `payoutDocs/${currentPayoutsDocId}/qr_${Date.now()}.jpg`); }
-
-                // Written to businessPayouts, NOT into the businesses doc. `businesses` is
-                // world-readable (listings need to be), so bank details sitting there were
-                // downloadable by anyone with no account at all.
-                await window.setDoc(window.doc(window.db, "businessPayouts", currentPayoutsDocId), {
-                    ownerUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
-                    businessId: currentPayoutsDocId,
-                    accountHolderName, accountNumber, ifsc, upiId,
-                    chequePhotoUrl, qrCodeUrl,
-                    status: 'pending_verification',
-                    submittedAt: new Date().toISOString()
-                }, { merge: true });
-                btn.innerText = '✅ Saved!';
-                setTimeout(() => openPayoutsScreen(currentPayoutsDocId), 700); // reload to show fresh status badge
-            } catch (err) {
-                console.error('Save payout details failed', err);
-                errBox.innerText = 'Could not save right now. Please try again.'; errBox.classList.remove('hidden');
-                btn.disabled = false; btn.innerText = '💾 Save Payout Details';
-            }
-        }
-
-        async function renderPayoutHistoryAndEarnings(docId) {
-            const historyBox = document.getElementById('pyPayoutHistory');
-            try {
-                // Commission rate — per-business override (businesses/{id}.commissionPercent) if set,
-                // otherwise the platform default.
-                let commissionPercent = DEFAULT_COMMISSION_PERCENT;
-                // Sirf ek listing ka commission chahiye tha - poore platform ki
-                // har listing padhi ja rahi thi.
-                const bizForRate = await getBiz(docId);
-                if (bizForRate) {
-                    const v = bizForRate.commissionPercent;
-                    if (typeof v === 'number' && v >= 0) commissionPercent = v;
-                }
-                document.getElementById('pyCommissionLabel').innerText = `Platform Commission (${commissionPercent}%)`;
-
-                // Total Collected — sum of successfully paid bookings for this property
                 const meUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-                const bookingsSnap = await window.getDocs(window.query(window.collection(window.db, 'bookings'),
+                const snap = await window.getDocs(window.query(window.collection(window.db, 'bookings'),
                     window.where('ownerUid', '==', meUid), window.where('propertyId', '==', docId)));
-                let totalCollected = 0;
-                bookingsSnap.forEach(d => { const b = d.data(); if (b.status === 'paid_verified' || b.status === 'paid_unverified_test') totalCollected += Number(b.amount) || 0; });
 
-                const commissionAmount = Math.round(totalCollected * commissionPercent / 100);
-                const netPayable = totalCollected - commissionAmount;
+                // Sirf wo booking jisme guest ne paisa de diya hai. Jo booking
+                // adhoori hai usse malik ko koi paisa nahi aana, isliye use
+                // ginna galat chetawani deta.
+                const PAISA_DIYA = ['paid_verified', 'paid_unverified_test', 'checked_in', 'checked_out'];
+                const HO_CHUKA = ['checked_in', 'checked_out'];
 
-                // Total Paid Out — sum of manual payout entries admin has logged for this property
-                const payoutsSnap = await window.getDocs(window.query(window.collection(window.db, 'payouts'),
-                    window.where('ownerUid', '==', meUid), window.where('businessId', '==', docId)));
-                let totalPaidOut = 0; let historyRows = [];
-                payoutsSnap.forEach(d => {
-                    const p = d.data();
-                    totalPaidOut += Number(p.amount) || 0;
-                    historyRows.push(p);
+                let ginti = 0, platformKo = 0, lenaHai = 0, milChuka = 0;
+                const rows = [];
+                snap.forEach(d => {
+                    const b = d.data();
+                    if (PAISA_DIYA.indexOf(b.status) < 0) return;
+                    ginti++;
+                    platformKo += Number(b.amount) || 0;
+                    // Purani booking me hostelBalanceDue na ho to khud nikaal lo -
+                    // warna wo booking "0 lena hai" dikhegi, jo galat hai.
+                    let bakaya = b.hostelBalanceDue;
+                    if (typeof bakaya !== 'number') {
+                        bakaya = (Number(b.totalPrice) || 0) - (Number(b.amount) || 0);
+                    }
+                    bakaya = Math.max(0, bakaya);
+                    if (HO_CHUKA.indexOf(b.status) >= 0) milChuka += bakaya;
+                    else lenaHai += bakaya;
+                    rows.push({ naam: b.guestName || 'Guest', bed: b.bedId || b.bedName || '',
+                                din: b.checkInDate || b.checkIn || '', bakaya: bakaya,
+                                aaya: HO_CHUKA.indexOf(b.status) >= 0 });
                 });
-                historyRows.sort((a, b) => new Date(b.paidAt || 0) - new Date(a.paidAt || 0));
 
-                document.getElementById('pyTotalCollected').innerText = '₹' + totalCollected.toLocaleString('en-IN');
-                document.getElementById('pyCommissionAmount').innerText = '− ₹' + commissionAmount.toLocaleString('en-IN');
-                document.getElementById('pyNetPayable').innerText = '₹' + netPayable.toLocaleString('en-IN');
-                document.getElementById('pyTotalPaidOut').innerText = '₹' + totalPaidOut.toLocaleString('en-IN');
-                document.getElementById('pyPendingBalance').innerText = '₹' + Math.max(0, netPayable - totalPaidOut).toLocaleString('en-IN');
+                document.getElementById('pyBookingCount').innerText = ginti;
+                document.getElementById('pyHostelDue').innerText = rakam(lenaHai);
+                document.getElementById('pyHostelTaken').innerText = rakam(milChuka);
+                document.getElementById('pyPlatformFee').innerText = rakam(platformKo);
 
-                if (historyRows.length === 0) {
-                    historyBox.innerHTML = `<p class="text-xs text-slate-400 font-semibold text-center py-6">No payouts recorded yet.</p>`;
+                // Jisse paisa lena baaki hai wo upar - wahi kaam ki baat hai.
+                rows.sort((a, b) => (a.aaya === b.aaya) ? 0 : (a.aaya ? 1 : -1));
+
+                if (!rows.length) {
+                    suchi.innerHTML = '<p class="text-xs text-slate-400 font-semibold text-center py-6">'
+                        + 'Abhi koi booking nahi aayi.</p>';
                 } else {
-                    historyBox.innerHTML = historyRows.map(p => `<div class="flex items-center justify-between px-4 py-3"><div><p class="text-sm font-black text-slate-800">₹${(Number(p.amount)||0).toLocaleString('en-IN')}</p><p class="text-[10px] font-bold text-slate-400">${p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : '—'} ${p.method ? '· ' + p.method : ''}</p></div>${p.note ? `<p class="text-[10px] text-slate-500 font-semibold text-right max-w-[50%]">${p.note}</p>` : ''}</div>`).join('');
+                    suchi.innerHTML = rows.map(r =>
+                        '<div class="flex items-center justify-between px-4 py-3">'
+                      + '<div class="min-w-0"><p class="text-sm font-black text-slate-800 truncate">' + r.naam + '</p>'
+                      + '<p class="text-[10px] font-bold text-slate-400">'
+                      + (r.bed ? 'Bed ' + r.bed : '') + (r.bed && r.din ? ' · ' : '')
+                      + (r.din ? r.din : '') + '</p></div>'
+                      + '<div class="text-right shrink-0" style="padding-left:.75rem;">'
+                      + '<p class="text-sm font-black ' + (r.aaya ? 'text-slate-500' : 'text-emerald-700') + '">'
+                      + rakam(r.bakaya) + '</p>'
+                      + '<p class="text-[9px] font-black uppercase tracking-wider '
+                      + (r.aaya ? 'text-slate-400">liya ja chuka' : 'text-emerald-600">lena hai')
+                      + '</p></div></div>').join('');
                 }
             } catch (err) {
-                console.warn('Could not load earnings', err);
-                historyBox.innerHTML = `<p class="text-xs text-red-400 font-semibold text-center py-6">Could not load earnings right now.</p>`;
+                console.warn('Kamai load nahi hui', err);
+                suchi.innerHTML = '<p class="text-xs text-red-400 font-semibold text-center py-6">'
+                    + 'Kamai abhi nahi dikhayi ja saki. Dobara koshish kijiye.</p>';
             }
         }
 
