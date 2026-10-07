@@ -10245,14 +10245,13 @@
         // PAYOUTS & EARNINGS
         // ==========================================
         let currentPayoutsDocId = null;
-        // Platform commission — HostelOM keeps this % of every booking for app management/running
-        // costs; subscription fees (billed separately) are the actual profit line. Default is 15%,
-        // but any single business can be given a different rate by adding a `commissionPercent`
-        // field (e.g. 20) directly on its businesses/{id} document — the ledger below always uses
-        // that override if present, otherwise falls back to this default.
-        const DEFAULT_COMMISSION_PERCENT = 15;
-        let pyPendingChequeFile = null;
-        let pyPendingQrFile = null;
+        // YAHAN DEFAULT_COMMISSION_PERCENT = 15 pada tha, aur uske saath malik ke
+        // cheque/QR ki file rakhne wale do variable.
+        //
+        // Wo 15% ka hisaab asli hisaab se alag tha. Asli jagah (ADVANCE_PERCENT)
+        // par 20% hai, aur wo 20% guest se liya jata hai - malik ke kiraye me se
+        // nahi kata jata. Do jagah do alag hisaab rakhne ka matlab tha ki ek
+        // jagah hamesha jhooth bolegi. Isliye jhoothi jagah hata di gayi.
 
         // ==========================================
         // PROPERTY BOOKINGS (business owner's own view)
