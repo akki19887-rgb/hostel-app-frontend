@@ -1340,6 +1340,16 @@
                 <button type="button" onclick="runMaint('/admin/cleanup-locks','Atke hue bed chhodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Atke hue bed chhodo</button>
                 <button type="button" onclick="runMaint('/admin/backfill-owner-uid','Purani booking jodne')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Purani booking jodo</button>
                 <button type="button" onclick="runMaint('/admin/secure-payout-details','Bank details chhupane')" class="px-4 py-2 bg-amber-50 border border-amber-300 text-amber-900 font-bold rounded-xl text-xs hover:bg-amber-100">Bank details chhupao</button>
+                <!-- PURANE BANK DETAILS MITANA.
+                     App malik se account number, IFSC aur cheque maangti thi, ek
+                     payout ke vaade par jo code me kabhi tha hi nahi. Form hata
+                     diya gaya, par jo malik pehle bhar chuke hain unka data abhi
+                     bhi pada hai. Jo cheez chahiye hi nahi, use rakhna hi nahi
+                     chahiye.
+                     Pehle "dekho" (kuch mitata nahi), phir "mitao". Mitana wapas
+                     nahi ho sakta, isliye do button. -->
+                <button type="button" onclick="runMaint('/admin/purge-bank-details','Purane bank details GINNE (kuch mitega nahi)')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Purane bank details dekho</button>
+                <button type="button" onclick="runMaint('/admin/purge-bank-details?confirm=MITA_DO','Purane bank details HAMESHA KE LIYE MITANE')" class="px-4 py-2 bg-red-50 border border-red-300 text-red-800 font-bold rounded-xl text-xs hover:bg-red-100">Purane bank details MITAO</button>
                 <button type="button" onclick="repairOwnerLinks(true)" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">Pehle dekho (kuch badlega nahi)</button>
                 <button type="button" onclick="repairOwnerLinks(false)" class="px-4 py-2 btn-gradient text-white font-black rounded-xl text-xs shadow">Malik apne aap jodo</button>
             </div>
