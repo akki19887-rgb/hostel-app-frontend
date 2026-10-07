@@ -11453,6 +11453,7 @@
             let n = 0;
             if (discoverFilters.type !== 'all') n++;
             if (discoverFilters.stay !== 'all') n++;
+            if (discoverFilters.kitne > 0) n++;
             if (discoverFilters.gender && discoverFilters.gender !== 'all') n++;
             if (discoverFilters.budget !== 'all') n++;
             n += (discoverFilters.features || []).length;
