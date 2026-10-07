@@ -3143,7 +3143,8 @@
             mess: 'Not Available', messPrices: { daily: 0, weekly: 0, monthly: 0, meal: 0 }, curfew: 'No Restriction', visitor: 'Not Allowed', visitorPrice: 0,
             genderType: 'Co-ed' // 'Boys' | 'Girls' | 'Co-ed' — used for the safety filter on Discover
         };
-        let discoverFilters = { type: 'all', stay: 'all', search: '', features: [], gender: 'all', budget: 'all' };
+        // kitne = guest kitne din/hafte/mahine rukna chahta hai. null = bataya nahi.
+        let discoverFilters = { type: 'all', stay: 'all', kitne: null, search: '', features: [], gender: 'all', budget: 'all' };
         let accountMode = 'user';
         let currentMethod = '';
         let fullFormattedMobile = '';
