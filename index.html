@@ -10836,29 +10836,21 @@
             });
         }
 
-        // Per-property commission override. The payouts ledger already reads
-        // businesses/{id}.commissionPercent and falls back to DEFAULT_COMMISSION_PERCENT — this is
-        // just the admin-facing way to set it, instead of editing the field in the Firestore console.
-        // Firestore rules keep this field admin-only, so an owner can never zero out our cut.
-        window.saveCommission = async function(docId) {
-            const el = document.getElementById('commInput-' + docId);
-            if (!el) return;
-            const v = parseFloat(el.value);
-            if (isNaN(v) || v < 0 || v > 100) {
-                showAppToast('Enter a commission between 0 and 100.');
-                return;
-            }
-            try {
-                await window.updateDoc(window.doc(window.db, "businesses", docId), { commissionPercent: v });
-                showAppToast(`✅ Commission set to ${v}% for this property.`);
-            } catch (e) {
-                alert('Could not save commission: ' + (e.message || e));
-            }
-        };
+        // YAHAN saveCommission tha - per-hostel "Commission %" set karne wala.
+        //
+        // Jab payout ka jhootha dhaancha hata, DEFAULT_COMMISSION_PERCENT bhi gaya,
+        // aur uske baad businesses/{id}.commissionPercent ko koi padhta hi nahi -
+        // na app, na server. Box phir bhi "Commission set to 12%" ka toast deta
+        // tha aur asli me kuch nahi badalta tha. Jo button kuch na kare use rakhna
+        // bhi ek tarah ka jhoot hai, isliye hata diya.
+        //
+        // Booking fees ek hi jagah se aati hai: ADVANCE_PERCENT (abhi 20), aur
+        // server par security.py me bhi wahi hai. Do jagah do number rakhne se hi
+        // 15% wala jhoot paida hua tha.
 
-        // Gender policy. Kept next to commission because both are admin-only levers on a live
-        // listing. The whole `rules` object is re-written rather than the one nested key, because
-        // a partial write would drop the amenities stored alongside it.
+        // Gender policy. Admin-only lever on a live listing. The whole `rules` object
+        // is re-written rather than the one nested key, because a partial write would
+        // drop the amenities stored alongside it.
         window.saveGenderPolicy = async function(docId) {
             const el = document.getElementById('genderSelect-' + docId);
             if (!el) return;
