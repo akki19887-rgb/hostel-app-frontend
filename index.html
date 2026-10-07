@@ -1771,12 +1771,20 @@
         </div>
     </div>
 
-    <!-- PAYOUTS & EARNINGS — per-property bank details (for manual transfer by admin) + a live
-         ledger showing Total Collected (from paid bookings), Total Paid Out (logged by admin), and
-         Pending Balance. Cancelled cheque / QR code are uploaded here by the owner; admin verifies
-         them manually (Firebase Console → businesses/{id}.payoutDetails.status) and logs each
-         transfer in the 'payouts' collection — designed so this can later be swapped for automatic
-         Razorpay Route payouts without changing the ledger math. -->
+    <!-- AAPKI KAMAI — pehle ye screen "Payouts & Earnings" thi aur malik se bank
+         account number, IFSC aur cancelled cheque maangti thi, is vaade par ki
+         HostelOM uske bank account me paisa transfer karega. Aisa intezaam kabhi
+         tha hi nahi: guest kul kiraye ka 20% HostelOM ko online deta hai aur
+         baaki 80% malik ko hostel par seedha. HostelOM malik ka paisa na leta
+         hai, na rokta hai, na bhejta hai.
+
+         Isliye bank details ka form, "HostelOM aapko itna dega" wale teen aankde
+         aur payout history - sab hata diya gaya. (Un line ko yahan dobara likha
+         nahi gaya: check_flows.py poori file me unhe dhoondhta hai, aur comment
+         me likhi line bhi usse takra jati hai.) Ab yahan sirf
+         wahi dikhta hai jo asli me hota hai: kitni booking aayi, guest ne
+         HostelOM ko kitni booking fees di, aur kis guest se hostel par kitna
+         lena hai. -->
     <!-- ===================================================================
          RENT TRACKER — the first piece of hostel management, not booking.
          Booking brings an owner here two or three times a month. Rent brings them
