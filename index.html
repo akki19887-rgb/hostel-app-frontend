@@ -2454,7 +2454,17 @@
             <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100" id="dataEditorRoomCount"></span>
         </div>
 
-        <div id="dynamicBusinessRoomsContainer" class="flex-1 overflow-y-auto layout-scroll grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24 pr-2 min-h-[300px]"></div>
+        <!-- KAMRE KE CARD DAB JATE THE.
+             Ye dabba `flex-1` hai, yaani iski unchai pehle se tay ho jati hai.
+             Grid ki default chaal hai ki apni unchai saari rows me BAANT de -
+             to 6 kamre par har card ko 34px milte the, jabki use 106px chahiye.
+             Naam, bed ki ginti, daam, photo - sab ek patli patti me kuch kat
+             jata tha. 2 kamre par bhi toota tha (94px vs 106px).
+             grid-auto-rows:min-content har row ko utni hi unchai deta hai jitni
+             uske andar ki cheez maangti hai, aur baaki dabba scroll karta hai.
+             align-content:start isliye ki rows upar se shuru hon, beech me na
+             khinchein. -->
+        <div id="dynamicBusinessRoomsContainer" style="grid-auto-rows:min-content; align-content:start;" class="flex-1 overflow-y-auto layout-scroll grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24 pr-2 min-h-[300px]"></div>
 
         <div class="absolute bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-slate-200 rounded-b-[2rem] flex justify-between items-center shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.1)] z-20">
             <button type="button" onclick="exitListing()" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">Cancel</button>
