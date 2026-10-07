@@ -1115,6 +1115,18 @@
                 <button onclick="setDiscoverFilter('stay', 'daily')" data-filter="stay" data-value="daily" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Daily</button>
                 <button onclick="setDiscoverFilter('stay', 'weekly')" data-filter="stay" data-value="weekly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Weekly</button>
                 <button onclick="setDiscoverFilter('stay', 'monthly')" data-filter="stay" data-value="monthly" class="filter-chip chip chip-outline hover:border-indigo-300 transition">Monthly</button>
+                <!-- KITNE DIN. Stay chunne par hi khulta hai.
+                     Malik apna minimum bharta hai (minStayDays/Weeks/Months) aur
+                     wo data document me pada rehta tha - list par kabhi kaam nahi
+                     aata tha. Guest ko 15 din chahiye, hostel ka minimum 1 mahina:
+                     ye baat guest ko bed chunne, tareekh bharne ke BAAD pata
+                     chalti thi. Ab list par hi chhant jata hai. -->
+                <span id="kitneWrap" class="hidden flex items-center gap-1.5 ml-1">
+                    <input type="number" id="kitneInput" min="1" placeholder="1"
+                        oninput="kitneBadla()"
+                        class="w-16 px-2 py-1.5 border-2 border-indigo-200 rounded-xl font-black text-xs text-center text-indigo-700 bg-white outline-none">
+                    <span id="kitneLabel" class="text-[10px] font-black text-indigo-600 uppercase">din</span>
+                </span>
             </div>
 
             <div class="flex gap-1.5 flex-wrap items-center">
