@@ -9871,6 +9871,56 @@
                 p.push(khaaliKamre.length + ' kamre me ek bhi bed nahi: '
                      + khaaliKamre.slice(0, 4).map(r => r.name || r.id).join(', '));
             }
+
+            // JO THEHRAV CHUNA HAI, USKA RATE HONA CHAHIYE.
+            //
+            // Ye app ki sabse chupi hui kharabi thi. Malik rules me "Daily"
+            // aur "Weekly" par tick lagata tha, par bed ka Daily/Weekly rate
+            // 0 pada rehta (bed banta hi 0 ke saath hai). Listing publish ho
+            // jati, aur guest ki taraf ka code ye hai:
+            //
+            //     if (allowedStays.daily && dPrice > 0) { ...Daily ka dabba... }
+            //
+            // Rate 0, to dabba BANTA HI NAHI. Guest ko sirf Monthly dikhta.
+            // "15 din ke liye bed chahiye" ya "3 hafte" - dono namumkin, aur
+            // kisi ko pata nahi chalta kyon. Malik samajhta hai uski listing
+            // poori hai; guest samajhta hai hostel sirf mahine par deta hai.
+            //
+            // Server (security.py) rate 0 par sahi se mana karta hai, par
+            // guest wahan tak pahunchta hi nahi - dabba hi nahi hota.
+            //
+            // Isliye yahan rokte hain: tick lagaya hai to rate bharo, warna
+            // tick hata do.
+            const chune = (typeof businessRules !== 'undefined' && businessRules && businessRules.stayTypes)
+                ? businessRules.stayTypes : null;
+            if (chune && beds.length) {
+                const THEHRAV = [
+                    ['daily',   'priceDaily',   'Daily',   'din'],
+                    ['weekly',  'priceWeekly',  'Weekly',  'hafte'],
+                    ['monthly', 'priceMonthly', 'Monthly', 'mahine'],
+                ];
+                THEHRAV.forEach(([kunji, khana, naam, kaal]) => {
+                    if (!chune[kunji]) return;
+                    const khaali = beds.filter(b => {
+                        // Monthly ka purana naam 'price' bhi chalta hai - use
+                        // bhi gino, warna purani listing par jhoothi shikayat.
+                        const r = (kunji === 'monthly')
+                            ? (Number(b.priceMonthly) || Number(b.price) || 0)
+                            : (Number(b[khana]) || 0);
+                        return r <= 0;
+                    });
+                    if (!khaali.length) return;
+                    const naamSuchi = khaali.slice(0, 5).map(b => b.id || '?').join(', ');
+                    p.push('Aapne "' + naam + '" thehrav chuna hai, par ' + khaali.length
+                         + ' bed ka ' + naam + ' rate 0 hai (' + naamSuchi
+                         + (khaali.length > 5 ? ' aur aur' : '')
+                         + '). Rate 0 rehne par guest ko ' + naam
+                         + ' ka vikalp DIKHTA HI NAHI - yaani kuch ' + kaal
+                         + ' ki booking ho hi nahi sakti. Rate bhariye, ya '
+                         + naam + ' ka tick hata dijiye.');
+                });
+            }
+
             return p;
         }
 
