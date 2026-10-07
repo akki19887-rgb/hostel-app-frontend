@@ -1948,71 +1948,67 @@
             </div>
         </div>
 
-        <!-- Earnings summary -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-            <div class="bg-emerald-50 border-2 border-emerald-100 rounded-2xl p-4 text-center">
-                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Collected</p>
-                <p id="pyTotalCollected" class="text-2xl font-black text-emerald-700">₹0</p>
-            </div>
-            <div class="bg-red-50 border-2 border-red-100 rounded-2xl p-4 text-center">
-                <p id="pyCommissionLabel" class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Platform Commission (15%)</p>
-                <p id="pyCommissionAmount" class="text-2xl font-black text-red-600">− ₹0</p>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <!-- TEEN AANKDE, TEENO SACH.
+             Pehle yahan teen aise aankde the jo keh rahe the ki HostelOM malik
+             ka paisa rok kar baitha hai aur thoda-thoda bhej raha hai. Aisa
+             kuch nahi hota. Guest 20% HostelOM ko online deta hai aur 80%
+             malik ko hostel par seedha. Isliye ab wahi teen cheezein dikhti
+             hain jo asli me hoti hain.
+
+             Un purani line ko yahan dobara likha nahi gaya hai - jaan-boojh kar.
+             check_flows.py poori file me unhe dhoondhta hai, aur comment me
+             likhi line bhi usse takra jati hai. Guard ko apne hi comment se
+             dhokha dena theek nahi. -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
             <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 text-center">
-                <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Net Payable to You</p>
-                <p id="pyNetPayable" class="text-2xl font-black text-indigo-700">₹0</p>
+                <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Kul Booking</p>
+                <p id="pyBookingCount" class="text-2xl font-black text-indigo-700">0</p>
+                <p class="text-[9px] font-bold text-indigo-400 mt-1">paisa de chuke guest</p>
+            </div>
+            <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-center">
+                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Hostel Par Lena Hai</p>
+                <p id="pyHostelDue" class="text-2xl font-black text-emerald-700">&#8377;0</p>
+                <p class="text-[9px] font-bold text-emerald-600 mt-1">aane wale guest se, 80%</p>
             </div>
             <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-center">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Already Paid to You</p>
-                <p id="pyTotalPaidOut" class="text-2xl font-black text-slate-700">₹0</p>
-            </div>
-            <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-center">
-                <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Pending Balance</p>
-                <p id="pyPendingBalance" class="text-2xl font-black text-amber-700">₹0</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Check-in Ho Chuka</p>
+                <p id="pyHostelTaken" class="text-2xl font-black text-slate-700">&#8377;0</p>
+                <p class="text-[9px] font-bold text-slate-400 mt-1">ye aapne hostel par liya hoga</p>
             </div>
         </div>
-        <p class="text-[10px] text-slate-400 font-semibold text-center -mt-5 mb-8">Payouts are currently transferred manually by HostelOM to your bank account below, on a regular cycle.</p>
 
-        <!-- Payout history -->
-        <h3 class="text-sm font-black text-slate-800 mb-2 uppercase tracking-widest">Payout History</h3>
-        <div id="pyPayoutHistory" class="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-8 divide-y divide-slate-100">
-            <p class="text-xs text-slate-400 font-semibold text-center py-6">No payouts recorded yet.</p>
+        <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Guest ne HostelOM ko di booking fees</p>
+                <p id="pyPlatformFee" class="text-sm font-black text-slate-700">&#8377;0</p>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-500 leading-relaxed">
+                Ye HostelOM ka hissa hai, aapke kiraye me se kata hua paisa nahi.
+                Guest ne kul kiraya hi diya hai &mdash; 20% HostelOM ko online, 80% aapko hostel par.
+            </p>
         </div>
 
-        <!-- Bank / payout details form -->
-        <h3 class="text-sm font-black text-slate-800 mb-1 uppercase tracking-widest">Your Payout Details</h3>
-        <div id="pyStatusBadge" class="hidden mb-4"></div>
-        <div class="space-y-4">
-            <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Account Holder Name</label><input type="text" id="pyAccountHolder" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="As per bank passbook"></div>
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Account Number</label><input type="text" inputmode="numeric" id="pyAccountNumber" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
-                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">Confirm Account Number</label><input type="text" inputmode="numeric" id="pyAccountNumberConfirm" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70"></div>
+        <!-- MALIK KA PAISA HUM CHHUTE HI NAHI - YE SAAF LIKHNA ZAROORI HAI.
+             Pehle isi jagah bank account number, IFSC aur cancelled cheque
+             maanga jata tha, ek payout ke bharose jo kabhi hona hi nahi tha. -->
+        <div class="flex items-start gap-3 bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-6">
+            <span class="text-lg leading-none mt-0.5">✅</span>
+            <div>
+                <p class="text-[13px] font-black text-emerald-800">Bank details ki zaroorat nahi hai</p>
+                <p class="text-[11.5px] font-semibold text-emerald-800 leading-relaxed mt-1">
+                    HostelOM aapka paisa na leta hai, na rokta hai, na aapko bhejta hai.
+                    Aapka 80% guest aapko hostel par seedha deta hai.
+                    Isliye hum aapse account number, IFSC ya cheque kabhi nahi maangte &mdash;
+                    aur koi aisa maange to wo HostelOM nahi hai.
+                </p>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">IFSC Code</label><input type="text" id="pyIfsc" style="text-transform:uppercase" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="e.g. SBIN0001234"></div>
-                <div><label class="text-[10px] font-black text-slate-500 block mb-1 uppercase tracking-widest">UPI ID (optional)</label><input type="text" id="pyUpiId" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70" placeholder="yourname@upi"></div>
-            </div>
+        </div>
 
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                    <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">Cancelled Cheque Photo</label>
-                    <label id="pyChequeSlot" class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl">
-                        <input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('cheque', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>
-                    </label>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-500 block mb-2 uppercase tracking-widest">UPI QR Code (optional)</label>
-                    <label id="pyQrSlot" class="aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition text-slate-300 text-2xl">
-                        <input type="file" accept="image/*" class="hidden" onchange="savePayoutImageLocally('qr', this)">📷<span class="text-[9px] font-bold text-slate-400 mt-1">Tap to upload</span>
-                    </label>
-                </div>
-            </div>
-
-            <p class="text-[10px] text-slate-400 font-semibold pt-1">After you save, HostelOM will manually verify your cancelled cheque/QR before your payouts begin. This usually takes 1–2 business days.</p>
-            <p id="pyFormError" class="hidden text-xs font-bold text-red-500 bg-red-50 border border-red-100 rounded-xl p-3"></p>
-            <button type="button" id="pySaveBtn" onclick="savePayoutDetails()" class="btn-gradient w-full text-white font-black py-4 rounded-2xl shadow-lg tracking-wider mt-2">💾 Save Payout Details</button>
+        <!-- BOOKING-WISE - ek hi jagah par "kis guest se kitna lena hai".
+             Ye wo sawaal hai jiske liye malik roz phone karta tha. -->
+        <h3 class="text-sm font-black text-slate-800 mb-2 uppercase tracking-widest">Kis Guest Se Kitna</h3>
+        <div id="pyBookingList" class="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100">
+            <p class="text-xs text-slate-400 font-semibold text-center py-6">Abhi koi booking nahi aayi.</p>
         </div>
     </div>
 
