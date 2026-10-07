@@ -11283,8 +11283,89 @@
             applyDiscoverFilters();
         }
 
+        // Is listing ke saare bed - layout2D aur roomsAndBeds, dono me ho
+        // sakte hain. Ek hi bed do baar na gine (Set object ki pehchaan par
+        // chalta hai).
+        function propKeBed(prop) {
+            const dekhe = new Set();
+            [prop && prop.layout2D, prop && prop.roomsAndBeds].forEach(list => {
+                if (!Array.isArray(list)) return;
+                list.forEach(blk => {
+                    if (blk && Array.isArray(blk.beds)) blk.beds.forEach(b => { if (b) dekhe.add(b); });
+                });
+            });
+            return Array.from(dekhe);
+        }
+
+        // Kya is hostel me ye thehrav SACH ME ho sakta hai?
+        //
+        // Teen shartein, aur teeno ka alag matlab hai:
+        //   1. malik ne wo thehrav chuna hai (rules.stayTypes)
+        //   2. kisi bed par uska rate SACH ME hai - kyunki guest ki taraf
+        //      shart `rate > 0` hai, aur rate 0 par wo vikalp hi nahi banta
+        //   3. malik ka minimum guest ki ginti se zyada nahi hai
+        //
+        // Doosri shart hi wo jhoot pakadti hai jo list par chal raha tha:
+        // pehle filter sirf tick dekhta tha, aur tick ka matlab kuch nahi
+        // tha. Guest "Daily" chun kar das hostel dekhta aur kisi me bhi
+        // Daily ka dabba nahi milta.
+        function stayChalega(prop, stay, kitne) {
+            const R = (prop && prop.rules) || {};
+            if (!R.stayTypes || !R.stayTypes[stay]) return false;
+
+            const KHANA = { daily: 'priceDaily', weekly: 'priceWeekly', monthly: 'priceMonthly' };
+            const MIN = { daily: 'minStayDays', weekly: 'minStayWeeks', monthly: 'minStayMonths' };
+            const bed = propKeBed(prop);
+
+            // Bed ki jaankari hi na ho to purani listing ko chhaant kar
+            // chhupana theek nahi - tick par bharosa kar lete hain.
+            if (bed.length) {
+                const koiRate = bed.some(b => {
+                    const r = (stay === 'monthly')
+                        ? (Number(b.priceMonthly) || Number(b.price) || 0)
+                        : (Number(b[KHANA[stay]]) || 0);
+                    return r > 0;
+                });
+                if (!koiRate) return false;
+            }
+
+            const n = Number(kitne);
+            if (n > 0) {
+                const kamSeKam = Number(R[MIN[stay]]) || 1;
+                if (n < kamSeKam) return false;
+            }
+            return true;
+        }
+
+        // "Kitne din" badla - sirf filter dobara chalao. Khana khud se nahi
+        // khulta/band hota, wo setDiscoverFilter karta hai.
+        window.kitneBadla = function() {
+            const el = document.getElementById('kitneInput');
+            const v = el ? parseInt(el.value, 10) : NaN;
+            discoverFilters.kitne = (v > 0) ? v : null;
+            applyDiscoverFilters();
+        };
+
         window.setDiscoverFilter = function(type, value) {
             discoverFilters[type] = value;
+            // Stay chunne par "kitne din/hafte/mahine" ka khana khulta hai, aur
+            // label uske hisaab se badalta hai. "Any" par band ho jata hai aur
+            // ginti bhi saaf - warna purani ginti chup-chaap chhanti rehti.
+            if (type === 'stay') {
+                const wrap = document.getElementById('kitneWrap');
+                const lab = document.getElementById('kitneLabel');
+                const inp = document.getElementById('kitneInput');
+                const NAAM = { daily: 'din', weekly: 'hafte', monthly: 'mahine' };
+                if (wrap && lab && inp) {
+                    if (value === 'all') {
+                        wrap.classList.add('hidden');
+                        inp.value = ''; discoverFilters.kitne = null;
+                    } else {
+                        wrap.classList.remove('hidden');
+                        lab.innerText = NAAM[value] || 'din';
+                    }
+                }
+            }
             document.querySelectorAll(`.filter-chip[data-filter="${type}"]`).forEach(el => { el.classList.remove('active-filter', 'chip-primary'); el.classList.add('chip-outline'); });
             const active = document.querySelector(`.filter-chip[data-filter="${type}"][data-value="${value}"]`);
             if (active) { active.classList.remove('chip-outline'); active.classList.add('active-filter', 'chip-primary'); }
