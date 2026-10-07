@@ -11517,7 +11517,15 @@
                 if (search && !propMatchesSearch(prop, search)) show = false;
                 if (discoverFilters.type !== 'all' && prop.propertyType !== discoverFilters.type) show = false;
                 if (discoverFilters.gender && discoverFilters.gender !== 'all' && (prop.rules?.genderType || 'Co-ed') !== discoverFilters.gender) show = false;
-                if (discoverFilters.stay !== 'all') { if(!prop.rules?.stayTypes?.[discoverFilters.stay]) show = false; }
+                // STAY KA FILTER - TEEN CHEEZEIN, TEENO ZAROORI.
+                //
+                // Pehle yahan sirf ek shart thi: malik ne tick lagaya hai ya
+                // nahi. Us tick ka matlab kuch nahi tha - rate 0 reh jaye to
+                // guest ke khulne par wo vikalp hi nahi banta. Guest "Daily"
+                // chun kar das hostel dekhta aur kisi me bhi Daily ka dabba
+                // nahi milta, aur wajah kahin likhi nahi hoti.
+                if (discoverFilters.stay !== 'all' && !stayChalega(prop, discoverFilters.stay,
+                                                                   discoverFilters.kitne)) show = false;
                 if (discoverFilters.features.length > 0) {
                     if (discoverFilters.features.includes('ac') && (!prop.rules?.acType || !prop.rules.acType.includes('AC'))) show = false;
                     if (discoverFilters.features.includes('cooler') && (!prop.rules?.acType || !prop.rules.acType.includes('Cooler'))) show = false;
