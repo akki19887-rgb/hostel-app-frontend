@@ -13616,7 +13616,22 @@
             // (rate + mess) x qty karta aaya hai, isliye dono ka jawab alag
             // aata aur payment "price changed" keh kar ruk jata.
             const messAmount = (window.currentMessSelection && window.currentMessSelection.amount) || 0;
-            const total = (currentBookingPlan.rate + messAmount) * qty;
+
+            // TEEN AANKDE - aur teeno aage tak le jane padte hain.
+            //
+            // currentBookingPlan.rate me MALIK ka rate hai (jaisa database me
+            // likha hai). Guest ka daam yahin banta hai:
+            //
+            //   malikKa  = (bed + khana) x qty   -> hostel par, poora
+            //   hamara   = markup(bed) x qty     -> online, HostelOM ko
+            //   total    = dono ka jod           -> guest ko itna dikhega
+            //
+            // Sirf `total` aage bhejna kaafi NAHI hai: mess par markup nahi
+            // lagta, isliye akele total se wapas split nikalna mumkin hi nahi.
+            // Isliye teeno saath chalte hain.
+            const malikKa = (currentBookingPlan.rate + messAmount) * qty;
+            const hamara = hamaraHissa(currentBookingPlan.rate) * qty;
+            const total = malikKa + hamara;
             if (totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
 
             // Security deposit is a one-time, Monthly-only charge — show it only when Monthly is
