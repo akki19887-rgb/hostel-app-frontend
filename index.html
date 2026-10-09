@@ -11871,7 +11871,13 @@
             // Figure out which flow called this (image-based vs 2D layout) so Cancel/Proceed can return correctly
             if (document.getElementById('screenUser2DLayout') && !document.getElementById('screenUser2DLayout').classList.contains('hidden')) {
                 grfReturnScreen = 'screenUser2DLayout';
-                grfBookingContext = { beds: selected2DBeds, totalPrice: selected2DBeds.reduce((s,b)=>s+b.price,0), mode: '2d' };
+                grfBookingContext = { beds: selected2DBeds,
+                                      totalPrice: selected2DBeds.reduce((s,b)=>s+b.price,0),
+                                      // Split bhi saath - payment screen ise dobara
+                                      // nahi nikaal sakti (mess par markup nahi lagta).
+                                      hamara: selected2DBeds.reduce((s,b)=>s+(b.hamara||0),0),
+                                      malikKa: selected2DBeds.reduce((s,b)=>s+(b.malikKa||0),0),
+                                      mode: '2d' };
                 document.getElementById('grfRoomType').value = selected2DBeds.length ? `Slot ${selected2DBeds[0].id} (${selected2DBeds[0].plan})` : '';
             } else {
                 grfReturnScreen = 'screenUserImageRedbus';
