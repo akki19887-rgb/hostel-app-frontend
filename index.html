@@ -12507,9 +12507,16 @@
 
                 submitBtn.disabled = false; submitBtn.innerText = 'Save & Proceed to Pay →';
                 const totalPrice = (grfBookingContext && grfBookingContext.totalPrice) ? grfBookingContext.totalPrice : 0;
-                // PAY-AT-HOSTEL MODEL: guest only pays ADVANCE_PERCENT% now; the rest is paid
-                // directly to the hostel at check-in (see Cancellation Policy modal).
-                const advanceAmount = Math.round(totalPrice * ADVANCE_PERCENT / 100);
+                // MARKUP MODEL: guest online sirf HostelOM ka hissa deta hai, aur
+                // malik ka poora kiraya hostel par.
+                //
+                // Split recalcBookingTotal se aata hai - yahan DOBARA nahi nikala
+                // ja sakta, kyunki mess par markup nahi lagta. Jo purani booking
+                // ya koi raasta split na bheje, uske liye peeche hatne ka hisaab
+                // hai: markup kul ka 20/120 hissa hota hai.
+                const advanceAmount = (grfBookingContext && typeof grfBookingContext.hamara === 'number')
+                    ? grfBookingContext.hamara
+                    : Math.round(totalPrice * MARKUP_PERCENT / (100 + MARKUP_PERCENT));
                 const hostelBalance = totalPrice - advanceAmount;
                 const beds = (grfBookingContext && grfBookingContext.beds) ? grfBookingContext.beds : [];
                 const planLabel = (grfBookingContext && grfBookingContext.planLabel) ? grfBookingContext.planLabel : (formData.roomType || 'Booking');
