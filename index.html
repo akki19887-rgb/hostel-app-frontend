@@ -10064,7 +10064,12 @@
                      shirshak: 'text-slate-500', nishaan: '\u{1F4CC}' };
         }
 
+        // Ghanti kholi - matlab malik ne dekh liya. Ab bajte rehna bekaar hai.
+        // (Waise bhi kahin tap karne par rukta hai, par ye saaf aur pakka hai.)
+        function awaazRokoPanelPar() { try { window.awaazRoko(); } catch (e) {} }
+
         function listenBizNotifications() {
+            awaazBtnTaaza();
             if (bizNotifUnsubscribe) bizNotifUnsubscribe();
             _bizNotifStore = {};
             const myUid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
