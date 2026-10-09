@@ -13600,7 +13600,9 @@
             if (belowMin || aboveMax) {
                 selected2DBeds = []; // invalid quantity — treat as nothing selected so Book stays disabled
             } else {
-                selected2DBeds = [{ id: currentSelectedBedId, price: total, plan: currentBookingPlan.type, qty, messSelection: window.currentMessSelection ? { ...window.currentMessSelection } : null }];
+                selected2DBeds = [{ id: currentSelectedBedId, price: total, plan: currentBookingPlan.type, qty,
+                                   malikKa: malikKa, hamara: hamara,
+                                   messSelection: window.currentMessSelection ? { ...window.currentMessSelection } : null }];
             }
             updateSmart2DBtn();
         }
