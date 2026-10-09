@@ -6225,7 +6225,12 @@
                             (bizData.roomsAndBeds || []).forEach(room => (room.beds || []).forEach(bed => {
                                 if (bedIdsForCheck.includes(bed.id)) liveTotal += Number(bed.priceMonthly || bed.price || 0);
                             }));
-                            const expectedAdvance = Math.round(liveTotal * (typeof ADVANCE_PERCENT !== 'undefined' ? ADVANCE_PERCENT : 20) / 100);
+                            // liveTotal me MALIK ke rate ka jod hai, isliye hamara
+                            // hissa seedha markup hai. (Ye jaanch ek mahine ke
+                            // hisaab se hai - pehle bhi aisi hi thi.)
+                            const expectedAdvance = (typeof hamaraHissa === 'function')
+                                ? hamaraHissa(liveTotal)
+                                : Math.round(liveTotal * 20 / 100);
                             if (liveTotal > 0 && Math.abs(expectedAdvance - Number(bData.amount)) > 1) {
                                 const proceed = confirm(`⚠️ Amount mismatch!\n\nThis booking's stored advance is ₹${bData.amount}, but based on the bed's current price (₹${liveTotal} total), the expected advance is ₹${expectedAdvance}.\n\nThis could mean the amount was tampered with. Continue anyway only if you've personally verified the real amount received in your bank/UPI app.\n\nPress OK to continue, Cancel to stop.`);
                                 if (!proceed) return;
