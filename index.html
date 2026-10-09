@@ -7114,15 +7114,25 @@
             const sh = document.getElementById('mainSubheading');
             if (!h || !sh) return;
 
-            if (mode === 'user') {
-                h.innerText = "Welcome";
-                sh.innerHTML = 'Sign in to <span class="gradient-text font-bold">HostelOM</span>';
-            } else if (mode === 'business') {
+            optionsScreenKaSirshak();
+        }
+
+        // screenOptions ka sirshak. Ek hi jagah, taaki wo kabhi purana na reh jaye.
+        //
+        // "Admin Portal" ka roop JAAN-BOOJH KAR hata diya gaya hai. Is card par
+        // jo teen button hain (Mobile / Google / Email) wo aam sign-in ke hain -
+        // admin unse login karta hi nahi, wo neeche "Staff & Admin" se jata hai.
+        // Us card ko "Admin Portal" kehna seedha jhooth tha.
+        function optionsScreenKaSirshak() {
+            const h = document.getElementById('mainHeading');
+            const sh = document.getElementById('mainSubheading');
+            if (!h || !sh) return;
+            if (accountMode === 'business') {
                 h.innerText = "Business Partner";
                 sh.innerHTML = 'Manage your properties with <span class="gradient-text font-bold">HostelOM Bizz</span>';
             } else {
-                h.innerText = "Admin Portal";
-                sh.innerText = "Verify and manage network";
+                h.innerText = "Welcome";
+                sh.innerHTML = 'Sign in to <span class="gradient-text font-bold">HostelOM</span>';
             }
         }
 
