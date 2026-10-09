@@ -8101,7 +8101,35 @@
         // REFUND_EXCEPTIONS, where the bed we charged for was never actually made available. The remaining (100 - ADVANCE_PERCENT)% is paid by the guest
         // DIRECTLY to the hostel at check-in — HostelOM never touches that portion, so there is
         // nothing to pay out to the owner afterwards.
-        const ADVANCE_PERCENT = 20;
+        // HOSTELOM KA HISSA - MALIK KE RATE KE UPAR, USME SE NAHI.
+        //
+        // Pehle ye "advance" tha: guest kul kiraye ka 20% online deta tha aur
+        // wahi HostelOM rakh leta tha. Matlab malik ko apne hi likhe rate ka
+        // 80% milta tha - paisa uske kiraye me se katta tha.
+        //
+        // Ab markup hai:
+        //     malik ne likha 5,000  ->  guest ko dikhega 6,000
+        //     1,000 HostelOM ko online, 5,000 malik ko hostel par (poora)
+        //
+        // MESS PAR MARKUP NAHI. Khana malik ka hai aur uska poora daam use
+        // jata hai. Uspar 20% jodne se HostelOM ka khana mehnga dikhta, aur
+        // guest hostel ko phone karke farq pakad leta.
+        const MARKUP_PERCENT = 20;
+
+        // Purana naam. Kuch purani jagah aur test ise maangte hain. Iska
+        // matlab ab "kiraye me se kata hua" nahi, "kiraye ke upar juda hua" hai.
+        const ADVANCE_PERCENT = MARKUP_PERCENT;
+
+        // HAMESHA IN DO KO ISTEMAL KIJIYE - kahin bhi haath se 20% mat likhiye.
+        // Server (security.py) bilkul yahi do hisaab karta hai; dono me se ek
+        // bhi jagah alag likhi gayi to payment "price changed" par ruk jayega.
+        function hamaraHissa(malikKaRate) {
+            return Math.round((Number(malikKaRate) || 0) * MARKUP_PERCENT / 100);
+        }
+        function guestKaDaam(malikKaRate) {
+            const r = Number(malikKaRate) || 0;
+            return r + hamaraHissa(r);
+        }
 
         // Shared by BOTH payment paths (Razorpay success handler AND admin's manual UPI
         // confirmation) — flips the paid bed(s) to 'occupied' on the live listing and marks the
