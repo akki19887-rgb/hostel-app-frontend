@@ -12525,7 +12525,14 @@
                 document.getElementById('paySumBeds').innerText = beds.length ? beds.map(b => b.id).join(', ') : (formData.roomType || '—');
                 document.getElementById('paySumPlan').innerText = planLabel;
                 document.getElementById('paySumStayTotal').innerText = '₹' + totalPrice;
-                document.getElementById('paySumAdvancePct').innerText = ADVANCE_PERCENT;
+                // Pehle yahan "20%" likha jata tha. Markup me HostelOM ka hissa
+                // kul daam ka 20% nahi hota (20/120 = ~17%), isliye koi bhi number
+                // likhna jhooth hoga. Label me ab sirf ye likha hai ki ye kiska
+                // paisa hai.
+                {
+                    const _pct = document.getElementById('paySumAdvancePct');
+                    if (_pct) _pct.innerText = '';
+                }
                 document.getElementById('paySumHostelBalance').innerText = '₹' + hostelBalance;
                 // "Notify Parent via WhatsApp" — pre-fills a message to the Emergency Contact number
                 // (the guest just taps Send, no automatic/paid WhatsApp API involved).
