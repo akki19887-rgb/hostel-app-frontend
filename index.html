@@ -10144,6 +10144,11 @@
                                         + ' - ghanti me poora byora hai');
                                 }
                             } catch (e) {}
+                            // AWAAZ. Patti sirf dekhne walon tak pahunchti hai;
+                            // malik aksar phone jeb me rakh kar kaam me laga
+                            // hota hai. _notifPehlaDaur ki wajah se page kholte
+                            // hi purani booking par alarm nahi bajta.
+                            try { window.awaazChalao(); } catch (e) {}
                         }
                     });
                     _notifPehlaDaur = false;
