@@ -8854,7 +8854,10 @@
         }
 
         function openCancellationPolicyModal() {
-            document.getElementById('policyAdvancePctLabel').innerText = ADVANCE_PERCENT;
+            // Pehle yahan "20%" bhara jata tha. Markup me koi ek percentage
+            // likhna hi galat hai - HostelOM ka hissa bed ke kiraye ka 20% hai,
+            // par guest ke kul daam ka utna nahi (khana usme jud chuka hota
+            // hai). Isliye ab text me koi number hai hi nahi.
             document.getElementById('modalCancellationPolicy').classList.remove('hidden');
         }
 
