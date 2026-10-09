@@ -13459,9 +13459,13 @@
             let minMonths = window.currentPropertyData?.rules?.minStayMonths || 1;
 
             let pricingHtml = `<div class="grid grid-cols-3 gap-2 mt-4 w-full">`;
-            if (allowedStays.daily && dPrice > 0) { pricingHtml += `<div id="plan-daily" onclick="selectBookingPlan('daily', ${dPrice}, ${minDays})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Daily</p><p class="text-sm font-black text-slate-800">₹${dPrice}</p></div>`; }
-            if (allowedStays.weekly && wPrice > 0) { pricingHtml += `<div id="plan-weekly" onclick="selectBookingPlan('weekly', ${wPrice}, ${minWeeks})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Weekly</p><p class="text-sm font-black text-slate-800">₹${wPrice}</p></div>`; }
-            if (allowedStays.monthly && mPrice > 0) { pricingHtml += `<div id="plan-monthly" onclick="selectBookingPlan('monthly', ${mPrice}, ${minMonths})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Monthly</p><p class="text-sm font-black text-slate-800">₹${mPrice}</p></div>`; }
+            // GUEST KO MARKUP WALA DAAM DIKHTA HAI, par selectBookingPlan ko
+            // MALIK ka rate hi jata hai. Hisaab ek hi jagah (recalcBookingTotal)
+            // rehta hai, warna do jagah do tarah ka rounding ho jata aur server
+            // se jawab na milta.
+            if (allowedStays.daily && dPrice > 0) { pricingHtml += `<div id="plan-daily" onclick="selectBookingPlan('daily', ${dPrice}, ${minDays})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Daily</p><p class="text-sm font-black text-slate-800">₹${guestKaDaam(dPrice)}</p></div>`; }
+            if (allowedStays.weekly && wPrice > 0) { pricingHtml += `<div id="plan-weekly" onclick="selectBookingPlan('weekly', ${wPrice}, ${minWeeks})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Weekly</p><p class="text-sm font-black text-slate-800">₹${guestKaDaam(wPrice)}</p></div>`; }
+            if (allowedStays.monthly && mPrice > 0) { pricingHtml += `<div id="plan-monthly" onclick="selectBookingPlan('monthly', ${mPrice}, ${minMonths})" class="plan-box bg-slate-50 border border-slate-200 p-2 rounded-xl text-center"><p class="text-[9px] font-black text-slate-400 uppercase">Monthly</p><p class="text-sm font-black text-slate-800">₹${guestKaDaam(mPrice)}</p></div>`; }
             pricingHtml += `</div>`;
             // Duration quantity selector — appears once a plan is picked, shows the unit label
             // matching the plan (days/weeks/months), lets the guest type how many, live-recalculates
