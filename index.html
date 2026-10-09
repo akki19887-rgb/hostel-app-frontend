@@ -6069,7 +6069,23 @@
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
             if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
-            if (screenId === 'screenOptions') { document.getElementById('screenOptionsLogoHeader').classList.remove('hidden'); }
+            if (screenId === 'screenOptions') {
+                document.getElementById('screenOptionsLogoHeader').classList.remove('hidden');
+                // IS CARD KA SIRSHAK HAR BAAR YAHIN SE AATA HAI.
+                //
+                // Pehle sirshak sirf switchAccountMode() me badalta tha aur
+                // phir waisa hi pada rehta tha. Nateeja: admin login karne ke
+                // baad agar kisi wajah se wapas is screen par aa gaye (dashboard
+                // load na hua, ya back dabaya), to AAM SIGN-IN wale card par
+                // "Admin Portal - Verify and manage network" likha reh jata tha.
+                //
+                // Ye sirf dekhne me galat nahi tha - jhooth tha. Is card ke teen
+                // button (Mobile / Google / Email) aam sign-in ke hain. Admin
+                // yahan se login karta hi nahi; wo neeche "Staff & Admin" se
+                // jata hai. Koi guest us phone par app khole to use lagta ki
+                // app kisi aur ke liye hai.
+                optionsScreenKaSirshak();
+            }
             if (screenId !== 'screenUserDashboard' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
 
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
