@@ -11826,7 +11826,16 @@
             // whole flat as a single "bed" unit so the same lock/payment logic applies unchanged.
             window.currentPropertyData = currentFlatHouseData;
             grfReturnScreen = 'screenFlatHouseView';
-            grfBookingContext = { beds: [{ id: 'FLAT-WHOLE', price: fd.monthlyRent || 0, plan: 'Monthly Rent' }], totalPrice: fd.monthlyRent || 0, mode: 'flat' };
+            // Flat/house par bhi wahi markup - kiraya malik ka poora, hamara
+            // hissa uske upar.
+            {
+                const _kiraya = Number(fd.monthlyRent) || 0;
+                const _hamara = hamaraHissa(_kiraya);
+                grfBookingContext = { beds: [{ id: 'FLAT-WHOLE', price: _kiraya + _hamara, plan: 'Monthly Rent',
+                                               malikKa: _kiraya, hamara: _hamara }],
+                                      totalPrice: _kiraya + _hamara,
+                                      hamara: _hamara, malikKa: _kiraya, mode: 'flat' };
+            }
             document.getElementById('grfRoomType').value = `${fd.bhk || 'Flat'} — Whole Unit`;
             document.getElementById('grfHostelNameHeading').innerText = currentFlatHouseData.businessName || 'Flat/House';
             document.getElementById('grfFormError').classList.add('hidden');
