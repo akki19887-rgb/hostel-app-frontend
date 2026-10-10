@@ -14563,8 +14563,34 @@
             else { btn.disabled = true; if(selected2DBeds.length === 0) btn.innerText = `Select Bed & Plan`; else btn.innerText = `Agree to T&C`; btn.className = "px-12 py-4 bg-slate-200 text-slate-400 font-black rounded-2xl cursor-not-allowed transition tracking-wider"; }
         }
 
+        // PHONE PAR PREVIEW SHURU ME BAND RAHEGA.
+        //
+        // 390x844 par naap kar dekha tha: preview panel akele 420px le leta
+        // tha, aur toolbar + floor tabs + sirshe ke baad kamron ki list
+        // top=764 par shuru hoti thi - yaani SCREEN SE BAAHAR (844px). Malik
+        // ko ek bhi kamra dikhta hi nahi tha, bas khaali screen.
+        //
+        // Preview dekhna zaroori nahi hai - KAAM kamron ki list me hota hai.
+        // Isliye phone par wo band milta hai, aur "Naksha dekhein" dabane par
+        // khulta hai. Button pehle se tha.
+        //
+        // Ek hi baar - uske baad malik ki marzi chalti hai. Warna wo kholta
+        // aur agla render use dobara band kar deta.
+        let _previewPhonePeBandKiya = false;
+        function phonePePreviewBandKaro() {
+            if (_previewPhonePeBandKiya) return;
+            if (window.innerWidth >= 768) return;        // desktop/tablet par waisa hi
+            const panel = document.getElementById('bizPreviewPanel');
+            if (!panel) return;
+            _previewPhonePeBandKiya = true;
+            panel.classList.add('hidden');
+            const btn = document.getElementById('bizPreviewToggleBtn');
+            if (btn) btn.innerText = '\u{1F53C} Naksha dekhein';
+        }
+
         function renderBusinessConfig() {
             const container = document.getElementById('dynamicBusinessRoomsContainer'); if(!container) return; container.innerHTML = '';
+            phonePePreviewBandKaro();
             if(floorMaps.length > 0 && !currentSelectedFloor) { currentSelectedFloor = floorMaps[0].floorName; }
             const roomsThisFloor = globalDynamicRooms.filter(r => r.floor === currentSelectedFloor);
             const countLabel = document.getElementById('dataEditorRoomCount');
