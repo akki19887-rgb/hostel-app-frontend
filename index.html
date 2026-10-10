@@ -359,10 +359,32 @@
         const storage = getStorage(app);
         const auth = getAuth(app);
         
-        // ADDED: Offline persistence for faster repeat visits
-        enableIndexedDbPersistence(db).catch((err) => {
-            console.warn("Firestore Persistence warning: ", err.code);
-        });
+        // OFFLINE PERSISTENCE JAAN-BOOJH KAR BAND HAI.
+        //
+        // Pehle yahan Firestore ka offline (IndexedDB) cache chalu kiya jata
+        // tha - "faster repeat visits" ke liye. Usne jo nuksaan kiya wo faayde
+        // se bahut bada hai:
+        //
+        //   - Ye ek hi tab me chal sakta hai. Doosre tab me failed-precondition
+        //     aata hai (jo catch me chup-chaap nigal liya jata tha).
+        //   - Safari/iOS storage khaali karne me bahut sakht hai. Jaise hi
+        //     IndexedDB hat jaye ya block ho, Firestore apna client KHUD BAND
+        //     kar deta hai. Uske baad HAR call par yahi aata hai:
+        //         "The client has already been terminated."
+        //
+        // Asli me kya hota tha: malik 8 kamre, photo, 360 sab bharta; Publish
+        // dabata; "Saving & Syncing..." par atak jata; aur phir wahi error -
+        // aur poora kaam gaya. Ye asli listing par hua hai, 16 tab khule phone
+        // par.
+        //
+        // Offline cache is app ke liye load-bearing hai bhi nahi: booking, bed
+        // ka haal, OTP - sab ke liye network chahiye hi. Thoda tez repeat load
+        // us khatre ke laayak nahi.
+        //
+        // Agar kabhi offline cache chahiye ho to purana wala MAT lautaiye -
+        // naya `initializeFirestore(app, { localCache: persistentLocalCache({
+        // tabManager: persistentMultipleTabManager() }) })` kai tab sambhalta
+        // hai. Par Safari ki storage safai phir bhi ek khatra rahegi.
 
         window.db = db;
         window.storage = storage;
