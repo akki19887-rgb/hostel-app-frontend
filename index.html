@@ -2408,8 +2408,52 @@
                 <p class="text-xs text-slate-500 font-semibold mt-1">Government verification & policy</p>
             </div>
         </div>
-        <div class="space-y-6">
-            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-3xl border border-indigo-100/60">
+        <!-- PHONE PAR TEEN ALAG PANNE KI SOOCHI.
+             Desktop par ye chhupi rehti hai aur teeno hisse ek saath
+             dikhte hain - wahan scroll ki dikkat hai hi nahi. -->
+        <div id="legalSoochi" class="hidden">
+            <p class="text-xs font-bold text-slate-500 mb-4">Teen hisse hain. Ek-ek karke bhariye - jo bhar denge wo hara ho jayega.</p>
+            <div class="space-y-3">
+                <button type="button" onclick="legalHissaKholo(1)" id="legalRow1"
+                    class="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-200 bg-white text-left">
+                    <span class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black shrink-0">1</span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block font-black text-slate-800">Sarkari Jaanch</span>
+                        <span class="block text-[11px] font-bold text-slate-400">Malik ka naam, Aadhaar, Gumasta</span>
+                    </span>
+                    <span class="text-slate-300 text-xl shrink-0" id="legalTick1">&#8250;</span>
+                </button>
+                <button type="button" onclick="legalHissaKholo(2)" id="legalRow2"
+                    class="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-200 bg-white text-left">
+                    <span class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shrink-0">2</span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block font-black text-slate-800">Suvidha aur Niyam</span>
+                        <span class="block text-[11px] font-bold text-slate-400">Wifi, parking, deposit, minimum din</span>
+                    </span>
+                    <span class="text-slate-300 text-xl shrink-0" id="legalTick2">&#8250;</span>
+                </button>
+                <button type="button" onclick="legalHissaKholo(3)" id="legalRow3"
+                    class="w-full flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-200 bg-white text-left">
+                    <span class="w-10 h-10 rounded-full bg-orange-600 text-white flex items-center justify-center font-black shrink-0">3</span>
+                    <span class="flex-1 min-w-0">
+                        <span class="block font-black text-slate-800">Mess aur Khana</span>
+                        <span class="block text-[11px] font-bold text-slate-400">Khane ka daam - din, hafta, mahina</span>
+                    </span>
+                    <span class="text-slate-300 text-xl shrink-0" id="legalTick3">&#8250;</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hissa khula ho to uske upar ye patti - wapas jaane ke liye. -->
+        <div id="legalWapasPatti" class="hidden mb-4">
+            <button type="button" onclick="legalSoochiPar()"
+                class="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 font-black text-slate-700 text-sm">
+                &#8592; Teeno hisse
+            </button>
+        </div>
+
+        <div class="space-y-6" id="legalHisseDabba">
+            <div id="legalHissa1" class="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-3xl border border-indigo-100/60">
                 <h3 class="text-xs font-black text-indigo-900 mb-4 uppercase tracking-widest flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">1</span> Government Verification</h3>
                 <div class="space-y-3">
                     <div><label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Aadhaar (Privacy Protected)</label><input type="text" id="formAadhaar" value="[Aadhaar Redacted]" readonly class="w-full p-3.5 border-2 border-slate-200 rounded-xl bg-slate-100 text-slate-500 font-bold cursor-not-allowed"></div>
