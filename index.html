@@ -3565,14 +3565,67 @@
         window.toggleRoomAccordion = function(index) { currentlyExpandedRoomIdx = (currentlyExpandedRoomIdx === index) ? null : index; renderBusinessConfig(); }
         function openZoomModal(src) { if(!src) return; document.getElementById('zoomedImageTarget').src = src; document.getElementById('imageZoomModal').classList.remove('hidden'); }
         function closeZoomModal() { document.getElementById('imageZoomModal').classList.add('hidden'); }
+        // AI naksha poori screen me - PADHNE LAYAK.
+        //
+        // Pehle ye bas innerHTML ki nakal karta tha. Do chhed the:
+        //   1. nakal ke saath `.naksha-zoom-layer` ka purana inline transform
+        //      bhi chala jata - phone ke chhote dabbe ke liye laga scale(0.39).
+        //      Popup bada hota, naksha phir bhi 39% par.
+        //   2. popup me nakshaZoomJodo() nahi chalta - na zoom ke button, na
+        //      do ungli se zoom, na khiskana.
+        //
+        // Ab popup ka apna dabba hai aur usi nakshaZoomJodo() se bandhta hai
+        // jo chhote dabbe par chalta hai - ek hi jagah ka code, dono ke liye.
         function zoomBlueprintContainer() {
-            const blueprintGridHtml = document.getElementById('blueprintGrid').innerHTML;
-            const modalContainer = document.createElement('div'); modalContainer.id = 'blueprintZoomModal'; modalContainer.className = 'zoom-modal'; modalContainer.onclick = () => modalContainer.remove();
-            // Popup pehle max-w-4xl (896px) me bandha tha — naksha usse chaura hota hai, isliye
-            // dayen kinare se kat jata tha aur left-right scroll bhi nahi milta tha.
-            // Ab popup lagbhag poori screen leta hai aur dono taraf scroll karta hai.
-            modalContainer.innerHTML = `<span class="zoom-close">✕</span><div class="bg-white p-6 rounded-2xl overflow-auto layout-scroll" style="width:96vw; height:92vh; max-width:none;" onclick="event.stopPropagation()">${blueprintGridHtml}</div>`;
+            const chhota = document.getElementById('blueprintGrid');
+            if (!chhota) return;
+            const parat = chhota.querySelector(':scope > .naksha-zoom-layer');
+            const andar = parat ? parat.innerHTML : chhota.innerHTML;
+
+            const modalContainer = document.createElement('div');
+            modalContainer.id = 'blueprintZoomModal';
+            modalContainer.className = 'zoom-modal';
+            modalContainer.style.padding = '0';
+            modalContainer.onclick = () => bandKaro();
+
+            modalContainer.innerHTML =
+                '<div style="position:absolute; inset:0; display:flex; flex-direction:column;" onclick="event.stopPropagation()">'
+              + '  <div style="flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;'
+              + '              gap:10px; padding:12px 14px; background:#0f172a; color:#fff;">'
+              + '    <span style="font-size:11px; font-weight:900; letter-spacing:.08em;">AI NAKSHA</span>'
+              + '    <span style="font-size:10px; font-weight:700; color:#94a3b8;">Do ungli se zoom &middot; ek ungli se khiskaiye</span>'
+              + '    <button type="button" id="nakshaBadaBand" style="flex:0 0 auto; width:40px; height:40px;'
+              + '            border-radius:12px; background:#fff; border:none; font-size:18px; font-weight:900;'
+              + '            color:#0f172a; cursor:pointer;">&#10005;</button>'
+              + '  </div>'
+              + '  <div id="nakshaBadaDabba" style="flex:1 1 auto; min-height:0; background:#fff;'
+              + '       overflow:hidden; touch-action:none;">'
+              + '    <div class="naksha-zoom-layer" style="width:900px; transform-origin:0 0;">' + andar + '</div>'
+              + '  </div>'
+              + '</div>';
             document.body.appendChild(modalContainer);
+
+            function bandKaro() {
+                try { delete _nakshaZoomHaal['nakshaBadaDabba']; } catch (e) {}
+                modalContainer.remove();
+            }
+            const bandBtn = document.getElementById('nakshaBadaBand');
+            if (bandBtn) bandBtn.onclick = bandKaro;
+
+            // Haal saaf - warna pichhli baar ka zoom/khiskaav chipka rehta hai.
+            try { delete _nakshaZoomHaal['nakshaBadaDabba']; } catch (e) {}
+            try {
+                nakshaZoomJodo('nakshaBadaDabba');
+                // 100% PAR KHOLO, "fit" PAR NAHI.
+                //
+                // Phone par fit ka matlab hai 39% - 10px ka likha hua 4px ka.
+                // Naksha PADHNE ke liye kholte hain. Poora ek saath dekhna ho
+                // to FIT ka button wahin hai.
+                const h = _nakshaHaal('nakshaBadaDabba');
+                h.s = Math.max(1, h.fit);
+                h.tx = 0; h.ty = 0;
+                _nakshaLagao('nakshaBadaDabba');
+            } catch (e) { console.warn('bada naksha', e); }
         }
 
         function deleteSelectedFabricElement() {
