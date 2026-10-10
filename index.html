@@ -7304,6 +7304,29 @@
         // ==== SMS OTP via 2Factor.in (backend-routed) ====
         let _otpSessionId = null;
 
+        // SERVER KA JAWAB PADHNE KA EK HI TARIKA.
+        //
+        // Pehle dono jagah seedha `await res.json()` likha tha. Par har
+        // jawab JSON nahi hota - 429 (bahut baar koshish), 502, ya beech me
+        // koi proxy ka HTML page. Aise me .json() KHUD girta hai, aur guest
+        // ko "Failed to fetch" jaisa kuch dikhta hai jiska asli wajah se koi
+        // lena-dena nahi hota.
+        async function jawabPadho(res) {
+            let data = null;
+            try { data = await res.json(); } catch (e) { data = null; }
+            if (res.ok && data && !data.error) return data;
+            if (data && data.error) throw new Error(data.error);
+            if (res.status === 429) {
+                throw new Error('Abhi bahut baar koshish ho chuki hai. Thodi der baad '
+                              + 'dobara try kijiye, ya Google/Email se login kar lijiye.');
+            }
+            if (res.status >= 500) {
+                throw new Error('Server abhi jawab nahi de raha. Ek minute baad dobara '
+                              + 'koshish kijiye.');
+            }
+            throw new Error('Kuch gadbad hui (code ' + res.status + '). Dobara koshish kijiye.');
+        }
+
         async function sendOtpToBackend(isResend) {
             showOtpError('');
             const mobileInput = document.getElementById('authMobileNumber');
