@@ -2683,7 +2683,18 @@
                 <button type="button" onclick="addFloorMap()" class="btn-gradient w-full py-3.5 text-white font-black rounded-xl shadow-md tracking-wide">SAVE FLOOR MAP</button>
             </div>
         </div>
-        <div class="mt-8 flex justify-between items-center border-t border-slate-200/60 pt-6">
+        <!-- NAKSHA NA HONE PAR BHI RAASTA.
+             Pehle yahan sirf "PROCESS WITH AI" tha, aur wo naksha chadhaye
+             bina chalta hi nahi tha. Aam hostel malik ke paas naksha hota
+             hi nahi - wo yahin ruk jata tha. -->
+        <div class="mt-6 border-t border-slate-200/60 pt-5">
+            <button type="button" onclick="binaNakshaKholo()"
+                class="w-full p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-left">
+                <span class="block font-black text-slate-800 text-sm">&#128207; Mere paas naksha nahi hai</span>
+                <span class="block text-[11px] font-bold text-slate-400 mt-0.5">Teen sawaal poochh kar hum khud bana denge</span>
+            </button>
+        </div>
+        <div class="mt-5 flex justify-between items-center border-t border-slate-200/60 pt-5">
             <button type="button" onclick="goTo('screenBusinessSecureForm')" class="px-6 py-3.5 text-slate-500 font-bold hover:bg-slate-100 rounded-xl transition">← Back</button>
             <button type="button" onclick="simulateAIProcessing()" class="btn-success px-8 py-4 text-white font-black rounded-2xl shadow-xl tracking-wider">PROCESS WITH AI ✨</button>
         </div>
