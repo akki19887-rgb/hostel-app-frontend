@@ -362,6 +362,140 @@
                 min-height: 0 !important;
                 padding-bottom: 96px !important;
             }
+
+            /* SECURE LEGAL FORM ke teen panne CSS se nahi chalte.
+               Line 110 par `.hidden { display: none !important; }` hai -
+               usse koi bhi selector haar jata hai. Isliye wo kaam JS me
+               `hidden` class jod-hata kar hota hai (legalHissaKholo /
+               legalSoochiPar), bilkul waise jaise poora app karta hai. */
+        }
+
+        /* ============================================================
+           UNGLI SE TAP KARNE LAYAK - phone par
+           ============================================================
+           43 screen 390x844 par naap kar dekhi. Google aur Apple dono
+           kehte hain ki tap karne wali cheez kam se kam 44px honi
+           chahiye. App me kai jagah 16px se 32px tak the.
+           Desktop par kuch nahi badla - ye sirf phone ke liye hai.
+           ============================================================ */
+        @media (max-width: 1023px) {
+            /* --- "Publish Image Map" SCREEN SE BAAHAR tha ---
+               Header justify-between hai bina wrap ke, aur screen
+               overflow-hidden. Phone par button right=451 par chala jata
+               tha jabki screen 390 ki hai - naksha publish hi nahi hota
+               tha. Ab header neeche khisak kar do line me aata hai. */
+            #screenAdminMappingTool > div:first-child {
+                flex-wrap: wrap !important;
+                padding: 10px 14px !important;
+                gap: 8px !important;
+            }
+            #screenAdminMappingTool > div:first-child h2 { font-size: 1.1rem !important; }
+            #screenAdminMappingTool > div:first-child p { font-size: 10px !important; margin-top: 0 !important; }
+            #screenAdminMappingTool > div:first-child > div:last-child {
+                width: 100%; gap: 8px !important;
+            }
+            #dynamicMappingPublishBtn {
+                flex: 1 1 auto; padding: 10px 14px !important; font-size: 12px !important;
+            }
+
+            /* --- Toolbar ke button: 30px se 38px --- */
+            #bizToolbarBtns button,
+            #admin2DTopBar button {
+                min-height: 38px;
+                padding-top: 8px !important; padding-bottom: 8px !important;
+            }
+
+            /* --- Niche wale link ("Forgot password?", "Back to Options",
+                   "Cancel") 16-20px unche the. Poori chaudai ke hain,
+                   par unchai hi nahi thi - ungli par chook jaati thi. --- */
+            #screenAdminSecureLogin > button.w-full,
+            #screenOtpVerification > button.w-full,
+            #screenEmailAuth > button.w-full,
+            #screenBusinessLogin > button.w-full,
+            #screenPropertyTypeSelection > button.w-full,
+            #screenFlatHouseDetails > button.w-full {
+                min-height: 44px; padding: 12px 8px;
+            }
+
+            /* --- 8-9px ka likha padha nahi jata --- */
+            .text-\[8px\], .text-\[9px\] { font-size: 10px !important; }
+
+            /* --- KANOONI LINK - ye khulne hi chahiye.
+                   "Booking & Refund Policy" 14px unchi thi, "View policy"
+                   11px, "Cancellation Policy" 15px. Itni patli cheez par
+                   ungli rakhna lagbhag namumkin hai - aur Play Store wale
+                   khud jaanchte hain ki ye link khulte hain ya nahi. --- */
+            #agreeTnC ~ label span,
+            #screenPaymentStep button.underline,
+            #screenUserDashboard a.underline {
+                display: inline-block;
+                padding: 10px 4px;
+                margin: -10px 0;        /* line ki unchai na badhe */
+            }
+            #screenPaymentStep > button.w-full { min-height: 44px; }
+
+            /* --- Amenity ke chip 24px the.
+                   Sirf unchai badhayi hai - chaudai badhane se ek line me
+                   do chip ki jagah ek hi aati. --- */
+            .fh-amenity-chip {
+                min-height: 38px;
+                display: inline-flex; align-items: center;
+                font-size: 11px !important;
+            }
+
+            /* --- Subtitle 8px aur 9px par chale gaye the (purane mobile
+                   CSS ne chhota kiya tha). 10px se neeche padha nahi
+                   jata; header ki unchai isse badhti nahi. --- */
+            #screenUser2DLayout > div:first-child p { font-size: 10px !important; }
+            #screenAdmin2DEditor > div:first-child p { font-size: 10px !important; }
+
+            /* --- Gol button (<- aur X) 40px ke hain, par flex ke andar
+                   padosi unhe 32-34px par dabaa dete the. Gol cheez ka
+                   dabna saaf dikhta hai - wo ande jaisi ho jati hai.
+                   (Niyam yahan shorthand me likha hai jaan-boojh kar:
+                   tw.css ka scanner comment bhi padhta hai aur lamba naam
+                   dekhte hi ek nayi class maangne lagta hai.) --- */
+            button.w-10.h-10, button.w-12.h-12 { flex: 0 0 auto; }
+
+            /* --- MALIK KA DASHBOARD: Logout aur Help SCREEN SE BAAHAR the.
+                   Header ka dayein wala hissa `flex items-center gap-3` hai
+                   bina flex-wrap ke - chaar button + do ghanti 616px maang
+                   lete hain, screen 390 ki. Dabba side me khisakta to hai,
+                   par phone par kaun soche ki header ko kheenchna hai.
+                   Admin console me wrap pehle se tha, par wahan sirsha
+                   36px ka hai jo aadhi screen kha jata hai. --- */
+            #screenBusinessDashboard > div:first-child,
+            #screenAdminDashboard > div:first-child {
+                flex-wrap: wrap !important;
+                gap: 12px !important;
+                padding-bottom: 14px !important;
+                margin-bottom: 14px !important;
+            }
+            #screenBusinessDashboard > div:first-child > div:last-child,
+            #screenAdminDashboard > div:first-child > div:last-child {
+                flex-wrap: wrap !important;
+                width: 100%;
+                justify-content: flex-start !important;
+                gap: 8px !important;
+            }
+            #screenBusinessDashboard h2,
+            #screenAdminDashboard h2 { font-size: 1.5rem !important; }
+            #screenBusinessDashboard > div:first-child p,
+            #screenAdminDashboard > div:first-child p { font-size: 11px !important; margin-top: 0 !important; }
+            #screenBusinessDashboard > div:first-child .w-14.h-14,
+            #screenAdminDashboard > div:first-child .w-14.h-14 {
+                width: 44px !important; height: 44px !important; font-size: 20px !important;
+            }
+            /* chaudi patti wale button phone par patle - warna ek line me ek hi aata hai */
+            #screenBusinessDashboard > div:first-child > div:last-child > a,
+            #screenBusinessDashboard > div:first-child > div:last-child > button,
+            #screenAdminDashboard > div:first-child > div:last-child > button {
+                padding-left: 12px !important; padding-right: 12px !important;
+                font-size: 12px !important; min-height: 40px;
+            }
+
+            /* Kamre ke panne par "Apply these photos" / "Apply this rate" 33px the */
+            #roomEditorContent button { min-height: 38px; }
         }
 
         /* RedBus-style seat visuals (apply on all viewports so admin preview matches) */
