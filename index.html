@@ -7389,8 +7389,7 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: _otpSessionId, otp, phone: raw })
                 });
-                const data = await res.json();
-                if (!res.ok || data.error) throw new Error(data.error || 'Incorrect OTP. Please try again.');
+                const data = await jawabPadho(res);
 
                 // Backend verified the OTP via 2Factor and handed us a Firebase custom token —
                 // sign in with it so the rest of the app (Firestore rules, uid-based data) keeps
