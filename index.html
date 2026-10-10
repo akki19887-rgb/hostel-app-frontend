@@ -11022,7 +11022,25 @@
 
                 }
                 editingBusinessDocId = null; exitListing();
-            } catch (error) { alert("Error: " + error.message); } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
+            } catch (error) {
+                // "The client has already been terminated" ek Firestore ka
+                // andar ka sandesh hai - malik ke liye uska koi matlab nahi.
+                // Aur wo ek hi cheez se theek hota hai: page dobara kholna.
+                // Isliye wahi saaf likh dete hain, warna malik dobara-dobara
+                // Publish dabata rehta hai aur har baar wahi error aata hai.
+                const m = String((error && error.message) || error || '');
+                if (m.indexOf('client has already been terminated') >= 0
+                    || m.indexOf('INTERNAL ASSERTION') >= 0) {
+                    alert('App ka database se rishta toot gaya hai (aksar bahut saare tab '
+                        + 'khule hone par hota hai).\n\nAapka kaam is screen par abhi bhi '
+                        + 'maujood hai. Kripya:\n'
+                        + '1. baaki tab band kijiye\n'
+                        + '2. ye page dobara kholiye (refresh)\n'
+                        + '3. phir Publish dabaiye');
+                } else {
+                    alert("Error: " + m);
+                }
+            } finally { btn.innerText = "✅ VERIFY & PUBLISH"; btn.disabled = false; }
         }
 
         // Hides the "Original Floor Plan" side panel so the canvas gets the ENTIRE width — much
