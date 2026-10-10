@@ -7346,8 +7346,7 @@
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone: raw })
                 });
-                const data = await res.json();
-                if (!res.ok || data.error) throw new Error(data.error || 'Failed to send OTP');
+                const data = await jawabPadho(res);
                 _otpSessionId = data.session_id;
                 document.getElementById('sendOtpSection').classList.add('hidden');
                 document.getElementById('verifyOtpSection').classList.remove('hidden');
