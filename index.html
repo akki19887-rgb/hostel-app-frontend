@@ -6629,6 +6629,9 @@
             }
             if (screenId !== 'screenUserDashboard' && userUnsubscribe) { userUnsubscribe(); userUnsubscribe = null; }
 
+            // Legal form phone par teen alag panne me khulta hai - screen
+            // dikhte hi soochi wali haalat me le aao.
+            if(screenId === 'screenBusinessSecureForm' && typeof legalFormTaiyaar === 'function') legalFormTaiyaar();
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
             if(screenId === 'screenUserDashboard') {
                 syncWishlistFromAccount().then(updateSavedCount);
