@@ -15644,7 +15644,13 @@
             const box = document.getElementById(id);
             if (!box) return;
             const h = _nakshaHaal(id);
-            window.nakshaFit(id);
+            // PEHLI BAAR FIT, USKE BAAD MALIK KA ZOOM.
+            //
+            // renderAttractive2DPlan har chhote badlaav par poora innerHTML
+            // badal kar yahan aata hai. Pehle yahan hamesha nakshaFit chalta
+            // tha - yaani Quick Edit me ek daam badalte hi naksha wapas 39%
+            // par. Phone par har tap ke baad dobara zoom karna padta tha.
+            if (h.napa) _nakshaLagao(id); else window.nakshaFit(id);
 
             if (getComputedStyle(box).position === 'static') box.style.position = 'relative';
 
