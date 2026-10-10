@@ -10791,16 +10791,23 @@
                     if (cleanRoom.rawFiles) {
                         for (let i = 0; i < finalPhotos.length || i < cleanRoom.rawFiles.length; i++) {
                             if (cleanRoom.rawFiles[i]) {
-                                let path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`;
-                                try {
-                                    finalPhotos[i] = await uploadFileToStorage(cleanRoom.rawFiles[i], path);
-                                } catch (upErr) {
-                                    console.warn('Room photo upload fail:', cleanRoom.id, i, upErr);
-                                    finalPhotos[i] = '';
-                                }
+                                const file = cleanRoom.rawFiles[i];
+                                const path = `business_rooms/${hostelSlug}/${Date.now()}_${cleanRoom.id}_photo_${i}`;
+                                const slot = i;
+                                const arr = finalPhotos;
+                                upKaam.push({
+                                    chalao: () => uploadFileToStorage(file, path),
+                                    rakho: (url, err) => {
+                                        if (err) { console.warn('Room photo upload fail:', path, err); }
+                                        arr[slot] = url || '';
+                                    },
+                                });
                             }
                         }
                     }
+                    // Upload abhi hua nahi hai - niche saath-saath hoga. Par ye
+                    // safai (blob:/data: hatana) upload ke BAAD honi chahiye,
+                    // isliye wo bhi neeche dobara chalti hai.
                     finalPhotos = finalPhotos.map(u =>
                         (typeof u === 'string' && (u.startsWith('blob:') || u.startsWith('data:'))) ? '' : (u || ''));
                     cleanRoom.photos = finalPhotos;
