@@ -3105,9 +3105,84 @@
             document.getElementById('modal360Viewer').classList.add('hidden');
             if (pannellumViewerInstance) { try { pannellumViewerInstance.destroy(); } catch (e) {} pannellumViewerInstance = null; }
         }
+        // ==========================================================
+        // 360 KI PHOTO SACH ME 360 HAI YA NAHI
+        // ==========================================================
+        //
+        // Asli 360 photo "equirectangular" hoti hai: chaudai = unchai x 2.
+        // Aisi hi photo gole (sphere) par sahi baithti hai.
+        //
+        // Phone ki aam photo 4:3 ya 3:4 hoti hai. Use gole par chipkane par
+        // upar aur neeche ke sire ek NUKTE par simat jate hain - screen par
+        // ek funnel jaisa dikhta hai, jaise tasveer kisi bindu me kheenchi
+        // ja rahi ho. Ye kharabi nahi hai; aam photo ke saath aisa hona hi
+        // hai.
+        //
+        // App ye kabhi jaanchti hi nahi thi: malik aam photo chun deta,
+        // app "chadh gayi" keh deti, aur GUEST ko wo tedhi cheez dikhti.
+        const NAKSHA360_ANUPAT_KAM = 1.8;   // isse kam = aam photo
+        const NAKSHA360_ANUPAT_ZYADA = 2.2; // isse zyada = kuch aur hi
+
+        function photoKaNaap(file) {
+            return new Promise((theek, galat) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    const naap = { w: img.naturalWidth, h: img.naturalHeight };
+                    URL.revokeObjectURL(url);
+                    theek(naap);
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); galat(new Error('photo padhi nahi gayi')); };
+                img.src = url;
+            });
+        }
+
+        // null = theek hai. Warna galti ka sandesh (malik ko dikhane layak).
+        async function teenSauSaathJaancho(file) {
+            let naap;
+            try {
+                naap = await photoKaNaap(file);
+            } catch (e) {
+                // Naap na mile to roko mat - ho sakta hai koi anokha format ho.
+                // Rokne se faayda tabhi hai jab hum PAKKE hon ki photo galat hai.
+                console.warn('360 ka naap nahi mila, chhod rahe hain:', e);
+                return null;
+            }
+            if (!naap.w || !naap.h) return null;
+            const anupat = naap.w / naap.h;
+            if (anupat >= NAKSHA360_ANUPAT_KAM && anupat <= NAKSHA360_ANUPAT_ZYADA) return null;
+
+            return 'Ye 360 wali photo nahi lagti.\n\n'
+                 + 'Aapki photo ' + naap.w + ' x ' + naap.h + ' hai '
+                 + '(chaudai unchai se ' + anupat.toFixed(1) + ' guna).\n'
+                 + '360 photo me chaudai unchai se THEEK DUGNI honi chahiye - '
+                 + 'jaise 4000 x 2000.\n\n'
+                 + 'Aam photo ko 360 me daalne par wo beech me ek nukte par simat '
+                 + 'jati hai - guest ko bahut buri dikhti hai.\n\n'
+                 + '360 photo aise lijiye:\n'
+                 + '• phone ke camera me "Panorama" mode se poora gol ghoom kar, ya\n'
+                 + '• Google Street View app ke "Photo Sphere" se, ya\n'
+                 + '• kisi 360 camera (Insta360, Ricoh Theta) se\n\n'
+                 + '360 na ho to koi baat nahi - aam photo "Room Photos" me lagaiye, '
+                 + 'wahan wo theek dikhti hai.';
+        }
+
         // Admin-side: uploading/removing a room's 360° photo during onboarding, before it's published.
         async function saveRoom360Locally(roomIndex, inputElement) {
             let file = inputElement.files[0]; if (!file) return;
+
+            // PEHLE NAAP, PHIR KUCH AUR.
+            //
+            // Compress karne ke baad jaanchne ka koi matlab nahi - tab tak
+            // malik intezaar kar chuka hota hai. Aur galat photo ko compress
+            // karna waise bhi bekaar mehnat hai.
+            const _galat360 = await teenSauSaathJaancho(file);
+            if (_galat360) {
+                inputElement.value = '';          // wahi photo dobara chun sakein
+                alert(_galat360);
+                return;
+            }
+
             inputElement.parentElement.innerHTML = "⏳ Wait...";
             // "Wait..." LAGA KAR CHHOD DENA SABSE BURA ANJAAM THA.
             //
