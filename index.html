@@ -15633,6 +15633,7 @@
             // gaya. Chaudai na mile to naap chhedna hi nahi; screen dikhne par
             // ye function dobara chalta hai aur tab sahi naap lagta hai.
             if (!box.clientWidth) { h.fit = 1; h.s = 1; h.tx = 0; h.ty = 0; _nakshaLagao(id); return; }
+            h.napa = true;      // ek baar sahi naap mil gayi
             h.fit = Math.min(1, box.clientWidth / w);
             h.s = h.fit; h.tx = 0; h.ty = 0;
             _nakshaLagao(id);
