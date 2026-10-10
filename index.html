@@ -10762,6 +10762,14 @@
                 // ya nahi; app "synced live" bol deta tha aur bas.
                 let live360 = 0;
                 const failed360 = [];
+
+                // PEHLE SAARA KAAM GINO, PHIR EK SAATH CHADHAO.
+                //
+                // Pehle ye loop har photo ko wahin `await` kar deta tha - ek
+                // ke baad ek, 24 tak. Ab yahan sirf list banti hai; asli
+                // upload neeche ek saath hota hai (4 ki tukdi me).
+                const upKaam = [];
+
                 for (let room of globalDynamicRooms) {
                     let cleanRoom = { ...room };
                     let finalPhotos = [...(cleanRoom.photos || [])];
