@@ -3922,6 +3922,51 @@
         // compressImage(file) tha - bina maap ke, yaani 1280 pixel. Panorama ke
         // liye wo tabaahi hai: 360 degree ka drishya 1280 me nichod dene par
         // sab dhundhla ho jata hai. Ab bulane wala apni maap de sakta hai.
+        // ==========================================================
+        // KAI UPLOAD EK SAATH - par sab ek saath nahi
+        // ==========================================================
+        //
+        // Pehle har photo ek-ek karke chadhti thi (nested for + await).
+        // 8 kamre x 3 photo = 24 upload ek ke baad ek, har ek me compress
+        // + network. Phone par ye minute-on chalta tha, aur beech me
+        // network khaali baitha rehta tha.
+        //
+        // 4 EK SAATH, isse zyada nahi: phone ka network aur memory dono ki
+        // apni hadd hai. 24 ek saath chhodne par kuch upload time-out ho
+        // jate hain - yaani haalat pehle se kharab.
+        const UPLOAD_EK_SAATH = 4;
+
+        // kaam = [{ chalao: async () => ..., rakho: (url, err) => ... }]
+        // `batao` har poore hue kaam ke baad bulaya jata hai, taaki button
+        // par ginti chalti rahe.
+        async function saathSaathChadhao(kaam, batao) {
+            let agla = 0, hoChuke = 0;
+            const kul = kaam.length;
+            async function ekDhaaga() {
+                while (true) {
+                    const i = agla++;
+                    if (i >= kul) return;
+                    const k = kaam[i];
+                    try {
+                        const url = await k.chalao();
+                        k.rakho(url, null);
+                    } catch (e) {
+                        // EK PHOTO GIRNE SE POORA SAVE NAHI GIRNA CHAHIYE.
+                        // Us jagah khaali chhod di jati hai; malik baad me
+                        // dobara chadha sakta hai. Poora save girne par wo
+                        // saara kaam kho deta.
+                        console.warn('upload fail:', e);
+                        k.rakho(null, e);
+                    }
+                    hoChuke++;
+                    if (batao) { try { batao(hoChuke, kul); } catch (e2) {} }
+                }
+            }
+            const dhaage = [];
+            for (let i = 0; i < Math.min(UPLOAD_EK_SAATH, kul); i++) dhaage.push(ekDhaaga());
+            await Promise.all(dhaage);
+        }
+
         async function uploadFileToStorage(file, path, maxDimension) {
             // Skip re-compressing files that are already small (≈2MB or less) — these have almost
             // always already been compressed once by the caller (e.g. room photos at 1080px/85%).
