@@ -3656,7 +3656,26 @@
             adminCanvasZoom = scale; adminFabricCanvasInstance.setZoom(scale); adminFabricCanvasInstance.setWidth(adminCanvasBaseSize.w * scale); adminFabricCanvasInstance.setHeight(adminCanvasBaseSize.h * scale); adminFabricCanvasInstance.requestRenderAll();
         }
 
-        function toggleBusinessPreviewPanel() { const panel = document.getElementById('bizPreviewPanel'); const btn = document.getElementById('bizPreviewToggleBtn'); if (!panel) return; if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); if (btn) btn.innerText = '🔽 Hide Preview'; } else { panel.classList.add('hidden'); if (btn) btn.innerText = '🔼 Show Preview'; } }
+        function toggleBusinessPreviewPanel() {
+            const panel = document.getElementById('bizPreviewPanel');
+            const btn = document.getElementById('bizPreviewToggleBtn');
+            if (!panel) return;
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                if (btn) btn.innerText = '\u{1F53D} Naksha chhupaiye';
+                // NAAP DOBARA LENA ZAROORI HAI.
+                //
+                // nakshaFit() dabbe ki clientWidth se naap leta hai, aur chhupe
+                // hue dabbe ki chaudai 0 hoti hai. Phone par panel shuru me band
+                // hota hai - to render ke waqt naap mili hi nahi thi aur naksha
+                // 900px par pada reh jata. Kholne par wo dayein se kat jata.
+                // Ek pal ruk kar - panel ko khulne ka waqt mil jaye.
+                setTimeout(() => { try { window.nakshaFit('blueprintGrid'); } catch (e) {} }, 60);
+            } else {
+                panel.classList.add('hidden');
+                if (btn) btn.innerText = '\u{1F53C} Naksha dekhein';
+            }
+        }
         function toggleAdminFloorPlanPanel() { const panel = document.getElementById('adminFloorPlanPanel'); const canvasPanel = document.getElementById('adminCanvasPanel'); const btn = document.getElementById('floorPanelToggleBtn'); if (!panel) return; if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); canvasPanel.classList.remove('w-full'); if (btn) btn.innerText = '◧ Hide Plan'; } else { panel.classList.add('hidden'); canvasPanel.classList.add('w-full'); if (btn) btn.innerText = '◨ Show Plan'; } }
 
         document.addEventListener('keydown', (e) => {
