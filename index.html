@@ -10845,15 +10845,52 @@
                     // to upload na ho paane par ek blob: link Firestore me chala jata,
                     // guest ko "Explore in 360" ka button dikhta, aur dabane par kuch
                     // nahi khulta. blob: link us browser tab ke band hote hi mar jata hai.
-                    if (typeof cleanRoom.panorama360Url === 'string'
-                        && (cleanRoom.panorama360Url.startsWith('blob:')
-                            || cleanRoom.panorama360Url.startsWith('data:'))) {
-                        cleanRoom.panorama360Url = '';
-                    }
-                    if (cleanRoom.panorama360Url) live360++;
                     cleanRoomsData.push(cleanRoom); }
-                const coverPhotoFile = document.getElementById('propertyCoverPhoto').files ? document.getElementById('propertyCoverPhoto').files[0] : null; let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
-                if(coverPhotoFile) { uploadedCoverUrl = await uploadFileToStorage(coverPhotoFile, `covers/${hostelSlug}/${Date.now()}_main_photo`); }
+
+                // ---- AB ASLI UPLOAD, 4 EK SAATH ----
+                //
+                // Cover photo bhi isi tukdi me - wo bhi alag se await ho rahi
+                // thi aur sabse aakhir me, jab malik pehle hi ukta chuka hota.
+                const coverFileEl = document.getElementById('propertyCoverPhoto');
+                const coverFile = (coverFileEl && coverFileEl.files) ? coverFileEl.files[0] : null;
+                let uploadedCoverUrl = loadedBusinessData ? (loadedBusinessData.coverPhotoUrl || "") : "";
+                if (coverFile) {
+                    const coverPath = `covers/${hostelSlug}/${Date.now()}_main_photo`;
+                    upKaam.push({
+                        chalao: () => uploadFileToStorage(coverFile, coverPath),
+                        rakho: (url, err) => {
+                            if (err) console.warn('cover upload fail:', err);
+                            else uploadedCoverUrl = url;
+                        },
+                    });
+                }
+
+                if (upKaam.length) {
+                    await saathSaathChadhao(upKaam, (hoChuke, kul) => {
+                        // GINTI DIKHANA ZAROORI HAI.
+                        //
+                        // Pehle button bas "Saving & Syncing..." kehta tha.
+                        // Malik ko pata hi nahi chalta ki kaam chal raha hai ya
+                        // atak gaya - aur jab kuch nahi dikhta, log app band kar
+                        // dete hain. Poori listing chali jati hai.
+                        if (btn) btn.innerText = '⏳ ' + hoChuke + '/' + kul + ' photo chadh rahi hai...';
+                    });
+                    if (btn) btn.innerText = '⏳ Save kar rahe hain...';
+                }
+
+                // SAFAI UPLOAD KE BAAD. Jo upload nahi hui uski jagah khaali
+                // rahe - mara hua blob: link kabhi Firestore me na jaye.
+                cleanRoomsData.forEach(cr => {
+                    cr.photos = (cr.photos || []).map(u =>
+                        (typeof u === 'string' && (u.startsWith('blob:') || u.startsWith('data:'))) ? '' : (u || ''));
+                    if (typeof cr.panorama360Url === 'string'
+                        && (cr.panorama360Url.startsWith('blob:')
+                            || cr.panorama360Url.startsWith('data:'))) {
+                        cr.panorama360Url = '';
+                    }
+                    if (cr.panorama360Url) live360++;
+                });
+                // Cover photo upar wali tukdi me hi chadh chuki hai.
                 if(editingBusinessDocId) {
                     // "Updates synced live to users!" ab sach hai.
                     //
