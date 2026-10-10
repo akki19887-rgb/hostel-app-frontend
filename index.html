@@ -10820,16 +10820,23 @@
                     // jati hai) to ye POORA save gira deta tha - kamre, daam,
                     // photo sab - aur owner ko bas ek aam sa error milta.
                     if (cleanRoom.raw360File) {
+                        const file360 = cleanRoom.raw360File;
                         const path360 = `panorama360/${hostelSlug}/${Date.now()}_${cleanRoom.id}_360`;
-                        try {
+                        const kamraRef = cleanRoom;
+                        upKaam.push({
                             // 4000 pixel - panorama me detail chahiye. Bina ye bataye
                             // uploader ise 1280 par nichod deta tha.
-                            cleanRoom.panorama360Url = await uploadFileToStorage(cleanRoom.raw360File, path360, 4000);
-                        } catch (e360) {
-                            console.warn('360 upload fail:', cleanRoom.id, e360);
-                            failed360.push((cleanRoom.name || cleanRoom.id) + ': ' + (e360.message || e360));
-                            cleanRoom.panorama360Url = '';
-                        }
+                            chalao: () => uploadFileToStorage(file360, path360, 4000),
+                            rakho: (url, err) => {
+                                if (err) {
+                                    console.warn('360 upload fail:', kamraRef.id, err);
+                                    failed360.push((kamraRef.name || kamraRef.id) + ': ' + (err.message || err));
+                                    kamraRef.panorama360Url = '';
+                                } else {
+                                    kamraRef.panorama360Url = url;
+                                }
+                            },
+                        });
                         delete cleanRoom.raw360File;
                     }
                     // MARA HUA blob: LINK KABHI SAVE NA HO.
