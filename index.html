@@ -2700,6 +2700,40 @@
         </div>
     </div>
 
+    <!-- BINA NAKSHE WALA RAASTA - teen sawaal.
+         Modal isliye, nayi screen nahi: malik pehle hi 5 screen paar kar
+         chuka hai, aur yahan sirf teen ank bharne hain. -->
+    <div id="binaNakshaModal" class="hidden" style="position:fixed; inset:0; z-index:120; background:rgba(15,23,42,.6); display:flex; align-items:center; justify-content:center; padding:18px;">
+        <div class="bg-white rounded-3xl w-full" style="max-width:420px; max-height:92vh; overflow-y:auto; padding:22px;" onclick="event.stopPropagation()">
+            <h3 class="display-font text-2xl font-black text-slate-900">Naksha hum bana denge</h3>
+            <p class="text-xs font-bold text-slate-500 mt-1 mb-5">Teen baatein bata dijiye. Aage ki screen par naam, daam aur photo sab badal sakte hain.</p>
+
+            <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Building me kitne floor hain?</label>
+            <input type="number" id="bnFloors" value="1" min="1" max="10"
+                class="w-full p-3 mb-4 border-2 border-slate-100 rounded-xl text-base font-bold text-slate-700 bg-slate-50">
+
+            <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Har floor me kitne kamre?</label>
+            <input type="number" id="bnRooms" value="6" min="1" max="40"
+                class="w-full p-3 mb-4 border-2 border-slate-100 rounded-xl text-base font-bold text-slate-700 bg-slate-50">
+
+            <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Ek kamre me kitne bed?</label>
+            <input type="number" id="bnBeds" value="2" min="1" max="12"
+                class="w-full p-3 mb-4 border-2 border-slate-100 rounded-xl text-base font-bold text-slate-700 bg-slate-50">
+
+            <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Ek bed ka mahine ka kiraya (&#8377;)</label>
+            <input type="number" id="bnRate" value="5000" min="0"
+                class="w-full p-3 mb-2 border-2 border-slate-100 rounded-xl text-base font-bold text-slate-700 bg-slate-50">
+            <p class="text-[10px] font-bold text-slate-400 mb-4">Ye sab bed par lag jayega. Alag-alag kamre ka alag daam baad me rakh sakte hain.</p>
+
+            <div id="bnJod" class="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-5"></div>
+
+            <div class="flex gap-3">
+                <button type="button" onclick="binaNakshaBand()" class="flex-1 py-3.5 rounded-xl bg-slate-100 font-black text-slate-600">Rehne dijiye</button>
+                <button type="button" onclick="binaNakshaBanao()" class="btn-gradient flex-1 py-3.5 text-white font-black rounded-xl shadow-lg">Bana dijiye &#8594;</button>
+            </div>
+        </div>
+    </div>
+
     <div id="screenBusinessBedConfig" class="hidden fullscreen-mobile-page pt-4 pb-4 px-4 md:px-6 rounded-[2rem] max-w-7xl w-full relative h-[97vh] flex flex-col screen-panel premium-card overflow-hidden">
         <div id="bizToolbar" class="border-b border-slate-200/60 pb-3 mb-3 flex justify-between items-center flex-wrap gap-3 bg-white p-3 rounded-2xl shadow-sm z-10 relative">
             <div>
