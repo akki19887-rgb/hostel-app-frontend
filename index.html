@@ -10359,6 +10359,117 @@
             document.getElementById('uploadPrompt').innerHTML = floorMaps.length > 0 ? `<span class='text-5xl block mb-2'>✅</span><p class='font-black text-emerald-600'>${floorMaps.length} Map(s) Ready.</p>` : `<span class="text-5xl block mb-3 text-indigo-300">📥</span><p class="font-black text-slate-600">Add Floor Maps</p>`;
         }
 
+        // ==========================================================
+        // BINA NAKSHE KE LISTING - malik khud bana sake
+        // ==========================================================
+        //
+        // simulateAIProcessing ki pehli hi line thi:
+        //     if(floorMaps.length === 0) { alert("Please upload at least
+        //     one floor map."); return; }
+        // Yaani naksha na ho to malik aage badh hi nahi sakta tha. Aam
+        // hostel malik ke paas architect ka naksha hota hi nahi.
+        //
+        // Jaancha ki naksha aage kahin zaroori hai ya nahi: publish ki rok
+        // (layoutProblems) sirf bed aur unki ID dekhti hai, aur save karte
+        // waqt `if (fm.file)` bina file wale floor ko chhod deta hai. Yaani
+        // naksha sirf AI ko 2D plan banane ke liye chahiye tha.
+        window.binaNakshaKholo = function() {
+            const m = document.getElementById('binaNakshaModal');
+            if (!m) return;
+            m.classList.remove('hidden');
+            binaNakshaJodTaaza();
+            ['bnFloors', 'bnRooms', 'bnBeds', 'bnRate'].forEach(id => {
+                const e = document.getElementById(id);
+                if (e) e.oninput = binaNakshaJodTaaza;
+            });
+        };
+
+        window.binaNakshaBand = function() {
+            const m = document.getElementById('binaNakshaModal');
+            if (m) m.classList.add('hidden');
+        };
+
+        function binaNakshaAnk() {
+            const lo = (id, kam, zyada, chook) => {
+                const e = document.getElementById(id);
+                let v = parseInt((e && e.value) || '', 10);
+                if (!isFinite(v)) v = chook;
+                return Math.max(kam, Math.min(zyada, v));
+            };
+            return {
+                floors: lo('bnFloors', 1, 10, 1),
+                rooms: lo('bnRooms', 1, 40, 6),
+                beds: lo('bnBeds', 1, 12, 2),
+                rate: Math.max(0, parseInt(document.getElementById('bnRate').value || '0', 10) || 0),
+            };
+        }
+
+        // JOD SAAMNE DIKHNA CHAHIYE.
+        // 3 floor x 10 kamre x 4 bed = 120 bed. Malik ko ye banne se PEHLE
+        // pata hona chahiye, baad me 120 card dekh kar ghabrane se behtar.
+        function binaNakshaJodTaaza() {
+            const a = binaNakshaAnk();
+            const kamre = a.floors * a.rooms;
+            const bed = kamre * a.beds;
+            const el = document.getElementById('bnJod');
+            if (el) {
+                el.innerText = kamre + ' kamre, ' + bed + ' bed banenge'
+                             + (a.rate ? '  ·  har bed ₹' + a.rate + '/mahina' : '');
+            }
+        }
+
+        window.binaNakshaBanao = function() {
+            const a = binaNakshaAnk();
+
+            globalDynamicRooms = [];
+            admin2DBlocks = [];
+            floorMaps = [];
+            adminLocalCanvasStates = {}; adminLayoutSnapshotUrls = {};
+            adminExistingRoomsAndBeds = []; adminPublishedFloors = [];
+
+            let ginti = 0;
+            for (let f = 0; f < a.floors; f++) {
+                const floorName = (f === 0) ? 'Ground Floor' : (f + ' Floor');
+                // file nahi hai - save karte waqt `if (fm.file)` ise chhod deta hai
+                floorMaps.push({ floorName: floorName });
+
+                // Har floor par ek corridor, warna naksha ek seedhi laayi
+                // dikhta hai aur guest ko samajh nahi aata ki kamre kahan hain.
+                admin2DBlocks.push({ type: 'corridor', id: 'C-' + f, name: 'Corridor Walkway',
+                                     position: 'center', floor: floorName });
+
+                for (let r = 0; r < a.rooms; r++) {
+                    ginti++;
+                    const roomId = 'R' + ginti;
+                    const beds = [];
+                    for (let b = 1; b <= a.beds; b++) {
+                        beds.push({ id: roomId + '-B' + b, status: 'available',
+                                    priceDaily: 0, priceWeekly: 0,
+                                    priceMonthly: a.rate, price: a.rate });
+                    }
+                    const kamra = { id: roomId, name: 'Room ' + ginti, floor: floorName,
+                                    type: a.beds + '-Seater', price: a.rate, beds: beds,
+                                    photos: ['', '', ''], amenities: [], has_door: true };
+                    globalDynamicRooms.push(kamra);
+                    admin2DBlocks.push({ type: 'room', id: roomId, name: kamra.name, beds: beds,
+                                         amenities: [], has_door: true, floor: floorName });
+                }
+            }
+
+            currentSelectedFloor = floorMaps[0].floorName;
+            binaNakshaBand();
+            goTo('screenBusinessBedConfig');
+            try { refreshRoomsLabel(); } catch (e) {}
+            try { renderFloorTabs(); } catch (e) {}
+            renderBusinessConfig();
+            renderAttractive2DPlan();
+
+            // Purana naksha wala dabba khaali rahega - uska src saaf kar do,
+            // warna pichhli listing ki tasveer chipki reh jati hai.
+            const raw = document.getElementById('businessRawImageDisplay');
+            if (raw) raw.src = '';
+        };
+
         async function simulateAIProcessing() {
             if(floorMaps.length === 0) { alert("Please upload at least one floor map."); return; }
             document.getElementById('aiLoadingOverlay').classList.remove('hidden');
