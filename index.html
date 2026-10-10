@@ -3632,6 +3632,97 @@
         }
 
 
+        // ==========================================================
+        // "MERI JAGAH" - pin wahin jahan aap khade hain
+        // ==========================================================
+        //
+        // Pin lagane ka ek hi tarika tha: map par ungli se dhoondho aur
+        // kheencho. Jo aadmi HOSTEL KE SAAMNE KHADA hai uske liye ye ulta
+        // kaam hai - uska phone pehle se jaanta hai ki wo kahan hai.
+        //
+        // Jagah APNE AAP nahi maangi jati - sirf is button ko dabane par.
+        // App me ye niyam pehle se hai aur ise todna nahi chahiye.
+        window.meriJagahPar = function() {
+            const b = document.getElementById('btnMeriJagah');
+            const purana = b ? b.innerHTML : '';
+            const wapas = () => { if (b) { b.innerHTML = purana || '\u{1F3AF}'; b.disabled = false; } };
+
+            if (!navigator.geolocation) {
+                alert('Is phone/browser me location ka intezaam nahi hai.\n\n'
+                    + 'Map par ungli se hostel ki jagah par pin laga dijiye.');
+                return;
+            }
+            if (!googleMap || !googleMarker) {
+                alert('Map abhi khul raha hai. Ek pal ruk kar dobara dabaiye.');
+                return;
+            }
+
+            if (b) { b.innerHTML = '⌛'; b.disabled = true; }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    wapas();
+                    const jagah = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    googleMap.setCenter(jagah);
+                    googleMap.setZoom(18);              // itna paas ki building dikhe
+                    googleMarker.position = jagah;
+                    businessCoordinates = jagah;
+                    ownerMovedPin = true;
+                    reverseGeocodePin();
+
+                    // KITNI PAKKI JAGAH HAI - YE BATANA ZAROORI HAI.
+                    //
+                    // Ghar ke andar GPS aksar 100-500 meter ki galti karta
+                    // hai. Pin to lag jati hai, par agar wo galat gali me
+                    // hai to guest wahin pahunchega. Isliye kachchi jagah
+                    // par malik ko saaf bata dete hain ki haath se theek
+                    // karna padega.
+                    const metre = Math.round(pos.coords.accuracy || 0);
+                    if (metre > 60) {
+                        alert('Pin laga di gayi hai, par aapke phone ko aapki jagah '
+                            + 'sirf lagbhag ' + metre + ' meter tak hi pata hai.\n\n'
+                            + 'Map ko bada karke pin ko THEEK apni building par '
+                            + 'khisak dijiye - warna guest aas-paas kahin aur '
+                            + 'pahunch jayega.\n\n'
+                            + 'Khuli jagah par (chhat ya bahar) jaakar dobara dabane '
+                            + 'se bhi jagah zyada pakki milti hai.');
+                    } else if (window.showAppToast) {
+                        window.showAppToast('\u{1F4CD} Pin aapki jagah par aa gayi '
+                                          + '(lagbhag ' + metre + ' meter tak pakka)');
+                    }
+                },
+                (err) => {
+                    wapas();
+                    // HAR GALTI KA APNA JAWAB.
+                    //
+                    // "Location nahi mili" kehna kaafi nahi - malik ko ye pata
+                    // nahi chalta ki ab kare kya. Teeno wajah ka alag hal hai.
+                    let sandesh;
+                    if (err && err.code === 1) {            // PERMISSION_DENIED
+                        sandesh = 'Aapne location ki ijaazat nahi di.\n\n'
+                                + 'Browser ke pate ke paas wale taale (\u{1F512}) par '
+                                + 'dabakar "Location" ko Allow kar dijiye, phir ye '
+                                + 'button dobara dabaiye.\n\n'
+                                + 'Ya map par ungli se hi pin laga dijiye - wo bhi '
+                                + 'bilkul theek hai.';
+                    } else if (err && err.code === 2) {     // POSITION_UNAVAILABLE
+                        sandesh = 'Phone abhi aapki jagah nahi bata paa raha.\n\n'
+                                + 'Phone ki settings me Location (GPS) chalu kijiye, '
+                                + 'aur ho sake to khuli jagah par aa jaiye.';
+                    } else {                                 // TIMEOUT ya kuch aur
+                        sandesh = 'Jagah dhoondhne me bahut der lag gayi.\n\n'
+                                + 'Khuli jagah par jaakar dobara koshish kijiye, ya '
+                                + 'map par ungli se pin laga dijiye.';
+                    }
+                    alert(sandesh);
+                },
+                // enableHighAccuracy: building tak pahunchna hai, mohalle tak nahi.
+                // 15 second: GPS ko pehli baar fix lene me waqt lagta hai, par
+                // itna bhi nahi ki malik button toot gaya samajh le.
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        };
+
         function initMap() {
             const bizMapEl = document.getElementById("map");
             if (bizMapEl) {
