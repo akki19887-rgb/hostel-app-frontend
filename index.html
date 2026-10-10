@@ -323,6 +323,47 @@
             }
         }
 
+        /* ============================================================
+           MALIK KI "REVIEW & CORRECT YOUR PLAN" SCREEN - PHONE PAR
+           ============================================================
+           390x844 par naap kar dekha tha: toolbar 183px, floor tabs 48px,
+           preview 420px, sirsha 42px - kul 693px. Screen 844px ki, aur
+           neeche publish ka patta 70px. Kamron ki list top=764 par shuru
+           hoti thi, yaani SCREEN SE BAAHAR. Ek bhi card nahi dikhta tha.
+           ============================================================ */
+        @media (max-width: 767px) {
+            /* --- Toolbar: 8 button ek hi line me, side me khisak kar --- */
+            #bizToolbar { padding: 8px 10px !important; gap: 6px !important; }
+            #bizToolbar h2 { font-size: 1.05rem !important; }
+            #bizToolbar p { font-size: 9px !important; margin-top: 0 !important; }
+            #bizToolbarBtns {
+                flex-wrap: nowrap !important; overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%; padding-bottom: 3px; gap: 5px !important;
+            }
+            #bizToolbarBtns > * { flex: 0 0 auto; white-space: nowrap; }
+            #bizToolbarBtns button { font-size: 10px !important; padding: 7px 9px !important; }
+
+            /* --- Preview: dono naksha ka takraav khatam ---
+               Dono bachchon par h-full (=100%) tha. Column me iska matlab
+               hai ki dono 420px maangte the - 840px do ke dabbe me. Isliye
+               AI naksha neeche se kat jata tha. */
+            #bizPreviewPanel { height: 300px !important; margin-bottom: 10px !important; }
+            #bizPreviewPanel > div:first-child { flex: 0 0 84px !important; height: 84px !important; }
+            #bizPreviewPanel > div:last-child { flex: 1 1 auto !important; height: auto !important; min-height: 0; }
+
+            /* --- Data editor ka sirsha patla --- */
+            #bizDataEditorHead { margin-bottom: 8px !important; }
+            #bizDataEditorHead h3 { font-size: 11px !important; }
+            #bizDataEditorHead h3 span { display: none; }
+
+            /* --- Kamron ki list: 300px ki zabardasti nahi, jitni jagah bachi ho --- */
+            #dynamicBusinessRoomsContainer {
+                min-height: 0 !important;
+                padding-bottom: 96px !important;
+            }
+        }
+
         /* RedBus-style seat visuals (apply on all viewports so admin preview matches) */
         #userBedOverlays > div {
             transition: transform 0.15s ease, background-color 0.15s ease;
