@@ -15737,7 +15737,13 @@
         }
 
         function renderAttractive2DPlan() {
-            const containers = ['blueprintGrid', 'architectBlueprintGrid'].map(id => document.getElementById(id)).filter(Boolean);
+            // nakshaBadaDabba = poori screen wala naksha, jab khula ho.
+            // Pehle wo ek jami hui nakal thi: Quick Edit se badla hua chhote
+            // naksha me dikhta aur bade me purana hi pada rehta. Phone par
+            // Quick Edit tap karne layak SIRF badi screen par hai, isliye use
+            // zinda rakhna zaroori hai.
+            const containers = ['blueprintGrid', 'architectBlueprintGrid', 'nakshaBadaDabba']
+                .map(id => document.getElementById(id)).filter(Boolean);
             if (containers.length === 0) return;
             const filteredBlocks = admin2DBlocks.filter(b => (b.floor || 'Ground Floor') === currentSelectedFloor);
             const corridors = filteredBlocks.filter(b => b.type === 'corridor'); const rooms = filteredBlocks.filter(b => b.type === 'room');
