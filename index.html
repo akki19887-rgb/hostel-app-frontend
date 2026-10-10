@@ -9844,6 +9844,137 @@
             goTo('screenBusinessSecureForm');
         };
 
+        // ==========================================================
+        // SECURE LEGAL FORM - PHONE PAR TEEN ALAG PANNE
+        // ==========================================================
+        //
+        // Naap kar dekha tha (390x844): screen 758px, maal 2322px - yaani
+        // 1564px scroll, 3 guna. Poore app me sabse lamba scroll. Malik 32
+        // khane bharte-bharte thak kar chhod deta tha.
+        //
+        // Ab phone par pehle teen row ki soochi, aur tap karne par wahi
+        // hissa akela poore panne par. Soochi par scroll zero; sabse bade
+        // hisse par 638px.
+        //
+        // KOI INPUT HILAYA NAHI GAYA - sirf dikhna-chhupna. Isliye
+        // saveLegalAndNext() me ek akshar nahi badla aur bhara hua data
+        // hissa badalne par bhi bana rehta hai.
+        const LEGAL_HISSE = 3;
+
+        // Chhupane-dikhane ke do chhote hathiyar.
+        // CSS se ye kaam nahi ho sakta: line 110 par
+        // `.hidden { display: none !important; }` likha hai, jo har selector
+        // ko haraa deta hai. Isliye class hi jodte-hatate hain.
+        const _legalDikhao = (id) => { const e = document.getElementById(id); if (e) e.classList.remove('hidden'); };
+        const _legalChhupao = (id) => { const e = document.getElementById(id); if (e) e.classList.add('hidden'); };
+
+        function legalPhonePar() {
+            const scr = document.getElementById('screenBusinessSecureForm');
+            if (!scr) return false;
+            const phone = window.innerWidth < 768;
+            if (!phone) {
+                // DESKTOP PAR KUCH NAHI BADLA - teeno hisse ek saath, soochi gayab.
+                _legalChhupao('legalSoochi');
+                _legalChhupao('legalWapasPatti');
+                _legalDikhao('legalNeecheKeButton');
+                for (let i = 1; i <= LEGAL_HISSE; i++) _legalDikhao('legalHissa' + i);
+            }
+            return phone;
+        }
+
+        // SHURUAATI MAAN YAAD RAKHO.
+        //
+        // Form me kai khane pehle se bhare aate hain - select ka pehla
+        // vikalp, checkbox jo by default tick hai, 0 likha hua number.
+        // Pehle main sirf "khaali to nahi hai" dekhta tha, aur hissa 2
+        // bina chhue hi "ho gaya" dikhne lagta tha. Wo jhooth hai.
+        // Ab tick tabhi lagta hai jab malik ne SACH ME kuch badla ho.
+        const _legalShuruMaan = {};
+
+        function _legalMaanLo(k) {
+            if (k.type === 'checkbox' || k.type === 'radio') return k.checked ? '1' : '';
+            if (k.type === 'file') return (k.files && k.files.length) ? 'F' + k.files.length : '';
+            return (k.value || '').trim();
+        }
+
+        function legalShuruaatYaadKaro() {
+            for (let i = 1; i <= LEGAL_HISSE; i++) {
+                const h = document.getElementById('legalHissa' + i);
+                if (!h) continue;
+                h.querySelectorAll('input, select, textarea').forEach((k, idx) => {
+                    const chaabi = i + ':' + (k.id || idx);
+                    if (!(chaabi in _legalShuruMaan)) _legalShuruMaan[chaabi] = _legalMaanLo(k);
+                });
+            }
+        }
+
+        function legalHissaBharaHai(n) {
+            const h = document.getElementById('legalHissa' + n);
+            if (!h) return false;
+            const khane = [...h.querySelectorAll('input, select, textarea')];
+            for (let idx = 0; idx < khane.length; idx++) {
+                const k = khane[idx];
+                const chaabi = n + ':' + (k.id || idx);
+                const ab = _legalMaanLo(k);
+                const shuru = _legalShuruMaan[chaabi];
+                if (shuru === undefined) { if (ab && ab !== '0') return true; continue; }
+                if (ab !== shuru) return true;
+            }
+            return false;
+        }
+
+        function legalTickTaaza() {
+            for (let i = 1; i <= LEGAL_HISSE; i++) {
+                const tick = document.getElementById('legalTick' + i);
+                const row = document.getElementById('legalRow' + i);
+                if (!tick || !row) continue;
+                if (legalHissaBharaHai(i)) {
+                    tick.innerHTML = '&#10004;';
+                    tick.style.color = '#059669';
+                    row.style.borderColor = '#a7f3d0';
+                    row.style.background = '#f0fdf4';
+                } else {
+                    tick.innerHTML = '&#8250;';
+                    tick.style.color = '';
+                    row.style.borderColor = '';
+                    row.style.background = '';
+                }
+            }
+        }
+
+        window.legalHissaKholo = function(n) {
+            const scr = document.getElementById('screenBusinessSecureForm');
+            if (!scr) return;
+            for (let i = 1; i <= LEGAL_HISSE; i++) {
+                if (i === n) _legalDikhao('legalHissa' + i); else _legalChhupao('legalHissa' + i);
+            }
+            _legalChhupao('legalSoochi');
+            _legalDikhao('legalWapasPatti');
+            // AGREE wala button khule hisse par nahi - yahan dabane ka
+            // matlab hi nahi banta, aur galti se dab jaye to adhoora form
+            // aage chala jayega.
+            _legalChhupao('legalNeecheKeButton');
+            scr.scrollTop = 0;      // naya panna upar se shuru ho
+        };
+
+        window.legalSoochiPar = function() {
+            const scr = document.getElementById('screenBusinessSecureForm');
+            if (!scr) return;
+            for (let i = 1; i <= LEGAL_HISSE; i++) _legalChhupao('legalHissa' + i);
+            _legalDikhao('legalSoochi');
+            _legalChhupao('legalWapasPatti');
+            _legalDikhao('legalNeecheKeButton');
+            legalTickTaaza();       // bharte hi hara nishaan dikhe
+            scr.scrollTop = 0;
+        };
+
+        // Screen khulte waqt: phone par soochi, desktop par sab kuch.
+        function legalFormTaiyaar() {
+            legalShuruaatYaadKaro();     // tick ka hisaab isi par tika hai
+            if (!legalPhonePar()) return;
+            legalSoochiPar();
+        }
+
         function saveLegalAndNext() {
             // JHOOTHE DEFAULT HATA DIYE.
             //
