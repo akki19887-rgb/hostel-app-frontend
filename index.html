@@ -8785,7 +8785,9 @@
             try {
                 await updateDoc(doc(db, 'bookings', bookingDocId), { status: 'checked_in', checkedInAt: new Date().toISOString() });
 
-                // Check-in par malik ko baaki 80% kiraya guest se lena hota hai, aur
+                // Check-in par malik ko apna POORA kiraya guest se lena hota hai
+                // (HostelOM ka hissa guest pehle hi online de chuka hai, aur wo
+                // malik ke rate ke upar juda tha - usme se kata nahi tha), aur
                 // guest ka rukna shuru hota hai. Dono ko bataya hi nahi jata tha,
                 // isliye tareekh par kisi ki baat maanni padti thi.
                 //
