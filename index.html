@@ -3602,6 +3602,13 @@
         // only show the login screen if nobody is.
         // ==========================================================================
         window.addEventListener('DOMContentLoaded', () => {
+            // BACKEND KO ABHI SE JAGAO.
+            //
+            // Splash waise bhi 2.5 second dikhta hai. Us waqt backend jagna
+            // shuru kar de to jab tak user number daal kar OTP dabayega, wo
+            // taiyaar ho chuka hoga. Bina iske pehla OTP 30-60 second leta
+            // hai aur user samajhta hai ki app toota hua hai.
+            try { backendJagao(); } catch (e) {}
             const SPLASH_MS = 2500;
             const startedAt = Date.now();
             let handled = false;
