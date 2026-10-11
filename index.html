@@ -10110,12 +10110,25 @@
             })();
         }
 
-        // PERF: the AI scan backend is hosted on a free tier that "sleeps" after inactivity and can
-        // take 30-60+ seconds to wake up on its very first request. Firing a harmless, ignored ping
-        // as soon as the admin starts a property (well before they actually reach "Analyze") gives
-        // the server a head start waking up, so by the time they hit the real AI request it's often
-        // already warm. This never blocks anything — failures are silently ignored.
+        // BACKEND KO JAGAO - SIRF AI KE LIYE NAHI.
+        //
+        // Render ka free plan 15 minute bekaar rehne par service so jata hai,
+        // aur uske baad pehli request 30-60 second leti hai.
+        //
+        // Pehle ye sirf TEEN jagah bulaya jata tha, aur teeno malik ke listing
+        // banane ke raaste me the. Yaani OTP ka raasta kabhi backend nahi
+        // jagata tha - aur OTP usi backend se jata hai.
+        //
+        // Nateeja: naya user app kholta, number daalta, "Send OTP" dabata, aur
+        // 30-60 second kuch nahi hota. Use lagta ki app toota hua hai.
+        //
+        // Isliye ab app khulte hi aur login wali screen par bhi jagaya jata
+        // hai. Ye fire-and-forget hai - fail ho to kuch nahi bigadta aur koi
+        // intezaar nahi hota.
         function wakeUpAIBackend() { try { fetch(`${BACKEND_URL}/`, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch (e) {} }
+        // Purana naam upar hi rehne diya - teen jagah pehle se bula rahi hain.
+        // Naya naam saaf batata hai ki ye poore backend ke liye hai.
+        const backendJagao = () => wakeUpAIBackend();
         // ==========================================================
         // MALIK AUR HOSTELOM KA SAMAJHAUTA
         // ==========================================================
