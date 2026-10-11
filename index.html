@@ -6664,6 +6664,13 @@
             document.querySelectorAll('.screen-panel').forEach(el => { el.classList.add('hidden'); el.classList.remove('animate-fade-in'); });
             const targetScreen = document.getElementById(screenId);
             if(targetScreen) { targetScreen.classList.remove('hidden'); targetScreen.classList.add('animate-fade-in'); }
+            // Login ke raaste par doosra mauka. Pehla mauka (app khulte hi)
+            // chook sakta hai - jaise purana page cache se khula ho, ya user
+            // der tak kisi aur screen par raha ho aur backend dobara so gaya ho.
+            if (screenId === 'screenOptions' || screenId === 'screenBusinessLogin'
+                || screenId === 'screenOtpVerification' || screenId === 'screenAdminSecureLogin') {
+                try { backendJagao(); } catch (e) {}
+            }
             if (screenId === 'screenOptions') {
                 document.getElementById('screenOptionsLogoHeader').classList.remove('hidden');
                 // IS CARD KA SIRSHAK HAR BAAR YAHIN SE AATA HAI.
