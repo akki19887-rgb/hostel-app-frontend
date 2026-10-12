@@ -5229,6 +5229,104 @@
             'default':         'bg-slate-100 text-slate-500'
         };
 
+        // ==========================================================
+        // LEAD SHARE
+        // ==========================================================
+        //
+        // MALIK KA LOGIN NUMBER YAHAN KABHI NAHI AATA.
+        //
+        // app.py ke /staff/reveal-phone par wajah likhi hai: 500 maliko ke
+        // number le kar nikal jana staff ki sabse keemti chori hai, aur
+        // wahi ek chori hai jiska koi nishaan nahi bachta. Isliye number
+        // dikhane ka apna alag, gina hua, likha jane wala raasta hai.
+        //
+        // Ek share button jo wahi number text me daal de, us poore intezaam
+        // ko ek tap me bekaar kar deta. Isliye yahan sirf wo number jata
+        // hai jo Google par pehle se sabko dikhta hai (l.phone) - hostel ke
+        // board par bhi wahi likha hota hai.
+        function leadKaText(l) {
+            const line = [];
+            line.push('\u{1F3E0} ' + (l.name || 'Hostel'));
+            if (l.leadCode) line.push('Code: ' + l.leadCode);
+
+            const jagah = [l.locality, l.address].filter(Boolean).join(', ');
+            if (jagah) line.push('\u{1F4CD} ' + jagah);
+            if (l.landmark) line.push('\u{1F393} ' + l.landmark);
+
+            if (l.rating) line.push('⭐ ' + l.rating + ' (' + (l.reviewCount || 0) + ' review)');
+
+            const naap = [];
+            if (l.beds !== null && l.beds !== undefined && l.beds !== '') naap.push(l.beds + ' bed');
+            if (l.rentFrom !== null && l.rentFrom !== undefined && l.rentFrom !== '') naap.push('₹' + l.rentFrom + ' se');
+            if (naap.length) line.push('\u{1F6CF}️ ' + naap.join(' · '));
+
+            // Hostel ka apna number - Google par pehle se sabko dikhta hai.
+            // Malik ka LOGIN number (l.ownerPhone) yahan jaan-boojh kar nahi hai.
+            if (l.phone) line.push('\u{1F4DE} ' + l.phone);
+
+            const halat = { new: 'Chhua nahi', contacted: 'Phone kiya', agreed: 'Raazi',
+                            refused: 'Mana kiya', converted: 'Listing ban gayi' };
+            line.push('Halat: ' + (halat[l.status] || 'Chhua nahi'));
+
+            if (l.orgType === 'seva-sadan') {
+                line.push('⚠️ SEVA SADAN - dharmarth sanstha, kiraya lete hain ya nahi pehle poochhiye');
+            }
+
+            const last = (l.contactLog && l.contactLog.length) ? l.contactLog[l.contactLog.length - 1] : null;
+            if (last && last.note) line.push('Aakhri baat: ' + last.note);
+
+            if (l.placeId) line.push('Map: https://www.google.com/maps/place/?q=place_id:' + l.placeId);
+
+            return line.join('\n');
+        }
+
+        // Share sheet ho to wahi - usse WhatsApp, SMS, kuch bhi chun sakte
+        // hain. Na ho to clipboard, aur bata do ki copy ho gaya - warna tap
+        // karne par kuch nahi hua jaisa lagta hai.
+        async function _shareYaCopy(title, text) {
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title: title, text: text });
+                    return;
+                }
+            } catch (e) {
+                // User ne khud band kar diya - ye galti nahi hai, chup rahiye.
+                if (e && e.name === 'AbortError') return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                showAppToast('Copy ho gaya - ab kahin bhi paste kar dijiye');
+            } catch (e) {
+                alert(text);      // aakhri raasta: saamne dikha do, khud copy kar lein
+            }
+        }
+
+        window.shareLead = function(id) {
+            const l = leadsCache.find(x => String(x.id) === String(id));
+            if (!l) { showAppToast('Ye lead nahi mili'); return; }
+            _shareYaCopy(l.name || 'Hostel lead', leadKaText(l));
+        };
+
+        // Poori chhanti hui list - "Pandri ke 9 hostel" ek saath bhejne ke liye.
+        // Jo abhi screen par dikh rahe hain wahi jate hain, poora database nahi.
+        window.shareLeadList = function() {
+            const rows = _lastLeadRows || [];
+            if (!rows.length) { showAppToast('Bhejne ke liye koi lead nahi'); return; }
+            // 40 se zyada ek message me bhejna bekaar hai - padha hi nahi jata,
+            // aur WhatsApp lambe message kaat deta hai.
+            const HADD = 40;
+            const bhejo = rows.slice(0, HADD);
+            const text = bhejo.map((l, i) => (i + 1) + '. ' + leadKaText(l)).join('\n\n')
+                       + (rows.length > HADD
+                            ? '\n\n(' + rows.length + ' me se pehle ' + HADD + ' bheje gaye hain)'
+                            : '');
+            _shareYaCopy(bhejo.length + ' hostel lead', text);
+        };
+
+        // renderLeads jo list bana raha hai wahi share hoti hai - warna
+        // chhaant lagane ke baad share me poori purani list chali jati.
+        let _lastLeadRows = [];
+
         function renderLeads() {
             // Jile ki dropdown ab SUCHI se bharti hai (fillDistrictFromTree), lead se nahi.
             //
