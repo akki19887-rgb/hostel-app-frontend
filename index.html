@@ -5360,6 +5360,9 @@
             // isliye 637 review wala Godavari neeche kahin pada rehta tha aur caller
             // 1 review wale pe waqt lagata tha. Ab jise zyada logon ne jaana hai wo upar.
             rows.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+            // Jo abhi screen par hai wahi share honi chahiye - chhaant ke baad
+            // poori purani list bhej dena galat hoga.
+            _lastLeadRows = rows;
 
             // Upar ki ginti
             const c = { new:0, contacted:0, agreed:0, converted:0 };
