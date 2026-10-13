@@ -13538,7 +13538,7 @@
             // nahi tha.
             const required = grfSkipMode
                 ? GRF_SKIP_REQUIRED
-                : ['grfFullName','grfDob','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
+                : ['grfFullName','grfDob','grfMobile','grfAadharNumber','grfEmergencyContact','grfAddress','grfJoiningDate'];
             const errBox = document.getElementById('grfFormError');
             for (const id of required) {
                 if (!document.getElementById(id).value.trim()) {
