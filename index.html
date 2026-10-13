@@ -13338,7 +13338,11 @@
         // declaration. These are checked on "Next" so a blank field on step 1 is caught there,
         // not after the guest has filled in everything on step 2.
         const GRF_REQUIRED = {
-            1: [['grfFullName', 'Full Name'], ['grfDob', 'Date of Birth'], ['grfAadharNumber', 'Aadhar Number']],
+            1: [['grfFullName', 'Full Name'], ['grfDob', 'Date of Birth'],
+                // Malik ko guest se baat karni hai. Pehle is form me guest ka
+                // apna number hi nahi tha - sirf rishtedaar ka emergency contact.
+                ['grfMobile', 'Aapka Mobile Number'],
+                ['grfAadharNumber', 'Aadhar Number']],
             2: [['grfEmergencyContact', 'Emergency Contact'], ['grfAddress', 'Permanent Address']]
         };
 
