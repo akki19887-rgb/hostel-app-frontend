@@ -6883,6 +6883,8 @@
             // Legal form phone par teen alag panne me khulta hai - screen
             // dikhte hi soochi wali haalat me le aao.
             if(screenId === 'screenBusinessSecureForm' && typeof legalFormTaiyaar === 'function') legalFormTaiyaar();
+            // Google/email se login karne par phone ka khaana kholna padta hai.
+            if(screenId === 'screenProfileCompletion' && typeof profilePhoneTaiyaar === 'function') profilePhoneTaiyaar();
             if(screenId === 'screenAdminDashboard') refreshAdminDash();
             if(screenId === 'screenUserDashboard') {
                 syncWishlistFromAccount().then(updateSavedCount);
