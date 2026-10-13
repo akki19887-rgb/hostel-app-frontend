@@ -8504,8 +8504,40 @@
                 if (nameEl) nameEl.focus();
                 return;
             }
+            // Phone ka khaana khula hai (Google/email se login) to usse khali
+            // nahi chhoda ja sakta - malik ko guest se baat karni hai.
+            const phoneKhaana = document.getElementById('profilePhoneKhaana');
+            const phoneEl = document.getElementById('profilePhone');
+            let daalaHuaPhone = '';
+            if (phoneKhaana && !phoneKhaana.classList.contains('hidden')) {
+                daalaHuaPhone = String((phoneEl && phoneEl.value) || '').replace(/\D/g, '');
+                if (daalaHuaPhone.length !== 10) {
+                    alert('Apna 10-ank ka mobile number daaliye. Hostel malik isi number par aapse baat karega.');
+                    if (phoneEl) phoneEl.focus();
+                    return;
+                }
+                if (!/^[6-9]/.test(daalaHuaPhone)) {
+                    alert('Mobile number 6, 7, 8 ya 9 se shuru hona chahiye.');
+                    if (phoneEl) phoneEl.focus();
+                    return;
+                }
+            }
             const originalText = btn ? btn.innerText : '';
             if (btn) { btn.disabled = true; btn.innerText = 'Saving...'; }
+            // Pehle localStorage - booking ka code aur getLoggedInIdentityLabel()
+            // yahin se phone uthate hain. Ye kabhi fail nahi hota. Firestore
+            // ke saath ek hi try me rakha tha, to Firestore girne par phone
+            // kahin bhi nahi bachta tha.
+            if (daalaHuaPhone) {
+                try {
+                    const u0 = window.auth && window.auth.currentUser;
+                    const ab = JSON.parse(localStorage.getItem('hostelom_user') || 'null') || {};
+                    ab.phone = daalaHuaPhone;
+                    if (u0) { ab.uid = u0.uid; if (u0.email) ab.email = u0.email; }
+                    if (!ab.loggedInAt) ab.loggedInAt = new Date().toISOString();
+                    localStorage.setItem('hostelom_user', JSON.stringify(ab));
+                } catch (lsErr) {}
+            }
             try {
                 const user = window.auth && window.auth.currentUser;
                 if (user) {
