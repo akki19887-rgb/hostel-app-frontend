@@ -332,6 +332,26 @@
            hoti thi, yaani SCREEN SE BAAHAR. Ek bhi card nahi dikhta tha.
            ============================================================ */
         @media (max-width: 767px) {
+            /* --- Guest Dashboard ke upar wale chaar button ---
+               Ye chaar button (Messages / My Bookings / Account / Logout) ek hi
+               line me the, bina wrap ke. 360px chaude phone par poori line 373px
+               ki ho jati thi - yaani LOGOUT ka button screen se BAHAR chala jata
+               tha (331..406). Guest log out kar hi nahi sakta tha, aur usse koi
+               nishaan bhi nahi milta tha ki wahan kuch hai.
+               Ab ye line lapet jati hai (wrap), aur daayein taraf se shuru hoti
+               hai. Saath hi har button 40px ka ho gaya - pehle 34px tha, jo
+               ungli se dabane ke liye chhota hai. --- */
+            #guestDashBtns {
+                flex-wrap: wrap !important;
+                justify-content: flex-end;
+                gap: 0.5rem !important;
+                max-width: 100%;
+            }
+            #guestDashBtns > button {
+                min-height: 40px;
+                padding-left: 0.7rem !important; padding-right: 0.7rem !important;
+            }
+
             /* --- Login ke teen button phone par ek-ek line me ---
                "Continue with Mobile" do line me toot jata tha ("Continue with" /
                "Mobile"), jisse teeno button lamba-tirchha dikhte the aur poora
