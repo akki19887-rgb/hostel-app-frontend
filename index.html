@@ -8545,7 +8545,11 @@
                         window.doc(window.db, 'users', user.uid),
                         {
                             fullName: fullName,
-                            phone: user.phoneNumber || null,
+                            phone: user.phoneNumber || (daalaHuaPhone ? '+91' + daalaHuaPhone : null),
+                            // Jo number guest ne khud type kiya hai wo OTP se jaanchaa
+                            // hua nahi hai. Ise alag se likh rahe hain taaki baad me
+                            // pata rahe ki is number par bharosa kitna karna hai.
+                            phoneVerified: !!user.phoneNumber,
                             email: user.email || null,
                             updatedAt: new Date().toISOString()
                         },
