@@ -13342,7 +13342,7 @@
         let grfCurrentStep = 1;
         function grfRenderStepUI() {
             // Skip mode me step batna band - sab kuch ek panne par. Bhaari khaane
-            // pehle hi chhupaye ja chuke hain, to guest ko sirf wahi teen cheezein
+            // pehle hi chhupaye ja chuke hain, to guest ko sirf wahi chaar cheezein
             // dikhti hain jinka vaada hua tha.
             document.querySelectorAll('.grf-step').forEach(el => { el.classList.toggle('hidden', !grfSkipMode && Number(el.dataset.step) !== grfCurrentStep); });
             document.querySelectorAll('.grf-dot').forEach(dot => { dot.classList.toggle('bg-indigo-500', Number(dot.dataset.dot) <= grfCurrentStep); dot.classList.toggle('bg-slate-200', Number(dot.dataset.dot) > grfCurrentStep); });
