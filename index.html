@@ -5348,15 +5348,29 @@
         window.shareLeadList = function() {
             const rows = _lastLeadRows || [];
             if (!rows.length) { showAppToast('Bhejne ke liye koi lead nahi'); return; }
-            // 40 se zyada ek message me bhejna bekaar hai - padha hi nahi jata,
-            // aur WhatsApp lambe message kaat deta hai.
+
+            // 40 se zyada ek message me bhejna bekaar hai - padha hi nahi jata.
             const HADD = 40;
             const bhejo = rows.slice(0, HADD);
-            const text = bhejo.map((l, i) => (i + 1) + '. ' + leadKaText(l)).join('\n\n')
+
+            // 10 se zyada hon to chhota roop - warna message kat jata hai.
+            const chhota = bhejo.length > 10;
+            const byora = (l) => chhota ? leadKaChhotaText(l) : leadKaText(l);
+
+            // GINTI SHURU AUR AKHIR, DONO ME.
+            //
+            // Akhiri line hi wo nishaan hai jisse pata chalta hai ki message
+            // poora pahuncha ya kat gaya. Kat gaya to wo line hi nahi dikhegi.
+            const sir = bhejo.length + ' hostel lead · HostelOM';
+            const pair = '———\n' + bhejo.length + ' me se ' + bhejo.length + ' bheje gaye'
                        + (rows.length > HADD
-                            ? '\n\n(' + rows.length + ' me se pehle ' + HADD + ' bheje gaye hain)'
+                            ? ' (kul ' + rows.length + ' the, pehle ' + HADD + ')'
                             : '');
-            _shareYaCopy(bhejo.length + ' hostel lead', text);
+
+            const text = sir + '\n\n'
+                       + bhejo.map((l, i) => (i + 1) + '. ' + byora(l)).join(chhota ? '\n' : '\n\n')
+                       + '\n\n' + pair;
+            _shareYaCopy(sir, text);
         };
 
         // renderLeads jo list bana raha hai wahi share hoti hai - warna
