@@ -13359,6 +13359,20 @@
                     return false;
                 }
             }
+            // Mobile 10 ank ka hona chahiye. Ye step 1 par bhi zaroori hai aur
+            // skip (chhota) form me bhi - isliye step ki shart ke bahar rakha hai,
+            // bas tab jab khaana dikh raha ho.
+            const mEl = document.getElementById('grfMobile');
+            if (mEl && mEl.offsetParent !== null) {
+                const md = String(mEl.value || '').replace(/\D/g, '');
+                if (md.length !== 10 || !/^[6-9]/.test(md)) {
+                    if (err) { err.innerText = 'Aapka mobile number 10 ank ka hona chahiye (6, 7, 8 ya 9 se shuru).'; err.classList.remove('hidden'); }
+                    mEl.focus();
+                    mEl.classList.add('ring-2', 'ring-red-400');
+                    setTimeout(function () { mEl.classList.remove('ring-2', 'ring-red-400'); }, 2200);
+                    return false;
+                }
+            }
             // Aadhaar length checked on step 1, where the field actually lives.
             if (step === 1) {
                 const a = document.getElementById('grfAadharNumber');
