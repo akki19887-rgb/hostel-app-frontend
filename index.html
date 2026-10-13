@@ -13862,7 +13862,14 @@
                             // what lets a guest read back their own registration, and it stops one
                             // account filing a registration in someone else's name.
                             guestUid: (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null,
-                            phone: (window.auth && window.auth.currentUser && window.auth.currentUser.phoneNumber) || (formData.emergencyContact || ''),
+                            // Pehle Firebase ka verified phone, warna jo guest ne
+                            // profile screen par khud daala tha. Emergency contact
+                            // sirf aakhri sahara hai - wo rishtedaar ka number hai,
+                            // guest ka nahi, aur malik ko guest se baat karni hai.
+                            phone: (window.auth && window.auth.currentUser && window.auth.currentUser.phoneNumber)
+                                   || formData.mobile
+                                   || (typeof meraPhoneLao === 'function' ? meraPhoneLao() : '')
+                                   || (formData.emergencyContact || ''),
                             propertyId: (window.currentPropertyData && window.currentPropertyData.id) || null,
                             bookingContext: grfBookingContext
                         });
