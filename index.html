@@ -112,6 +112,22 @@
         .bg-blob-1 { top: -100px; left: -100px; width: 350px; height: 350px; background: radial-gradient(circle, #a78bfa, transparent); }
         .bg-blob-2 { bottom: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, #f472b6, transparent); }
         .screen-panel { position: relative; z-index: 1; }
+        /* ===================================================================
+           #screenOptionsLogoHeader ko fixed hi rehna hai.
+           Uske HTML par Tailwind ki "fixed" class lagi hai, LEKIN upar wala
+           .screen-panel niyam bhi usi par lagta hai - aur dono ki taakat
+           barabar hai (ek class). Barabari me jo BAAD me likha ho wahi
+           jeetta hai, aur ye <style> block tw.css ke BAAD aata hai.
+           Isliye wo chup-chaap relative ban jata tha.
+           Nateeja: body "flex items-center justify-center" hai, to ye logo
+           card ke BAGAL ME ek saathi bankar baith jata tha. Do cheezein ek
+           saath beech me aane lagti thi, yaani:
+             - logo screen ke DAAYEIN kone me tairta dikhta tha
+             - aur poora login card beech se ~51px khisak jata tha
+           Pehla panna jo har guest aur har malik sabse pehle dekhta hai,
+           wahi tirchha dikhta tha.
+           =================================================================== */
+        #screenOptionsLogoHeader { position: fixed; }
         .animate-fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
         .premium-card {
