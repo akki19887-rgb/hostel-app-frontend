@@ -5413,6 +5413,15 @@
             // Jo abhi screen par hai wahi share honi chahiye - chhaant ke baad
             // poori purani list bhej dena galat hoga.
             _lastLeadRows = rows;
+            // GINTI BUTTON PAR HI LIKH DO.
+            //
+            // "Sirf 16 gaye" ki shikayat ka aadha jawab yahi hai: agar screen
+            // par 16 hi hain to 16 jana sahi hai. Dabane se PEHLE dikhna
+            // chahiye, baad me ginne se nahi.
+            const shBtn = document.getElementById('leadShareListBtn');
+            if (shBtn) {
+                shBtn.innerHTML = '&#128228; Ye poori list share kijiye (' + rows.length + ')';
+            }
 
             // Upar ki ginti
             const c = { new:0, contacted:0, agreed:0, converted:0 };
