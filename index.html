@@ -13249,6 +13249,17 @@
             }
 
             document.getElementById('grfFormError').classList.add('hidden');
+            // Login ka number apne aap bhar do. OTP se aaye hain to ye jaanchaa
+            // hua number hai; Google se aaye hain to wo jo profile screen par
+            // daala tha. Guest ise badal bhi sakta hai - malik ko isi par
+            // phone karna hai, to sahi number guest se hi poochhna theek hai.
+            try {
+                const mEl = document.getElementById('grfMobile');
+                if (mEl && !String(mEl.value || '').trim()) {
+                    const mera = (typeof meraPhoneLao === 'function') ? meraPhoneLao() : '';
+                    if (mera) mEl.value = mera;
+                }
+            } catch (e) {}
             document.getElementById('grfJoiningDate').value = window.selectedCheckInDate || '';
             const todayStr = new Date().toISOString().split('T')[0];
             document.getElementById('grfDob').max = todayStr; // no future date-of-birth
