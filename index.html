@@ -5290,6 +5290,32 @@
             return line.join('\n');
         }
 
+        // LAMBI LIST KA CHHOTA ROOP - ek lead, ek line.
+        //
+        // Poora byora 272 akshar ka hai; 40 lead = 11,000 akshar. Itna lamba
+        // message WhatsApp kai jagah kaat deta hai - aur usi wajah se "sirf
+        // 16 gaye" jaisa lagta hai. Chhote roop me ek lead ~140 akshar ki
+        // hai, to 40 lead bhi ~5,000 me aa jate hain.
+        function leadKaChhotaText(l) {
+            const t = [];
+            t.push(l.name || 'Hostel');
+            const jagah = l.locality || l.address;
+            if (jagah) t.push(jagah);
+            if (l.beds !== null && l.beds !== undefined && l.beds !== '') t.push(l.beds + ' bed');
+            if (l.rentFrom !== null && l.rentFrom !== undefined && l.rentFrom !== '') t.push('₹' + l.rentFrom + ' se');
+            // Hostel ka apna number - malik ka login number yahan bhi nahi.
+            if (l.phone) t.push(l.phone);
+            const halat = { new: 'Chhua nahi', contacted: 'Phone kiya', agreed: 'Raazi',
+                            refused: 'Mana kiya', converted: 'Listing ban gayi' };
+            t.push(halat[l.status] || 'Chhua nahi');
+            if (l.orgType === 'seva-sadan') t.push('⚠️ SEVA SADAN');
+            let line = t.join(' · ');
+            // Map ka link chhote roop me bhi rehta hai - field par nikle aadmi
+            // ke liye wahi sabse kaam ki cheez hai.
+            if (l.placeId) line += '\n   https://www.google.com/maps/place/?q=place_id:' + l.placeId;
+            return line;
+        }
+
         // Share sheet ho to wahi - usse WhatsApp, SMS, kuch bhi chun sakte
         // hain. Na ho to clipboard, aur bata do ki copy ho gaya - warna tap
         // karne par kuch nahi hua jaisa lagta hai.
