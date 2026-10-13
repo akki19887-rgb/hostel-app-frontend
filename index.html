@@ -13951,7 +13951,12 @@
                     hostelBalance: hostelBalance, // what the guest still owes the hostel directly
                     hostelName: formData.hostelName,
                     guestName: formData.fullName,
-                    guestPhone: formData.emergencyContact || '',
+                    // Guest ka APNA number pehle. Emergency contact aakhri sahara
+                    // hai - wo rishtedaar ka number hai, aur malik ko guest se
+                    // baat karni hai.
+                    guestPhone: formData.mobile
+                                || (typeof meraPhoneLao === 'function' ? meraPhoneLao() : '')
+                                || formData.emergencyContact || '',
                     guestEmail: formData.email || '',
                     bookingContext: grfBookingContext || {},
                     formSnapshot: formData,
