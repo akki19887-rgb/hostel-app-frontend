@@ -1171,6 +1171,20 @@
         </div>
         <div class="space-y-4">
             <div><label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Full Name</label><input type="text" id="profileName" placeholder="John Doe" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-semibold text-slate-800 bg-white/70"></div>
+            <!-- GOOGLE SE LOGIN KARNE WALO KA PHONE
+                 Mobile+OTP se login karne par phone Firebase khud de deta hai, to ye
+                 khaana chhupa rehta hai. Google se login karne par phone kahin se
+                 nahi aata tha - aur booking ka code guest ke number ki jagah uske
+                 rishtedaar ka emergency number bhej deta tha. Malik kisko phone
+                 karega? Isliye Google wale raaste par ye khaana zaroori hai. -->
+            <div id="profilePhoneKhaana" class="hidden">
+                <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Mobile Number <span class="text-red-500">*</span></label>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-3.5 bg-slate-100 border-2 border-slate-200 rounded-2xl font-black text-slate-600 text-sm">+91</span>
+                    <input type="tel" id="profilePhone" maxlength="10" inputmode="numeric" placeholder="9876543210" class="w-full p-3.5 border-2 border-slate-200 rounded-2xl font-bold text-slate-800 bg-white/70">
+                </div>
+                <p class="text-[11px] text-slate-500 font-semibold mt-1.5">Hostel malik isi number par aapse baat karega.</p>
+            </div>
         </div>
         <button type="button" onclick="validateAndSubmitProfile()" class="btn-dark w-full mt-6 text-white font-black py-4 rounded-2xl shadow-lg tracking-wider">SAVE & ENTER DASHBOARD</button>
     </div>
