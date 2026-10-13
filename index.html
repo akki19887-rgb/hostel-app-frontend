@@ -16763,7 +16763,14 @@
 
     </script>
     <script>
-        // Register service worker for PWA installability (silently no-ops if it fails, e.g. on file:// during local testing)
+        // SAVDHANI: sw.js is repo me HAI HI NAHI. Ye registration 404 par
+        // chup-chaap gir jata hai, isliye PWA "installability" asal me kaam
+        // nahi karti - comment jhooth bol raha tha. Ye block abhi hata nahi
+        // rahe kyunki aage sw.js banayenge; par asli service worker Play
+        // Store ki testing ke BEECH me nahi jodna - wo purani file cache kar
+        // ke "maine theek kiya, mujhe purana dikh raha hai" wali museebat
+        // khada kar deta hai. Pehle testing poori, phir sw.js.
+        // (Yahi block neeche DOBARA likha hua tha - wo hata diya.)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker registration failed:', err));
