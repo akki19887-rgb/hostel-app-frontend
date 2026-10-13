@@ -8457,6 +8457,44 @@
         // routeToDashboard() and never saved the name anywhere, so the name the user typed was
         // silently thrown away. Now it validates, writes to users/{uid} (which the rules allow
         // only for that user's own document), and then routes.
+        // Profile screen khulte hi tay karo ki phone ka khaana dikhana hai ya nahi.
+        // Dikhega sirf tab jab Firebase ke paas verified phone nahi hai (yaani
+        // Google/email se login hua hai).
+        function profilePhoneTaiyaar() {
+            try {
+                const khaana = document.getElementById('profilePhoneKhaana');
+                if (!khaana) return;
+                const u = window.auth && window.auth.currentUser;
+                const verifiedPhone = u && u.phoneNumber ? String(u.phoneNumber) : '';
+                if (verifiedPhone) {
+                    khaana.classList.add('hidden');
+                } else {
+                    khaana.classList.remove('hidden');
+                    // Agar pehle kabhi daal chuke hain to wahi bhar do.
+                    const inp = document.getElementById('profilePhone');
+                    if (inp && !inp.value) {
+                        const purana = meraPhoneLao();
+                        if (purana) inp.value = purana;
+                    }
+                }
+            } catch (e) {}
+        }
+        window.profilePhoneTaiyaar = profilePhoneTaiyaar;
+
+        // Guest ka apna 10-ank number, jahan se bhi mile. Pehle Firebase ka
+        // verified phone (OTP wala raasta), warna jo profile screen par daala tha.
+        // Emergency contact YAHAN se nahi aata - wo rishtedaar ka number hai.
+        function meraPhoneLao() {
+            try {
+                const u = window.auth && window.auth.currentUser;
+                if (u && u.phoneNumber) return String(u.phoneNumber).replace('+91', '').replace(/\D/g, '').slice(-10);
+                const saved = JSON.parse(localStorage.getItem('hostelom_user') || 'null');
+                if (saved && saved.phone) return String(saved.phone).replace('+91', '').replace(/\D/g, '').slice(-10);
+            } catch (e) {}
+            return '';
+        }
+        window.meraPhoneLao = meraPhoneLao;
+
         async function validateAndSubmitProfile() {
             const btn = event && event.target ? event.target : null;
             const nameEl = document.getElementById('profileName');
