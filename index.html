@@ -13422,7 +13422,10 @@
         // Skip mode me SIRF ye teen cheezein zaroori hain - wahi jinka vaada kiya
         // gaya hai. (Declaration ka tick aur dastkhat alag se jaanche jate hain;
         // wo kanooni hain aur hat nahi sakte, isliye popup me unka bhi zikr hai.)
-        const GRF_SKIP_REQUIRED = ['grfFullName', 'grfDob', 'grfJoiningDate'];
+        // grfMobile bhi isme hai: wo login se apne aap bhar jata hai, to guest
+        // ko kuch extra karna nahi padta - lekin bina number booking ka koi
+        // matlab nahi. Malik kisko phone karega?
+        const GRF_SKIP_REQUIRED = ['grfFullName', 'grfDob', 'grfJoiningDate', 'grfMobile'];
 
         function grfSkipToShortForm() {
             // Vaada wahi karna chahiye jo poora ho sake. Declaration ka tick aur
