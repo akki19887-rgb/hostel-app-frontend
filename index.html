@@ -474,10 +474,19 @@
             #screenPaymentStep button.underline,
             #screenUserDashboard a.underline {
                 display: inline-block;
-                padding: 10px 4px;
-                margin: -10px 0;        /* line ki unchai na badhe */
+                /* 10px se naapne par ye 35px hi bante the - 44px ki sifarish se
+                   kam. 11px ki likhai + 15px upar-neeche = 45px. */
+                padding: 15px 6px;
+                margin: -15px 0;        /* line ki unchai na badhe */
             }
             #screenPaymentStep > button.w-full { min-height: 44px; }
+
+            /* --- Do aur button jo ungli ke liye chhote the ---
+                   "Ye poori list share kijiye" 32px ka tha aur "⛶ Expand"
+                   sirf 28px ka. Dono par ungli phisal jati thi, aur Expand
+                   to naksha bade karne ka ekmatr rasta hai. --- */
+            #leadShareListBtn { min-height: 44px; padding-top: 10px !important; padding-bottom: 10px !important; }
+            #btnExpandCanvas { min-height: 40px; padding-top: 10px !important; padding-bottom: 10px !important; }
 
             /* --- Amenity ke chip 24px the.
                    Sirf unchai badhayi hai - chaudai badhane se ek line me
