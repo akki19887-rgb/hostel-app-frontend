@@ -332,6 +332,31 @@
            hoti thi, yaani SCREEN SE BAAHAR. Ek bhi card nahi dikhta tha.
            ============================================================ */
         @media (max-width: 767px) {
+            /* --- Login ke teen button phone par ek-ek line me ---
+               "Continue with Mobile" do line me toot jata tha ("Continue with" /
+               "Mobile"), jisse teeno button lamba-tirchha dikhte the aur poora
+               panna bigda hua lagta tha. Jagah kam padti thi kyunki card par
+               32px ka padding tha, icon 48px ka, aur gap 16px ka - 393px chaude
+               phone par likhne ke liye sirf ~140px bachte the.
+               Ab: card ka padding 20px, icon 40px, gap 12px, likhai thodi chhoti.
+               Isse ~50px zyada jagah milti hai - 360px wale phone par bhi poora
+               aa jata hai. Computer par kuch nahi badla. --- */
+            #screenOptions, #screenBusinessLogin { padding: 1.25rem !important; }
+            #screenOptions .icon-container,
+            #screenBusinessLogin .icon-container { width: 40px !important; height: 40px !important; border-radius: 12px; }
+            .method-option { padding: 0.8rem !important; }
+            .method-option > div:first-child { gap: 0.7rem !important; min-width: 0; }
+            .method-option .text-left { min-width: 0; }
+            .method-option .text-left > div:first-child {
+                font-size: 0.9rem !important; line-height: 1.25;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            .method-option .text-left > div:last-child {
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            /* Teer ko sikudne mat do, warna wo likhai ke neeche chala jata hai */
+            .method-option > span:last-child { flex: 0 0 auto; margin-left: 0.4rem; }
+
             /* --- Toolbar: 8 button ek hi line me, side me khisak kar --- */
             #bizToolbar { padding: 8px 10px !important; gap: 6px !important; }
             #bizToolbar h2 { font-size: 1.05rem !important; }
