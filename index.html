@@ -13685,6 +13685,11 @@
                 courseYear: document.getElementById('grfCourseYear').value.trim(),
                 fatherName: document.getElementById('grfFatherName').value.trim(),
                 motherName: document.getElementById('grfMotherName').value.trim(),
+                // Guest ka apna number aur email. Pehle formData me ye dono the hi
+                // nahi, isliye neeche guestPhone me emergencyContact (rishtedaar ka
+                // number) chala jata tha aur admin ki email me number khali jata tha.
+                mobile: (document.getElementById('grfMobile') ? document.getElementById('grfMobile').value : '').replace(/\D/g, '').slice(-10),
+                email: (window.auth && window.auth.currentUser && window.auth.currentUser.email) || '',
                 emergencyContact: document.getElementById('grfEmergencyContact').value.trim(),
                 address: document.getElementById('grfAddress').value.trim(),
                 roomType: document.getElementById('grfRoomType').value,
