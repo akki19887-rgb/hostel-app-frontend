@@ -2065,6 +2065,31 @@
             </div>
             <button type="button" onclick="loadBookingMessages()" title="Refresh"
                 class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 transition">🔄</button>
+            <button type="button" id="chatMenuBtn" onclick="toggleChatMenu()" title="Safety"
+                class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 text-xl shrink-0 transition">⋮</button>
+        </div>
+
+        <!-- Safety menu: Report and Block.
+             Google Play's user-generated-content policy requires BOTH of these in any app
+             where two strangers can message each other, and our content rating is declared
+             as "moderated chat" - which is only true if a guest who gets an abusive or
+             off-platform message can actually do something about it from inside the app. -->
+        <div id="chatMenuSheet"
+             class="hidden absolute top-[60px] right-3 z-[9700] w-60 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+            <button type="button" onclick="openChatReport()"
+                class="w-full text-left px-4 py-3 text-[13px] font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
+                <span class="text-base">🚩</span> Report this chat</button>
+            <button type="button" id="chatBlockBtn" onclick="toggleChatBlock()"
+                class="w-full text-left px-4 py-3 text-[13px] font-bold text-red-600 hover:bg-red-50 flex items-center gap-2.5 border-t border-slate-100">
+                <span class="text-base">🚫</span> <span id="chatBlockBtnText">Block this person</span></button>
+        </div>
+
+        <!-- Shown when either side has blocked the other. The composer is switched off with it,
+             because a message box that silently throws messages away is worse than no box. -->
+        <div id="chatBlockedBanner"
+             class="hidden mx-3 mt-3 shrink-0 flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-2xl px-3 py-2.5">
+            <span class="text-base leading-none mt-0.5">🚫</span>
+            <p class="text-[11px] font-bold text-red-800 leading-relaxed flex-1" id="chatBlockedText">Blocked.</p>
         </div>
 
         <!-- Safety banner. The whole point of in-app chat is that numbers never change hands,
