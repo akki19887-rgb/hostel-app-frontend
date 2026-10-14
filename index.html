@@ -8439,10 +8439,27 @@
                 console.error('Email auth failed', err);
                 let userMsg = 'Something went wrong. Please try again.';
                 if (err && err.code) {
-                    if (err.code === 'auth/wrong-password') userMsg = 'Incorrect password for this email.';
+                    // 'Something went wrong' se kisi ko kuch pata nahi chalta.
+                    // Sabse aam wajah: wahi email pehle se Google ya phone wale
+                    // raaste me lagi hui hai - ek email par do tarah ke login
+                    // nahi bante. Naya Firebase 'invalid-credential' bhejta hai,
+                    // purana 'wrong-password' bhejta tha; dono sambhal rahe hain.
+                    if (err.code === 'auth/wrong-password'
+                     || err.code === 'auth/invalid-credential'
+                     || err.code === 'auth/invalid-login-credentials') {
+                        userMsg = 'Ye email ya to kisi aur tarike se judi hai (Google / mobile), '
+                                + 'ya password galat hai. Agar aapne pehle Google se login kiya tha '
+                                + 'to wahi button dabaiye. Password bhool gaye hain to "Forgot password" '
+                                + 'se naya rakh lijiye.';
+                    }
+                    else if (err.code === 'auth/account-exists-with-different-credential') {
+                        userMsg = 'Ye email pehle se kisi aur tarike se judi hai. Jis button se '
+                                + 'pehli baar login kiya tha, wahi dabaiye (Google ya Mobile).';
+                    }
                     else if (err.code === 'auth/invalid-email') userMsg = 'Invalid email address.';
                     else if (err.code === 'auth/weak-password') userMsg = 'Password is too weak (min 6 characters).';
                     else if (err.code === 'auth/too-many-requests') userMsg = 'Too many attempts. Try again later.';
+                    else if (err.code === 'auth/network-request-failed') userMsg = 'Internet nahi mil raha. Network dekh kar dobara dabaiye.';
                 }
                 showEmailAuthError(userMsg);
             } finally {
