@@ -3752,6 +3752,30 @@
             try {
                 window.onAuthStateChanged(window.auth, async (user) => {
                     if (user) {
+                        // EMAIL JAANCHE BINA ANDAR NAHI.
+                        //
+                        // createUserWithEmailAndPassword() user ko Firebase me
+                        // TURANT login kar deta hai - chahe email jaanchi ho ya
+                        // nahi. Upar wali screen "Verify your email" dikhati thi,
+                        // par wo sirf dikhawa tha: page REFRESH karte hi ye
+                        // handler chalta, user mil jata, aur seedha dashboard
+                        // khul jata.
+                        //
+                        // Matlab koi bhi kisi ki bhi email daal kar, koi bhi
+                        // password rakh kar, bas F5 dabakar andar aa sakta tha.
+                        // Jaanch ka poora matlab hi khatam.
+                        //
+                        // Ab: agar login SIRF password se hua hai aur email
+                        // jaanchi nahi gayi, to dashboard nahi - wapas jaanch
+                        // wali screen par.
+                        //
+                        // Phone (OTP) wale user ka emailVerified hamesha false
+                        // hota hai aur email hoti hi nahi - unhe rokna galat
+                        // hoga. Isliye shart "sirf password wala" par hai.
+                        if (binaJaanchEmailWalaHai(user)) {
+                            finish(() => emailJaanchKiScreenPar(user));
+                            return;
+                        }
                         let mode = 'user';
                         try { mode = localStorage.getItem('hoom_account_mode') || 'user'; } catch (e) {}
 
