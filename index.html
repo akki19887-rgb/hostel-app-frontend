@@ -7056,7 +7056,98 @@
             document.addEventListener('DOMContentLoaded', paintOnline);
         })();
 
-        function goTo(screenId) {
+        // ==========================================
+        // PEECHE JAANA
+        // ==========================================
+        // App ab Play Store se install hoti hai. Install hone ke baad browser ka
+        // address bar nahi dikhta - yaani uska back ka teer bhi nahi. Aur phone ka
+        // apna back button? Wo app ko SEEDHA BAND kar deta tha, kyunki poore code
+        // me history ka ek bhi istemal nahi tha. Android ko lagta tha peeche jaane
+        // ko kuch hai hi nahi.
+        //
+        // Ab har screen ek itihaas me jama hoti hai, aur peeche jaane par:
+        //   1. pehle koi khula parda band hota hai (chat, bottom sheet, modal)
+        //   2. phir pichhli screen
+        //   3. dashboard par pahunch kar hi app band hone ka mauka milta hai
+        //
+        // Jin screen se peeche jaane ka matlab nahi banta - unse back dabane par
+        // kuch nahi hota (login ke beech se peeche jaana user ko atka deta hai).
+        const JAD_SCREEN = new Set([
+            'screenSplash', 'screenOptions', 'screenUserDashboard',
+            'screenBusinessDashboard', 'screenAdminDashboard', 'screenFieldDesk',
+            'screenVerifierDesk', 'screenProfileCompletion', 'screenOtpVerification',
+            'screenBookingSuccess',
+        ]);
+        let screenItihaas = [];
+        let abhiKaScreen = null;
+
+        // Koi parda khula hai? To back pehle usi ko band karega.
+        function khulaPardaBandKaro() {
+            // chat ke andar report ki screen - sabse upar
+            const rep = document.getElementById('chatReportSheet');
+            if (rep && !rep.classList.contains('hidden')) { closeChatReport(); return true; }
+            // chat ka drawer
+            const chatOv = document.getElementById('chatDrawerOverlay');
+            if (chatOv && !chatOv.classList.contains('hidden')) { closeBookingChat(); return true; }
+            // bed/room ka bottom sheet
+            const sheet = document.getElementById('userDetailSheet');
+            if (sheet && sheet.classList.contains('open')) { closeDetailSheet(); return true; }
+            // koi bhi khula modal
+            const modal = Array.from(document.querySelectorAll('.zoom-modal'))
+                .find(m => !m.classList.contains('hidden'));
+            if (modal) { modal.classList.add('hidden'); return true; }
+            return false;
+        }
+
+        window.wapasJao = function() {
+            if (khulaPardaBandKaro()) return;
+            if (!screenItihaas.length) return;
+            const pichhla = screenItihaas.pop();
+            // goTo ko dobara itihaas me na daalne ka ishara
+            goTo(pichhla, true);
+        };
+
+        function backButtonDikhao(screenId) {
+            const b = document.getElementById('globalBackBtn');
+            if (!b) return;
+            const dikhe = !JAD_SCREEN.has(screenId) && screenItihaas.length > 0;
+            b.classList.toggle('dikhao', dikhe);
+        }
+
+        // Phone ka apna back button. Browser ke history me ek khali panna daal kar
+        // rakhte hain - back dabte hi popstate aata hai, hum apna kaam karte hain,
+        // aur phir se ek panna daal dete hain taaki agli baar bhi mauka mile.
+        (function phoneKaBackSambhalo() {
+            try { history.pushState({ hoom: true }, ''); } catch (e) { return; }
+            window.addEventListener('popstate', () => {
+                try { history.pushState({ hoom: true }, ''); } catch (e) {}
+                if (khulaPardaBandKaro()) return;
+                if (screenItihaas.length) { goTo(screenItihaas.pop(), true); return; }
+                // Itihaas khali - yaani ghar par hain. Yahan se back ka matlab
+                // "app band karo" hota hai, par bina poochhe band karna bura lagta
+                // hai: log galti se daba dete hain aur bhari hui booking gavaa dete
+                // hain. Isliye ek baar poochh lete hain.
+                if (confirm('HostelOM band karein?')) {
+                    try { history.go(-2); } catch (e) {}
+                }
+            });
+        })();
+
+        function goTo(screenId, peecheJaRaheHain) {
+            // Itihaas sambhalo. Wahi screen dobara khulne par jod mat do, warna
+            // ek hi panne par back dabate rehna padta hai.
+            if (!peecheJaRaheHain && abhiKaScreen && abhiKaScreen !== screenId) {
+                screenItihaas.push(abhiKaScreen);
+                if (screenItihaas.length > 30) screenItihaas.shift();
+            }
+            // Dashboard/login par pahunchte hi itihaas saaf - ye nayi shuruaat hai.
+            // Booking poori hone wali screen bhi isme hai: wahan se peeche jaa kar
+            // payment ki screen par lautna sabse bura anubhav hoga - guest ko lagega
+            // ki paisa dobara dena hai.
+            if (JAD_SCREEN.has(screenId)) screenItihaas = [];
+            abhiKaScreen = screenId;
+            setTimeout(() => backButtonDikhao(screenId), 30);
+
             // "?" ka madad button sirf dono dashboard par dikhe — baaki screen par nahi,
             // warna wo booking ke button ke upar aa jata hai.
             setTimeout(() => {
