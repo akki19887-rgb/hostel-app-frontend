@@ -1157,6 +1157,25 @@
                 </div>
                 <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
             </button>
+            <!-- EMAIL SE LOGIN - MALIK KE LIYE BHI
+                 Ye button sirf guest wali screen par tha. Business Portal par
+                 sirf Mobile aur Google the. Do dikkatein isse hoti thi:
+                 1. Google Play ka reviewer is hisse me ghus hi nahi sakta tha -
+                    wo na SMS OTP le sakta hai, na apna niji Google account
+                    istemal kar sakta hai (Google ka apna niyam). "App access"
+                    adhoori rehti aur app reject ho sakti thi.
+                 2. Jis malik ka number badal gaya ho, uske paas koi doosra
+                    raasta nahi bachta tha.
+                 Routing pehle se theek hai: openBusinessLoginPage() ne
+                 accountMode='business' set kar diya hota hai, isliye email se
+                 login karne par bhi malik ka dashboard hi khulta hai. -->
+            <button type="button" id="bizEmailBtn" onclick="goTo('screenEmailAuth')" class="method-option w-full flex items-center justify-between p-4 rounded-2xl group">
+                <div class="flex items-center gap-4">
+                    <div class="icon-container"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="#6366f1" stroke-width="1.8"/><path d="M4 7l8 6 8-6" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    <div class="text-left"><div class="font-black text-slate-800">Continue with Email</div><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Verify via inbox link</div></div>
+                </div>
+                <span class="text-slate-300 group-hover:text-indigo-500 transition transform group-hover:translate-x-1 text-lg">→</span>
+            </button>
         </div>
     </div>
 
