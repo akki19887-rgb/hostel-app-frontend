@@ -7751,6 +7751,185 @@
             sendBookingMessage();
         };
 
+        // ---- REPORT / BLOCK ----
+        // Two strangers can message each other here, so the app has to give the person on
+        // the receiving end a way out. Google Play's user-generated-content policy requires
+        // it, and our declared content rating says "moderated chat" - which is only honest
+        // if a report actually reaches somebody who can act on it. It does: /chat/report
+        // carries the last 25 messages to the admin desk and fires a notification.
+        const CHAT_REPORT_REASONS = [
+            ['abusive',     '😠', 'Abusive or threatening language'],
+            ['sexual',      '🚫', 'Sexual or inappropriate content'],
+            ['offplatform', '💸', 'Asking to pay or talk outside the app'],
+            ['fake',        '🎭', 'Fake listing or false information'],
+            ['spam',        '📢', 'Spam or unwanted advertising'],
+            ['other',       '❓', 'Something else'],
+        ];
+        let chatReportReason = null;
+        let chatIBlocked = false;      // maine isko block kiya
+        let chatTheyBlocked = false;   // isne mujhe block kiya
+
+        window.toggleChatMenu = function() {
+            const m = document.getElementById('chatMenuSheet');
+            if (m) m.classList.toggle('hidden');
+        };
+        function closeChatMenu() {
+            const m = document.getElementById('chatMenuSheet');
+            if (m) m.classList.add('hidden');
+        }
+        // Tapping anywhere else shuts the menu. Without this it stays open over the
+        // conversation and looks stuck.
+        document.addEventListener('click', (e) => {
+            const m = document.getElementById('chatMenuSheet');
+            if (!m || m.classList.contains('hidden')) return;
+            if (e.target.closest('#chatMenuSheet') || e.target.closest('#chatMenuBtn')) return;
+            m.classList.add('hidden');
+        }, true);
+
+        // The drawer must draw itself correctly the moment it opens - showing a live
+        // composer to somebody who has blocked the other side would just lose their message.
+        async function refreshChatState() {
+            chatIBlocked = false; chatTheyBlocked = false;
+            try {
+                const res = await apiFetch('/chat/state?bookingId=' + encodeURIComponent(currentChatBookingId));
+                if (res.ok) {
+                    const j = await res.json();
+                    chatIBlocked = !!j.iBlocked;
+                    chatTheyBlocked = !!j.theyBlocked;
+                }
+            } catch (e) { /* offline: leave the chat usable, the server still refuses the send */ }
+            paintChatBlockState();
+        }
+
+        function paintChatBlockState() {
+            const banner = document.getElementById('chatBlockedBanner');
+            const text = document.getElementById('chatBlockedText');
+            const btnText = document.getElementById('chatBlockBtnText');
+            const input = document.getElementById('chatMessageInput');
+            const send = document.getElementById('chatSendBtn');
+            if (!banner) return;
+
+            if (btnText) btnText.innerText = chatIBlocked ? 'Unblock this person' : 'Block this person';
+
+            const rukaHai = chatIBlocked || chatTheyBlocked;
+            banner.classList.toggle('hidden', !rukaHai);
+            if (text) {
+                text.innerText = chatIBlocked
+                    ? 'You blocked this person. They cannot message you. Unblock from the ⋮ menu to talk again.'
+                    : 'This person is not accepting messages on this booking.';
+            }
+            if (input) {
+                input.disabled = rukaHai;
+                input.placeholder = rukaHai ? 'Messaging is off' : 'Type here';
+                input.classList.toggle('opacity-50', rukaHai);
+            }
+            if (send) {
+                send.disabled = rukaHai;
+                send.classList.toggle('opacity-40', rukaHai);
+                send.classList.toggle('pointer-events-none', rukaHai);
+            }
+        }
+
+        window.toggleChatBlock = function() {
+            closeChatMenu();
+            if (!currentChatBookingId) return;
+            const karna = !chatIBlocked;
+            if (karna && !confirm('Block this person?\n\nThey will not be able to message you on this booking. You can unblock any time.')) return;
+            const errBox = document.getElementById('chatError');
+            apiFetch('/chat/block', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: currentChatBookingId, block: karna })
+            }).then(async (res) => {
+                if (!res.ok) {
+                    let msg = 'Could not change this.';
+                    try { const j = await res.json(); msg = j.error || msg; } catch (e) {}
+                    errBox.innerText = msg; errBox.classList.remove('hidden');
+                    return;
+                }
+                chatIBlocked = karna;
+                errBox.classList.add('hidden');
+                paintChatBlockState();
+            }).catch((e) => {
+                errBox.innerText = 'Could not change this: ' + e.message;
+                errBox.classList.remove('hidden');
+            });
+        };
+
+        window.openChatReport = function() {
+            closeChatMenu();
+            chatReportReason = null;
+            const box = document.getElementById('chatReportReasons');
+            box.innerHTML = CHAT_REPORT_REASONS.map(([id, emoji, label]) => `
+                <button type="button" data-reason="${id}" onclick="pickChatReportReason(this)"
+                    class="w-full flex items-center gap-3 bg-white border-2 border-slate-200 rounded-2xl px-3.5 py-3 text-left transition active:scale-[0.99]">
+                    <span class="text-base">${emoji}</span>
+                    <span class="flex-1 text-[13px] font-bold text-slate-700">${label}</span>
+                    <span class="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0 flex items-center justify-center text-[10px] text-white font-black">·</span>
+                </button>`).join('');
+            document.getElementById('chatReportDetails').value = '';
+            document.getElementById('chatReportError').classList.add('hidden');
+            document.getElementById('chatReportForm').classList.remove('hidden');
+            document.getElementById('chatReportFooter').classList.remove('hidden');
+            document.getElementById('chatReportDone').classList.add('hidden');
+            document.getElementById('chatReportSheet').classList.remove('hidden');
+        };
+
+        window.closeChatReport = function() {
+            document.getElementById('chatReportSheet').classList.add('hidden');
+        };
+
+        window.pickChatReportReason = function(btn) {
+            chatReportReason = btn.getAttribute('data-reason');
+            document.querySelectorAll('#chatReportReasons [data-reason]').forEach(b => {
+                const chuna = b === btn;
+                b.classList.toggle('border-indigo-500', chuna);
+                b.classList.toggle('bg-indigo-50/50', chuna);
+                b.classList.toggle('border-slate-200', !chuna);
+                const dot = b.querySelector('span:last-child');
+                dot.classList.toggle('bg-indigo-500', chuna);
+                dot.classList.toggle('border-indigo-500', chuna);
+                dot.innerText = chuna ? '✓' : '·';
+            });
+            document.getElementById('chatReportError').classList.add('hidden');
+        };
+
+        window.submitChatReport = async function() {
+            const err = document.getElementById('chatReportError');
+            if (!chatReportReason) {
+                err.innerText = 'Please choose what is wrong.';
+                err.classList.remove('hidden');
+                return;
+            }
+            const btn = document.getElementById('chatReportSubmit');
+            btn.disabled = true; btn.innerText = 'Sending...';
+            try {
+                const res = await apiFetch('/chat/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bookingId: currentChatBookingId,
+                        reason: chatReportReason,
+                        details: document.getElementById('chatReportDetails').value.trim(),
+                    })
+                });
+                if (!res.ok) {
+                    let msg = 'Could not send this report.';
+                    try { const j = await res.json(); msg = j.error || msg; } catch (e) {}
+                    err.innerText = msg; err.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('chatReportForm').classList.add('hidden');
+                document.getElementById('chatReportFooter').classList.add('hidden');
+                document.getElementById('chatReportDone').classList.remove('hidden');
+            } catch (e) {
+                err.innerText = 'Could not send: ' + e.message;
+                err.classList.remove('hidden');
+            } finally {
+                btn.disabled = false; btn.innerText = 'Submit report';
+            }
+        };
+
         // Which messages this person has already seen. Kept in localStorage rather than
         // Firestore because it is per-device and nobody else needs it — and writing a
         // "seen" flag to the database on every message would triple the write cost.
