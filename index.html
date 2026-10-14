@@ -7651,6 +7651,9 @@
             renderQuickChat(role);
             loadBookingMessages();
             startChatListener(bookingDocId);
+            closeChatReport();          // pichhli baar ki report screen khuli na reh jaye
+            closeChatMenu();
+            refreshChatState();         // block laga hai ya nahi, pehle hi pata chal jaye
 
             try {
                 const oneSnap = await getDoc(doc(db, 'bookings', bookingDocId));
