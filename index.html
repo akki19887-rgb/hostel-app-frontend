@@ -8360,6 +8360,38 @@
         // Sends via our own backend + Resend (better deliverability, HostelOM branding) — falls back
         // to Firebase's own default sender automatically if the backend isn't set up yet, so this
         // never blocks signup even before FIREBASE_SERVICE_ACCOUNT_JSON/RESEND_API_KEY are configured.
+        // Login SIRF email+password se hua hai aur email abhi tak jaanchi
+        // nahi gayi? Phone/Google wale user yahan nahi aate - unka
+        // providerId alag hota hai (phone / google.com).
+        function binaJaanchEmailWalaHai(user) {
+            try {
+                if (!user || user.emailVerified) return false;
+                const p = user.providerData || [];
+                if (!p.length) return false;
+                return p.every(x => x && x.providerId === 'password');
+            } catch (e) { return false; }
+        }
+        window.binaJaanchEmailWalaHai = binaJaanchEmailWalaHai;
+
+        // Dashboard ki jagah jaanch wali screen. Logout nahi kar rahe, kyunki
+        // "dobara bhejiye" ka button chalane ke liye login hona zaroori hai.
+        function emailJaanchKiScreenPar(user) {
+            try {
+                goTo('screenEmailAuth');
+                const form = document.getElementById('emailAuthFormSection');
+                const wait = document.getElementById('emailVerifyPendingSection');
+                if (form) form.classList.add('hidden');
+                if (wait) wait.classList.remove('hidden');
+                const t = document.getElementById('verifyEmailTarget');
+                if (t) t.innerText = (user && user.email) || '';
+                const lbl = document.getElementById('emailAuthStepLabel');
+                if (lbl) lbl.innerText = 'Verify your email to continue';
+            } catch (e) {
+                try { goTo('screenOptions'); } catch (e2) {}
+            }
+        }
+        window.emailJaanchKiScreenPar = emailJaanchKiScreenPar;
+
         async function sendCustomVerificationEmail(user) {
             try {
                 const res = await apiFetch(`/send-verification-email`, {
