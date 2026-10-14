@@ -253,6 +253,35 @@
         #userDetailSheetBackdrop.open { opacity: 1; pointer-events: auto; }
         .sheet-grabber { width: 40px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 10px auto 6px; }
 
+        /* HAR SCREEN PAR DIKHNE WALA BACK BUTTON
+         *
+         * App ab Play Store se install hoti hai. Install hone par browser ka
+         * address bar aur uska back ka teer GAYAB ho jata hai - aur hamari har
+         * screen ka apna ← button panne ke upar hota hai, jo neeche scroll karte
+         * hi nazar se hat jata hai. Malik ne khud phasa: "bed par click karta hu
+         * par back ka button kaha h".
+         *
+         * Isliye ye button panne ke saath nahi hilta - hamesha ek hi jagah,
+         * upar baayें kone me chipka rehta hai.
+         *
+         * z-index 9400: chat ke drawer (9500) se neeche, taaki drawer khulne par
+         * uske upar na chadhe; baaki sab se upar.
+         */
+        #globalBackBtn {
+            position: fixed; z-index: 9400; display: none;
+            top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px;
+            width: 44px; height: 44px; border-radius: 999px;
+            align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.94); backdrop-filter: blur(6px);
+            border: 1px solid #e2e8f0; box-shadow: 0 4px 14px -4px rgba(15,23,42,0.28);
+            font-size: 20px; font-weight: 800; color: #334155; cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+        }
+        #globalBackBtn.dikhao { display: flex; }
+        #globalBackBtn:active { transform: scale(0.92); background: #f1f5f9; }
+        /* Computer par browser ka apna back hota hai - wahan iski zaroorat nahi. */
+        @media (min-width: 1024px) { #globalBackBtn { display: none !important; } }
+
         @media (max-width: 1023px) {
             #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
             #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
