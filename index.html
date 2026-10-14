@@ -62,20 +62,19 @@
          banana zaroori hai, warna wo hissa bina design ke dikhega.
          check_twcss.py har test par yahi milata hai. -->
     <link rel="stylesheet" href="/tw.css">
-    <!-- SENTRY ERROR LOGGING: paste your DSN below (from sentry.io project settings). Leave as-is until you have one — it just won't send anything. -->
-    <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
-    <script>
-        window.addEventListener('load', function() {
-            const SENTRY_DSN_FRONTEND = "PASTE_YOUR_SENTRY_DSN_HERE"; // e.g. https://abc123xyz@o123456.ingest.sentry.io/7654321
-            if (window.Sentry && SENTRY_DSN_FRONTEND && SENTRY_DSN_FRONTEND.indexOf('PASTE_YOUR') !== 0) {
-                Sentry.init({
-                    dsn: SENTRY_DSN_FRONTEND,
-                    tracesSampleRate: 0.2,
-                    beforeSend(event) { if (!event.exception) return null; return event; } // sirf real errors bhejo, sab kuch nahi
-                });
-            }
-        });
-    </script>
+    <!-- SENTRY YAHAN SE HATA DIYA GAYA — app ki raftaar ke liye.
+         Script har baar CDN se ~90 KB utarta tha, aur uske baad kuch karta hi
+         nahi tha: DSN "PASTE_YOUR_SENTRY_DSN_HERE" para tha, yaani init kabhi
+         chala hi nahi. Phone par wo seedha itna waqt ka nuksaan tha — ek naya
+         domain (browser.sentry-cdn.com) kholna, DNS, TLS, phir download, aur
+         badle me shoonya.
+
+         Jis din sach me error-logging chahiye: Sentry par project banaiye,
+         asli DSN lijiye, aur ye do line wapas daal dijiye —
+           <script defer src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
+           Sentry.init({ dsn: "<asli DSN>", tracesSampleRate: 0.2 });
+         Tab Data safety me "App info and performance -> Crash logs, Diagnostics"
+         bhi tick karna padega — abhi wo jaanbujh kar khali hai. -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
     <!-- 360° VIRTUAL TOUR: Pannellum is a free, open-source panorama viewer. CSS loads eagerly
          (tiny), JS is lazy-loaded only when a 360 photo is actually opened — see loadScriptOnce(). -->
