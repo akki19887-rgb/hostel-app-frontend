@@ -14095,7 +14095,6 @@
                 // now reject any document containing a full `aadharNumber`, so a future rules
                 // mistake can never leak complete Aadhaar numbers.
                 aadharLast4: (document.getElementById('grfAadharNumber').value || '').replace(/\D/g, '').slice(-4),
-                bloodGroup: document.getElementById('grfBloodGroup').value.trim(),
                 collegeName: document.getElementById('grfCollegeName').value.trim(),
                 occupationType: document.getElementById('grfOccupationType').value,
                 courseYear: document.getElementById('grfCourseYear').value.trim(),
