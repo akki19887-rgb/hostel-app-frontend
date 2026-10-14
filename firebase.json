@@ -44,6 +44,12 @@
         ]
       },
       {
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      },
+      {
         "source": "/tw.css",
         "headers": [
           { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
