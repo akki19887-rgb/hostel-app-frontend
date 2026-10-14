@@ -3311,11 +3311,14 @@
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Blood Group <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
-                    <input type="text" id="grfBloodGroup" placeholder="e.g. B+" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
-                </div>
+            <!-- BLOOD GROUP YAHAN SE HATA DIYA GAYA
+                 Google Play ki Data safety me "Health and fitness" ek alag khaana hai.
+                 Blood group uske andar aata hai - aur ek optional khaane ke liye poori
+                 app par health-data wala thappa lag jata, jiske saath alag policy,
+                 alag jaanch aur reject hone ka khatra aata hai. HostelOM ko iski
+                 zaroorat hai hi nahi: hostel check-in par khud poochh leta hai.
+                 Ab wo poora khaana saaf hai. -->
+            <div class="grid grid-cols-1 gap-4 mt-4">
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">College / School / Company Name <span class="text-slate-300 normal-case font-bold">(optional)</span></label>
                     <input type="text" id="grfCollegeName" placeholder="Institute name, or your workplace if a working professional" class="w-full p-3.5 border-2 border-slate-200 rounded-xl font-bold text-slate-800 bg-white/70">
