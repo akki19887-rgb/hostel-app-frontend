@@ -12683,7 +12683,14 @@
                     } else if (live360) {
                         msg360 = '\n\n360 ka tour ' + live360 + ' kamre me live hai.';
                     }
-                    alert('Updates synced live to users!' + msg360);
+                    // Naksha chadha ya nahi, ye bhi batao. Pehle wo chup-chaap
+                    // phenk diya jata tha aur alert tab bhi "synced live" bolta tha -
+                    // malik ko mahine bhar pata nahi chalta ki uska plan gaya hi nahi.
+                    const msgNaksha = nayeNakshe.length
+                        ? '\n\nNaya naksha chadh gaya: ' + nayeNakshe.join(', ')
+                          + '\n(Admin ise dekh kar kamre dobara jama sakta hai.)'
+                        : '';
+                    alert('Updates synced live to users!' + msgNaksha + msg360);
                 }
                 else {
                     const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
