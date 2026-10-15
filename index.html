@@ -4363,12 +4363,23 @@
                     // nahi chalta ki ab kare kya. Teeno wajah ka alag hal hai.
                     let sandesh;
                     if (err && err.code === 1) {            // PERMISSION_DENIED
+                        // INSTALL KI HUI APP ME TAALA HOTA HI NAHI.
+                        //
+                        // Pehle yahan likha tha "pate ke paas wale taale par
+                        // dabaiye". Wo browser ki baat hai. Play Store se install
+                        // hone ke baad na address bar hota hai, na taala - malik
+                        // wo dhoondhta reh jata tha jo screen par hai hi nahi.
+                        // Ab app ke andar aur browser ke liye alag raasta.
                         sandesh = 'Aapne location ki ijaazat nahi di.\n\n'
-                                + 'Browser ke pate ke paas wale taale (\u{1F512}) par '
-                                + 'dabakar "Location" ko Allow kar dijiye, phir ye '
-                                + 'button dobara dabaiye.\n\n'
-                                + 'Ya map par ungli se hi pin laga dijiye - wo bhi '
-                                + 'bilkul theek hai.';
+                                + 'Sabse aasan: map par ungli se hi pin laga dijiye - '
+                                + 'wo bilkul theek hai, isi se kaam ho jayega.\n\n'
+                                + 'Ya ijaazat dena ho to:\n'
+                                + (appKeAndarHain()
+                                    ? 'Phone ki Settings → Apps → HostelOM → '
+                                      + 'Permissions → Location → Allow'
+                                    : 'Browser ke pate ke paas wale taale (\u{1F512}) par '
+                                      + 'dabakar "Location" ko Allow kijiye')
+                                + '\n\nPhir ye button dobara dabaiye.';
                     } else if (err && err.code === 2) {     // POSITION_UNAVAILABLE
                         sandesh = 'Phone abhi aapki jagah nahi bata paa raha.\n\n'
                                 + 'Phone ki settings me Location (GPS) chalu kijiye, '
