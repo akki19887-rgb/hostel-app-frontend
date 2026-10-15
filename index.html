@@ -282,6 +282,33 @@
         /* Computer par browser ka apna back hota hai - wahan iski zaroorat nahi. */
         @media (min-width: 1024px) { #globalBackBtn { display: none !important; } }
 
+        /* PIN LOCATION KA MAP - PHONE PAR BADA
+         *
+         * Screen ki unchai 85vh thi aur map "flex-1" par chhoda hua tha. Phone par
+         * uske upar-neeche itna kuch tha (bada sirshak, search, city ka label,
+         * hint, CONFIRM ka button) ki map ke hisse me sirf ~290px bachte the -
+         * ek chauthai screen. Usme se hostel ka theek darwaza dhoondhna mushkil
+         * hai, aur galat pin lagne ka matlab hai guest galat gali me pahunchega.
+         *
+         * Isliye phone par: sirshak aur khaane chhote, aur map ko kam se kam
+         * aadhi screen. dvh isliye ki Chrome ka address bar chhupne-dikhne par
+         * vh hil jata hai aur map ka naap badalta rehta hai.
+         */
+        @media (max-width: 767px) {
+            #screenGoogleMap { height: 92dvh !important; padding: 14px !important; }
+            #screenGoogleMap > div:first-child { padding-bottom: 10px !important; margin-bottom: 10px !important; }
+            #screenGoogleMap h2 { font-size: 1.4rem !important; }
+            #screenGoogleMap h2 + p { font-size: 11px !important; margin-top: 0 !important; }
+            #screenGoogleMap > div:first-child .w-12 { width: 40px !important; height: 40px !important; font-size: 1rem !important; }
+            #businessMapSearch { padding: 12px 12px 12px 42px !important; font-size: 14px !important; }
+            #screenGoogleMap > div:nth-child(2) { margin-bottom: 10px !important; }
+            #screenGoogleMap > div:nth-child(2) span { top: 12px !important; font-size: 1rem !important; }
+            #map { min-height: 48dvh; }
+            #pinCityLabel { margin-top: 8px !important; padding: 8px 12px !important; font-size: 13px !important; }
+            #screenGoogleMap > div:last-child { margin-top: 10px !important; justify-content: center !important; }
+            #screenGoogleMap > div:last-child button { width: 100%; padding: 14px 0 !important; }
+        }
+
         @media (max-width: 1023px) {
             #userFloorTabsContainer { padding-left: 16px !important; padding-right: 16px !important; padding-top: 8px !important; padding-bottom: 8px !important; }
             #screenUser2DLayout .glass-panel { padding: 12px 16px !important; }
