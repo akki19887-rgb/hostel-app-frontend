@@ -3867,6 +3867,129 @@
         // Now we wait for Firebase to tell us whether someone is already signed in, and
         // only show the login screen if nobody is.
         // ==========================================================================
+        // ====================================================================
+        // HOSTEL KE DARWAZE PAR QR  ->  SEEDHA USI HOSTEL KI BOOKING
+        // ====================================================================
+        // Har hostel ka apna QR, jo uske gate/board par chipkega. Jo bhi aadmi
+        // wahan khada hai, scan karte hi usi hostel ka kamra-bed wala panna
+        // khulta hai - search se guzarna nahi padta.
+        //
+        // LINK KA ROOP (ye kabhi badla NAHI ja sakta):
+        //     https://ho-om.in/h/<businessId>
+        //     https://ho-om.in/?h=<businessId>          (dono chalte hain)
+        //     ...&r=<roomId>                            (kamre ke darwaze ka QR)
+        //     ...&s=<kahan se>                          (qr / poster / card)
+        //
+        // Deewar par chipka QR hamesha ke liye wahi rehta hai. Isliye usme
+        // businessId hi jata hai - koi chhota code nahi. Chhota code ka matlab
+        // hota ek aur table jisme code se id dhoondhni padti; wo table kabhi
+        // bhi mit gayi ya naye sire se bani, to har chhapa hua QR mar jata.
+        // businessId kabhi badalti nahi, isliye QR bhi kabhi nahi marta.
+        //
+        // SABSE BADA JAAL, JISME FANSNA AASAN THA:
+        // Guest wali list (allApprovedProperties) sirf 40 listing tak rukti hai
+        // aur uparse chuni hui city se chhanti hai. Agar QR se aaya panna usi
+        // list me dhoondha jata, to scan karne wale ko "Property not found!"
+        // milta - sirf isliye ki uske phone par doosri city chuni thi, ya wo
+        // hostel 41ve number par tha. Chhapa hua QR kabhi-kabhi chale, ye ho hi
+        // nahi sakta. Isliye yahan listing SEEDHA getBiz() se, id ke zariye
+        // laayi jati hai - list se koi lena-dena nahi.
+        //
+        // Bina QR ke ye poora hissa chupchaap so jata hai (pehli hi line par
+        // return), isliye aam app par iska zero asar hai.
+        let qrSeAaya = null;   // {id, roomId, src} - booking ke waqt kaam aayega
+
+        function qrLinkPadho(hrefDiyaHua) {
+            try {
+                const u = new URL(hrefDiyaHua || window.location.href);
+                let id = (u.searchParams.get('h') || '').trim();
+                if (!id) {
+                    const m = u.pathname.match(/^\/h\/([A-Za-z0-9_-]{3,100})\/?$/);
+                    if (m) id = m[1];
+                }
+                if (!id) return null;
+                return {
+                    id: id,
+                    roomId: (u.searchParams.get('r') || '').trim(),
+                    src: (u.searchParams.get('s') || 'qr').trim().slice(0, 20),
+                };
+            } catch (e) { return null; }
+        }
+        window.qrLinkPadho = qrLinkPadho;
+
+        // Firebase ka module alag <script type="module"> me hai aur der se chalta
+        // hai. QR se aaya aadmi tab tak kuch na kuch dekhta rahe, isliye intezaar
+        // karte hain - par hamesha ke liye nahi.
+        function firebaseTaiyaarHai() {
+            return !!(window.db && window.getDoc && window.doc);
+        }
+        async function firebaseKaIntezaar(zyadaSeZyadaMs) {
+            const tak = Date.now() + (zyadaSeZyadaMs || 12000);
+            while (Date.now() < tak) {
+                if (firebaseTaiyaarHai()) return true;
+                await new Promise(r => setTimeout(r, 120));
+            }
+            return firebaseTaiyaarHai();
+        }
+
+        // Guest ko dikhne wale sandesh angrezi me - QR scan karne wala koi bhi
+        // ho sakta hai, zaroori nahi ki wo hamara malik ya staff ho.
+        async function qrSeHostelKholo(info) {
+            if (!info || !info.id) return false;
+            if (!(await firebaseKaIntezaar(12000))) {
+                alert('Could not connect right now. Please check your internet and scan again.');
+                return false;
+            }
+            let data = null;
+            try { data = await getBiz(info.id); } catch (e) { data = null; }
+
+            if (!data) {
+                alert('This hostel is no longer listed on HostelOM.\n\nYou can search for other hostels and PGs nearby in the app.');
+                return false;
+            }
+            if (data.status !== 'approved_2d') {
+                alert('"' + (data.businessName || 'This hostel') + '" is not taking bookings through HostelOM at the moment.\n\nYou can search for other hostels and PGs nearby in the app.');
+                return false;
+            }
+
+            // openUser2DLayout() listing ko allApprovedProperties me dhoondhta hai.
+            // QR se aayi listing us list me ho bhi sakti hai, nahi bhi - isliye
+            // na mile to yahin jod dete hain. Jo pehle se hai use chhedte nahi,
+            // warna list ka apna taaza data (onSnapshot se aata hua) purana ho
+            // jata.
+            if (!allApprovedProperties.find(p => p.id === info.id)) {
+                allApprovedProperties.push(Object.assign({ id: info.id }, data));
+            }
+
+            qrSeAaya = info;
+            try { trackPropertyView(info.id, info.src === 'qr' ? 'qr' : ('qr-' + info.src)); } catch (e) {}
+            try { await openUser2DLayout(info.id); } catch (e) {
+                console.warn('QR se listing khul nahi payi', e);
+                alert('Something went wrong opening this hostel. Please try again.');
+                return false;
+            }
+            return true;
+        }
+        window.qrSeHostelKholo = qrSeHostelKholo;
+
+        // Ye alag listener hai, jaan-boojh kar. Neeche wala login/routing ka
+        // raasta bilkul waisa ka waisa chalta rehta hai - usme haath lagane ka
+        // matlab hota har user ke boot ko khatre me daalna, sirf QR ke liye.
+        window.addEventListener('DOMContentLoaded', () => {
+            const info = qrLinkPadho();
+            if (!info) return;                       // aam app - yahin khatam
+            const shuruHua = Date.now();
+            (async () => {
+                await firebaseKaIntezaar(12000);
+                // Splash apna 2.5 second poora kar le aur routeToDashboard apna
+                // kaam kar le - uske BAAD hostel kholte hain, warna dashboard
+                // upar aakar hostel ko dhak deta.
+                const baaki = 2900 - (Date.now() - shuruHua);
+                if (baaki > 0) await new Promise(r => setTimeout(r, baaki));
+                qrSeHostelKholo(info);
+            })();
+        });
+
         window.addEventListener('DOMContentLoaded', () => {
             // BACKEND KO ABHI SE JAGAO.
             //
