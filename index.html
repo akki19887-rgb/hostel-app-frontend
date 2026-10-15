@@ -13208,6 +13208,123 @@
             return pehla ? fmu[pehla] : '';
         }
 
+        // ARCHITECT MODE ME MALIK KA NAKSHA KYON NAHI DIKHTA THA
+        // ======================================================
+        // selectAdminFloor() me ye ek line thi:
+        //
+        //   let imgUrl = loadedBusinessData && loadedBusinessData.floorMapUrls
+        //       ? loadedBusinessData.floorMapUrls[floorName]
+        //       : (loadedBusinessData ? loadedBusinessData.mapImageUrl : '');
+        //
+        // Shart `floorMapUrls` ke HONE par lagi thi, us floor ke naksha ke
+        // hone par nahi. Yaani jaise hi floorMapUrls maujood hua - chahe
+        // khali {} ho, chahe us floor ka naam usme na ho - mapImageUrl wala
+        // raasta band. undefined mila, panel khali.
+        //
+        // Aur floor ke naam milte hi kab hain? Naksha upload karte waqt malik
+        // haath se naam likhta hai ("2 nd", "1st"), jabki kamre ka floor kahin
+        // aur se aata hai - addCustomRoom() me default 'Ground Floor' hai.
+        // Ek bhi akshar ka fark (space, bada-chhota akshar) = naksha gayab.
+        //
+        // Isliye ab seedha match na mile to:
+        //   1. naam ko normalize karke milao ("2 nd" == "2nd" == "2 ND")
+        //   2. agar poore hostel me EK hi naksha hai to wahi dikhao - us
+        //      haalat me kis floor ka hai, ye sawaal hi nahi uthta
+        //   3. phir bhi na mile to mapImageUrl
+        function naamSeedhaKaro(s) {
+            return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+        // Floor ka naam malik khud likhta hai - usme < > & kuch bhi aa sakta hai.
+        // Seedha innerHTML me daalna = toota hua panel (ya isse bura).
+        function nakshaNaamSafe(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function adminFloorKaNaksha(floorName, data) {
+            const d = data || loadedBusinessData || {};
+            const fmu = d.floorMapUrls || {};
+            if (fmu[floorName]) return { url: fmu[floorName], kaise: 'exact' };
+
+            const chaha = naamSeedhaKaro(floorName);
+            if (chaha) {
+                const milta = Object.keys(fmu).find(f => fmu[f] && naamSeedhaKaro(f) === chaha);
+                if (milta) return { url: fmu[milta], kaise: 'naam-milaya', asliNaam: milta };
+            }
+
+            const sabNaksha = Object.keys(fmu).filter(f => fmu[f]);
+            if (sabNaksha.length === 1) {
+                return { url: fmu[sabNaksha[0]], kaise: 'ek-hi-naksha', asliNaam: sabNaksha[0] };
+            }
+
+            if (d.mapImageUrl) return { url: d.mapImageUrl, kaise: 'purana-mapImageUrl' };
+            return { url: '', kaise: 'nahi-mila', maujoodFloors: sabNaksha };
+        }
+
+        // Panel me naksha lagao - ya saaf batao ki kyon nahi laga.
+        //
+        // Pehle na milne par `img.src = ''` kiya jata tha. Browser khali src ko
+        // PAGE ka hi pata maan leta hai: 1.25 MB ka index.html dobara download
+        // hota tha aur tooti photo ka nishaan dikhta tha. Upar se panel ka
+        // onclick `img.src` padhta hai - jo khali par bhi page ka poora pata
+        // lautata hai (truthy), isliye zoom wala popup bhi tooti photo ke saath
+        // khul jata tha. Ab src hata dete hain, img chhupa dete hain.
+        //
+        // `data` jaan-boojh kar baahar se liya ja sakta hai: loadedBusinessData
+        // module ke andar hai, isliye bina is parameter ke is function ki jaanch
+        // hi nahi ho sakti thi.
+        function adminNakshaPanelLagao(floorName, data) {
+            const img = document.getElementById('adminSideBySideImg');
+            const dabba = document.getElementById('adminMapDragContainer');
+            if (!img || !dabba) return '';
+
+            let sandesh = document.getElementById('adminNakshaNahiMila');
+            if (!sandesh) {
+                sandesh = document.createElement('div');
+                sandesh.id = 'adminNakshaNahiMila';
+                sandesh.className = 'hidden text-center px-3';
+                dabba.appendChild(sandesh);
+            }
+
+            const nat = adminFloorKaNaksha(floorName, data);
+            if (nat.url) {
+                img.src = nat.url;
+                img.classList.remove('hidden');
+                sandesh.classList.add('hidden');
+                img.onerror = function () {
+                    img.onerror = null;
+                    img.removeAttribute('src');
+                    img.classList.add('hidden');
+                    sandesh.innerHTML = '<p class="text-[11px] font-black text-red-600">&#9888; Naksha khul nahi paya</p>'
+                        + '<p class="text-[10px] font-semibold text-slate-500 mt-1">Uska link kaam nahi kar raha. Malik se dobara upload karwaiye.</p>';
+                    sandesh.classList.remove('hidden');
+                };
+                return nat.url;
+            }
+
+            img.removeAttribute('src');
+            img.classList.add('hidden');
+            const dusre = (nat.maujoodFloors || []).filter(f => f);
+            sandesh.innerHTML = '<p class="text-[11px] font-black text-amber-700">&#9888; "' + nakshaNaamSafe(floorName) + '" ka naksha nahi mila</p>'
+                + (dusre.length
+                    ? '<p class="text-[10px] font-semibold text-slate-500 mt-1">Is listing me naksha in naam se chadha hai: <b>'
+                      + dusre.map(f => nakshaNaamSafe(f)).join('</b>, <b>') + '</b>.<br>Floor ka naam alag likha gaya hai - isi se naksha nahi mil raha.</p>'
+                    : '<p class="text-[10px] font-semibold text-slate-500 mt-1">Is listing me koi floor plan upload hi nahi hua.<br>Kamre haath se banaiye, ya malik se naksha mangwaiye.</p>');
+            sandesh.classList.remove('hidden');
+            return '';
+        }
+
+        // Panel dabane par zoom. Pehle onclick seedha img.src padhta tha - aur
+        // khali src par browser PAGE ka pata lautata hai (khali string nahi),
+        // isliye openZoomModal ka `if(!src) return` kabhi bachata hi nahi tha:
+        // popup tooti photo ke saath khul jata tha. Ab src tabhi padhte hain
+        // jab img asal me dikh rahi ho.
+        window.adminNakshaZoom = function () {
+            const img = document.getElementById('adminSideBySideImg');
+            if (!img || img.classList.contains('hidden') || !img.getAttribute('src')) return;
+            openZoomModal(img.src);
+        };
+
         async function startAdminAIFlow(docId, rawImageUrl, totalBedsFromBusiness) {
             currentAdminDocId = docId;
             adminExpectedBeds = totalBedsFromBusiness || 0;
