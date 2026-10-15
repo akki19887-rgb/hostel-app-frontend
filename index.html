@@ -13004,7 +13004,183 @@
             }
         };
 
-        async function startAdminAIFlow(docId, rawImageUrl, totalBedsFromBusiness) { currentAdminDocId = docId; adminExpectedBeds = totalBedsFromBusiness || 0; aiGeneratedMapUrl = rawImageUrl; document.getElementById('adminToolImage').src = aiGeneratedMapUrl; mappedBedsData = []; bedCounter = 1; document.getElementById('dynamicMappingPublishBtn').onclick = approveAndPublishAdminMap; goTo('screenAdminMappingTool'); renderAdminBeds(); }
+        // ==========================================
+        // ADMIN KO SAARI PHOTO EK JAGAH
+        // ==========================================
+        // Pehle hostel wale card par ek bhi photo nahi dikhti thi - sirf likhawat
+        // (rules, mess, bed ki ginti). House/Flat wale card par photo dikhti thi,
+        // hostel par nahi. Nateeja: listing approve karne wala bina dekhe approve
+        // karta tha ki kamra kaisa hai, photo asli hai ya internet se uthayi hui,
+        // aur kis kamre ki photo hai hi nahi.
+        //
+        // Ab ek jagah: cover, har floor ka naksha, har kamre ki photo, aur 360.
+        // Jahan photo nahi hai wahan saaf likha hai - kyunki "photo nahi hai" bhi
+        // ek kaam ki jaankari hai, usi se malik ko phone karna hota hai.
+        window.openPhotoViewer = function(url, label) {
+            const m = document.getElementById('modalPhotoViewer');
+            if (!m) return;
+            document.getElementById('photoViewerImg').src = url;
+            document.getElementById('photoViewerLabel').innerText = label || '';
+            m.classList.remove('hidden');
+            m.style.display = 'flex';
+        };
+        window.closePhotoViewer = function() {
+            const m = document.getElementById('modalPhotoViewer');
+            if (!m) return;
+            m.classList.add('hidden');
+            m.style.display = 'none';
+            document.getElementById('photoViewerImg').src = '';
+        };
+
+        function adminThumb(url, label) {
+            const safeUrl = String(url).replace(/'/g, "\\'");
+            const safeLab = String(label || '').replace(/'/g, "\\'").replace(/</g, '&lt;');
+            return `<button type="button" onclick="openPhotoViewer('${safeUrl}','${safeLab}')"
+                class="shrink-0 relative block border-2 border-slate-200 rounded-xl overflow-hidden hover:border-indigo-400 transition"
+                style="width:88px;height:88px;padding:0;cursor:zoom-in;background:#f1f5f9;">
+                <img src="${url}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
+                <span style="position:absolute;left:0;right:0;bottom:0;background:rgba(15,23,42,.72);color:#fff;font-size:8px;font-weight:800;padding:2px 3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${safeLab}</span>
+            </button>`;
+        }
+
+        function adminSaariPhotosHtml(data) {
+            const hissey = [];
+
+            if (data.coverPhotoUrl) {
+                hissey.push({ naam: '\u{1F3E0} Cover', thumbs: [adminThumb(data.coverPhotoUrl, 'Cover')] });
+            }
+
+            // Floor ke naksha - yahi wo cheez hai jisse admin kamre jama karta hai
+            const fmu = data.floorMapUrls || {};
+            const floorNaam = Object.keys(fmu).filter(f => fmu[f]);
+            if (floorNaam.length) {
+                hissey.push({ naam: '\u{1F5FA} Floor ke naksha (' + floorNaam.length + ')',
+                              thumbs: floorNaam.map(f => adminThumb(fmu[f], f)) });
+            } else if (data.mapImageUrl) {
+                hissey.push({ naam: '\u{1F5FA} Naksha', thumbs: [adminThumb(data.mapImageUrl, 'Naksha')] });
+            }
+
+            // Kamre ki photo - kis kamre ki, ye naam ke saath, warna admin ko
+            // pata hi nahi chalta ki kaunsi photo kis kamre ki hai.
+            const kamre = Array.isArray(data.roomsAndBeds) ? data.roomsAndBeds : [];
+            const kamreThumbs = [];
+            const binaPhoto = [];
+            let gintiPhoto = 0, ginti360 = 0;
+            kamre.forEach((r) => {
+                const ph = (r && Array.isArray(r.photos)) ? r.photos.filter(p => p) : [];
+                if (ph.length) { ph.forEach((p, i) => kamreThumbs.push(adminThumb(p, (r.name || 'Room') + (ph.length > 1 ? ' ' + (i + 1) : '')))); gintiPhoto += ph.length; }
+                else binaPhoto.push(r.name || 'Room');
+                if (r && r.panorama360Url) ginti360++;
+            });
+            if (kamreThumbs.length) {
+                hissey.push({ naam: '\u{1F6CF} Kamron ki photo (' + gintiPhoto + ')', thumbs: kamreThumbs });
+            }
+
+            // 360 WALA VIEW BHI YAHIN SE KHULE.
+            //
+            // Sirf "3 kamre me 360 hai" likh dena kaafi nahi - 360 me hi sabse
+            // zyada gadbad hoti hai: kabhi seedhi photo 360 ke khaane me chadha
+            // di jati hai, kabhi link mar jata hai. Bina kholke dekhe pata hi
+            // nahi chalta. Isliye har 360 ka apna button.
+            const teen60Thumbs = [];
+            kamre.forEach((r) => {
+                if (r && r.panorama360Url) {
+                    const u = String(r.panorama360Url).replace(/'/g, "\\'");
+                    const n = String(r.name || 'Room').replace(/'/g, "\\'").replace(/</g, '&lt;');
+                    teen60Thumbs.push(`<button type="button" onclick="preview360Panorama('${u}')"
+                        class="shrink-0 relative block border-2 border-purple-200 rounded-xl overflow-hidden hover:border-purple-500 transition"
+                        style="width:88px;height:88px;padding:0;cursor:pointer;background:#faf5ff;">
+                        <img src="${r.panorama360Url}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
+                        <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;text-shadow:0 2px 6px rgba(0,0,0,.6);">&#127909;</span>
+                        <span style="position:absolute;left:0;right:0;bottom:0;background:rgba(88,28,135,.82);color:#fff;font-size:8px;font-weight:800;padding:2px 3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n}</span>
+                    </button>`);
+                }
+            });
+            if (teen60Thumbs.length) {
+                hissey.push({ naam: '\u{1F3A5} 360\u00B0 view (' + teen60Thumbs.length + ') \u2014 dabakar ghoomaiye',
+                              thumbs: teen60Thumbs });
+            }
+
+            if (!hissey.length) {
+                return `<div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 mb-3">
+                    <p class="text-[11px] font-black text-amber-800">&#9888; Is listing me EK BHI photo nahi hai &mdash; na cover, na naksha, na kamre ki.</p>
+                    <p class="text-[10px] font-semibold text-amber-700 mt-1">Approve karne se pehle malik se photo mangwa lijiye.</p>
+                </div>`;
+            }
+
+            const blocks = hissey.map(h => `
+                <div class="mb-2">
+                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">${h.naam}</p>
+                    <div class="flex gap-2 overflow-x-auto pb-1">${h.thumbs.join('')}</div>
+                </div>`).join('');
+
+            const chetavni = binaPhoto.length
+                ? `<p class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mt-1">
+                     &#9888; In kamron ki photo nahi hai: ${binaPhoto.join(', ')}</p>`
+                : `<p class="text-[10px] font-bold text-emerald-700 mt-1">&#10003; Har kamre ki photo maujood hai</p>`;
+            const teen60 = ginti360
+                ? `<p class="text-[10px] font-bold text-purple-700 mt-1">&#127909; ${ginti360} kamre me 360&deg; view hai</p>`
+                : '';
+
+            return `<div class="bg-white border-2 border-slate-200 rounded-xl p-3 mb-3">
+                <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 border-b border-slate-200 pb-1">
+                    &#128247; Saari photo &mdash; dabakar bada kijiye</p>
+                ${blocks}${chetavni}${teen60}
+            </div>`;
+        }
+
+        // TOOTI HUI PHOTO KA ASLI KARAN.
+        //
+        // Card seedha data.mapImageUrl bhejta tha. Wo khaana sirf do jagah likha
+        // jata hai: nayi listing banate waqt, aur admin ke approve karne par.
+        // PURANI listing EDIT karke naya naksha daalne par patch me sirf
+        // floorMapUrls jata hai - mapImageUrl waise ka waisa pada rehta hai.
+        //
+        // Nateeja: onclick me 'undefined' chala jata tha, aur <img src="undefined">
+        // ka matlab hai tooti hui photo ka nishaan. Admin ko lagta tha naksha
+        // upload hi nahi hua, jabki wo floorMapUrls me pada hota tha.
+        //
+        // Ab pehle mapImageUrl, na mile to pehla floor ka naksha, wo bhi na mile
+        // to khali - aur khali par mapping tool saaf bata deta hai (neeche).
+        function adminNakshaUrl(data) {
+            if (data && data.mapImageUrl) return data.mapImageUrl;
+            const fmu = (data && data.floorMapUrls) || {};
+            const pehla = Object.keys(fmu).find(f => fmu[f]);
+            return pehla ? fmu[pehla] : '';
+        }
+
+        async function startAdminAIFlow(docId, rawImageUrl, totalBedsFromBusiness) {
+            currentAdminDocId = docId;
+            adminExpectedBeds = totalBedsFromBusiness || 0;
+
+            // 'undefined'/'null' string bhi khali hi maana jaye - purane card se
+            // wahi aata tha aur seedha tooti photo ban jata tha.
+            const url = (!rawImageUrl || rawImageUrl === 'undefined' || rawImageUrl === 'null')
+                ? '' : rawImageUrl;
+            if (!url) {
+                alert('Is listing me koi naksha (floor plan) nahi mila.\n\n'
+                    + 'Malik ne ya to upload hi nahi kiya, ya edit karte waqt wo '
+                    + 'chhoot gaya.\n\n'
+                    + 'Kamre jamane ke liye "\u2728 ARCHITECT MODE" istemal kijiye, '
+                    + 'ya malik se naksha mangwa lijiye.');
+                return;
+            }
+            aiGeneratedMapUrl = url;
+            const img = document.getElementById('adminToolImage');
+            img.src = url;
+            // Photo khud na khule (link mar gaya, ya Storage ki ijaazat badal gayi)
+            // to khali dabba dikhane ke bajay saaf batao.
+            img.onerror = () => {
+                img.onerror = null;
+                alert('Naksha khul nahi paya - uska link kaam nahi kar raha.\n\n'
+                    + 'Malik se naksha dobara upload karwaiye, ya "\u2728 ARCHITECT '
+                    + 'MODE" se kamre jama dijiye.');
+            };
+            mappedBedsData = []; bedCounter = 1;
+            document.getElementById('dynamicMappingPublishBtn').onclick = approveAndPublishAdminMap;
+            goTo('screenAdminMappingTool');
+            renderAdminBeds();
+        }
         function renderAdminBeds() {
             const container = document.getElementById('adminDrawnBeds'); container.innerHTML = ''; document.getElementById('mappingToolTitle').innerText = `Admin: Map Beds (${mappedBedsData.length}/${adminExpectedBeds})`;
             mappedBedsData.forEach(bed => { const overlay = document.createElement('div'); overlay.className = 'absolute border-2 border-red-500 bg-red-200/80 flex items-center justify-center text-red-900 font-bold text-[10px] rounded shadow-sm cursor-pointer'; overlay.style.top = bed.top; overlay.style.left = bed.left; overlay.style.width = bed.width; overlay.style.height = bed.height; overlay.innerHTML = `B${bed.id.split('-')[2]} <span class="text-[8px] ml-1">✖</span>`; overlay.onclick = (e) => { e.stopPropagation(); mappedBedsData = mappedBedsData.filter(b => b.id !== bed.id); renderAdminBeds(); }; container.appendChild(overlay); });
