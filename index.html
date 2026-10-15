@@ -12457,8 +12457,53 @@
                     ? slugify((loadedBusinessData && loadedBusinessData.businessName) || (loadedBusinessData && loadedBusinessData.businessProfile && loadedBusinessData.businessProfile.company))
                     : slugify(globalBizProfile.company);
 
-                let mainMapUrl = uploadedMapDataUrl; let floorMapUrlsObj = {};
-                if(!editingBusinessDocId) { mainMapUrl = ""; for (let fm of floorMaps) { if (fm.file) { let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`); floorMapUrlsObj[fm.floorName] = url; if(!mainMapUrl) mainMapUrl = url; } } } else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
+                // EDIT KARTE WAQT NAYA NAKSHA CHUP-CHAAP PHENK DIYA JATA THA.
+                //
+                // Pehle yahan sirf itna tha:
+                //     else { floorMapUrlsObj = loadedBusinessData.floorMapUrls || {}; }
+                // Yaani EDIT par koi upload hota hi nahi tha - purani list jaise ki
+                // taisi copy ho jati thi. Malik naya floor plan chunta, "Save" dabata,
+                // app kehta "Updates synced live to users!" - aur file kahin jati hi
+                // nahi thi. Admin ke page par purana (ya koi nahi) naksha dikhta tha.
+                //
+                // Ab edit par bhi wahi upload hota hai, bas purane naksho ke UPAR
+                // merge hota hai - jis floor ki nayi file di hai sirf wahi badalta
+                // hai, baaki floor jaise the waise rehte hain.
+                let mainMapUrl = uploadedMapDataUrl;
+                let floorMapUrlsObj = {};
+                let nayeNakshe = [];
+                if (!editingBusinessDocId) {
+                    mainMapUrl = "";
+                    for (let fm of floorMaps) {
+                        if (fm.file) {
+                            let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`);
+                            floorMapUrlsObj[fm.floorName] = url;
+                            if (!mainMapUrl) mainMapUrl = url;
+                        }
+                    }
+                } else {
+                    floorMapUrlsObj = Object.assign({}, loadedBusinessData.floorMapUrls || {});
+                    for (let fm of floorMaps) {
+                        if (fm.file) {
+                            let url = await uploadFileToStorage(fm.file, `main_maps/${hostelSlug}/${Date.now()}_${fm.floorName}`);
+                            floorMapUrlsObj[fm.floorName] = url;
+                            nayeNakshe.push(fm.floorName);
+                        }
+                    }
+                    // mainMapUrl tabhi badalte hain jab pehle tha hi nahi.
+                    //
+                    // Kyun itni savdhani: admin ke mapping tool me bed ke nishaan
+                    // (imageMapBeds) USI tasveer ke naap par lage hote hain. Tasveer
+                    // badal di to saare bed galat jagah chale jayenge - aur kisi ko
+                    // pata bhi nahi chalega. Isliye khali ho to bhar dete hain,
+                    // warna haath nahi lagate; admin naya naksha gallery me dekh
+                    // lega aur chaahe to dobara map kar lega.
+                    if (!loadedBusinessData.mapImageUrl && nayeNakshe.length) {
+                        mainMapUrl = floorMapUrlsObj[nayeNakshe[0]];
+                    } else {
+                        mainMapUrl = loadedBusinessData.mapImageUrl || '';
+                    }
+                }
                 let cleanRoomsData = [];
                 // 360 ka hisaab - save ke baad owner ko saaf bataya jayega.
                 // Pehle uske paas jaanne ka koi tarika hi nahi tha ki 360 gaya
