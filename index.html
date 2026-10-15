@@ -7083,6 +7083,25 @@
             document.addEventListener('DOMContentLoaded', paintOnline);
         })();
 
+        // App Play Store se install ki hui chal rahi hai, ya browser me khuli hai?
+        //
+        // Dono me rasta alag hota hai aur yahi sabse zyada uljhan paida karta hai:
+        // install ki hui app me na address bar hota hai, na uska taala. Usse
+        // "taale par dabaiye" kehna malik ko wo cheez dhoondhne bhejta hai jo
+        // screen par hai hi nahi.
+        //
+        // TWA (Play Store wali app) ka referrer "android-app://" se shuru hota hai.
+        // display-mode: standalone PWA aur TWA dono pakad leta hai.
+        function appKeAndarHain() {
+            try {
+                if (document.referrer && document.referrer.startsWith('android-app://')) return true;
+                if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+                if (window.navigator && window.navigator.standalone) return true;   // iOS
+            } catch (e) {}
+            return false;
+        }
+        window.appKeAndarHain = appKeAndarHain;
+
         // ==========================================
         // PEECHE JAANA
         // ==========================================
