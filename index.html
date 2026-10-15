@@ -12665,6 +12665,13 @@
                     if (businessAddress) patch.pinAddress = businessAddress;
                     if (businessCoordinates && businessCoordinates.lat) patch.coordinates = businessCoordinates;
                     if (floorMapUrlsObj && Object.keys(floorMapUrlsObj).length) patch.floorMapUrls = floorMapUrlsObj;
+                    // mapImageUrl sirf tab likhte hain jab pehle tha hi nahi - warna
+                    // admin ke lagaye hue bed ke nishaan purani tasveer ke naap par
+                    // reh jate hain aur galat jagah dikhte hain. (Upar vistaar se.)
+                    if (!loadedBusinessData.mapImageUrl && mainMapUrl) patch.mapImageUrl = mainMapUrl;
+                    // Naya naksha aaya hai to admin ko dobara dekhna chahiye - warna
+                    // "verified" ka thappa purani cheez par laga reh jata hai.
+                    if (nayeNakshe.length) patch.mapsUpdatedAt = new Date().toISOString();
                     await window.updateDoc(window.doc(window.db, "businesses", editingBusinessDocId), patch);
                     // 360 ka hisaab bhi batao. Bina iske owner ko pata hi nahi
                     // chalta tha ki uska tour gaya ya raste me gir gaya.
