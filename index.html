@@ -11523,8 +11523,11 @@
         function selectAdminFloor(floorName) {
             if (adminFabricCanvasInstance && currentAdminFloor) { adminLocalCanvasStates[currentAdminFloor] = adminFabricCanvasInstance.toJSON(['isBed', 'bedId', 'bedPrice', 'isRoom', 'roomId', 'roomSlotIndex', 'isAmenityIcon', 'tooltipLabel']); }
             currentAdminFloor = floorName; currentSelectedFloor = floorName; architectSelectedRoomId = null; const uniqueFloors = [...new Set(admin2DBlocks.map(b => b.floor || 'Ground Floor'))]; renderAdminFloorTabs(uniqueFloors);
-            let imgUrl = loadedBusinessData && loadedBusinessData.floorMapUrls ? loadedBusinessData.floorMapUrls[floorName] : (loadedBusinessData ? loadedBusinessData.mapImageUrl : '');
-            document.getElementById('adminSideBySideImg').src = imgUrl || ''; redrawAdminCanvasForFloor(); renderAttractive2DPlan();
+            // Pehle yahan ek shart thi jo floorMapUrls ke HONE par lagi thi, us
+            // floor ka naksha hone par nahi - isliye khali {} bhi mapImageUrl wala
+            // raasta band kar deta tha aur panel khali reh jata tha. Poora byora
+            // adminFloorKaNaksha() ke upar likha hai.
+            adminNakshaPanelLagao(floorName, loadedBusinessData); redrawAdminCanvasForFloor(); renderAttractive2DPlan();
         }
         function refreshRoomsLabel() { document.getElementById('detectedRoomsLabel').innerText = `${globalDynamicRooms.length} Rooms Found`; document.getElementById('businessRawImageDisplay').src = uploadedMapDataUrl; }
 
