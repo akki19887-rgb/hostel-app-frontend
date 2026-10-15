@@ -4280,7 +4280,48 @@
                 return;
             }
 
-            if (b) { b.innerHTML = '⌛'; b.disabled = true; }
+            // EK BAAR "DENY" DABA DIYA TO DOBARA POOCHHA HI NAHI JATA.
+            //
+            // Browser ka niyam hai: ijaazat ek baar mana kar di, to agli baar
+            // getCurrentPosition turant fail ho jata hai - koi popup nahi aata.
+            // Malik ke liye iska matlab tha ki button "toota hua" lagta tha:
+            // dabao, kuch na ho, dabao, phir kuch na ho.
+            //
+            // Isliye pehle haalat poochh lete hain. Pehle se mana ki hui ho to
+            // bekaar ka intezaar karwane ki jagah seedha wo raasta batate hain
+            // jisse ijaazat wapas chalu hoti hai.
+            const aageBadho = () => {
+                if (b) { b.innerHTML = '⌛'; b.disabled = true; }
+                jagahMaango();
+            };
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({ name: 'geolocation' }).then((p) => {
+                    if (p && p.state === 'denied') {
+                        alert('Location ki ijaazat pehle mana ki ja chuki hai, isliye '
+                            + 'phone ab dobara nahi poochhega.\n\n'
+                            + 'Sabse aasan: map par ungli se hi pin laga dijiye - '
+                            + 'usse kaam ho jayega.\n\n'
+                            + 'Ijaazat wapas chalu karni ho to:\n'
+                            + (appKeAndarHain()
+                                ? 'Phone ki Settings → Apps → HostelOM → '
+                                  + 'Permissions → Location → Allow'
+                                : 'Browser ke pate ke paas wale taale (\u{1F512}) par dabakar '
+                                  + '"Location" ko Allow kijiye')
+                            + '\n\nPhir ye button dobara dabaiye.');
+                        return;
+                    }
+                    aageBadho();
+                }).catch(aageBadho);
+            } else {
+                aageBadho();
+            }
+        };
+
+        // Asli maang yahan se jati hai. Alag isliye kiya taaki upar wali jaanch
+        // ke baad bhi, aur uske bina bhi, ek hi code chale.
+        function jagahMaango() {
+            const b = document.getElementById('btnMeriJagah');
+            const wapas = () => { if (b) { b.innerHTML = '\u{1F3AF}'; b.disabled = false; } };
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
