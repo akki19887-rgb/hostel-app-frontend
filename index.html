@@ -294,6 +294,50 @@
          * aadhi screen. dvh isliye ki Chrome ka address bar chhupne-dikhne par
          * vh hil jata hai aur map ka naap badalta rehta hai.
          */
+        /* ================= TRUST STRIP (listing ke neeche chaar dabbe) =========
+           Yahan asli CSS likhi hai, Tailwind ki class nahi. Wajah: app apni bani
+           hui tw.css use karta hai, CDN nahi - aur usme grid-cols-4, sm:block,
+           sm:text-2xl, py-2.5 jaisi class HAI HI NAHI. Unhe markup me likhne se
+           kuch hota nahi, wo chup-chaap bekaar pad jati hain (yahi pehli koshish
+           me hua: chaar dabbe chaar alag kataar me chale gaye).
+
+           Pehle ye strip phone par ~200px leti thi - theek us jagah par jahan
+           guest ko agla hostel dikhna chahiye. Ab ~62px. */
+        #trustStrip {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .trust-box {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+            padding: 16px 8px; text-align: center; text-decoration: none;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+            display: block;
+        }
+        .trust-link { cursor: pointer; transition: border-color .15s; }
+        .trust-link:hover { border-color: #a5b4fc; }
+        .trust-ico { font-size: 24px; line-height: 1; margin-bottom: 4px; }
+        .trust-naam {
+            font-size: 10px; font-weight: 900; color: #334155;
+            text-transform: uppercase; letter-spacing: .4px; line-height: 1.25; margin: 0;
+        }
+        .trust-byora {
+            font-size: 9px; font-weight: 600; color: #94a3b8; margin: 2px 0 0;
+            line-height: 1.3;
+        }
+        .trust-rekha { text-decoration: underline; }
+        @media (max-width: 767px) {
+            /* Phone par byora aur lambe naam chhup jate hain, chaaron ek kataar
+               me aa jate hain. Dabba 44px se ooncha rehta hai, taaki ungli se
+               dabane layak bana rahe. */
+            #trustStrip { margin-top: 18px; gap: 6px; }
+            .trust-box { padding: 9px 2px; border-radius: 12px; }
+            .trust-ico { font-size: 16px; margin-bottom: 3px; }
+            .trust-naam { font-size: 8.5px; letter-spacing: .2px; }
+            .trust-byora, .trust-lamba { display: none; }
+        }
+
         @media (max-width: 767px) {
             #screenGoogleMap { height: 92dvh !important; padding: 14px !important; }
             #screenGoogleMap > div:first-child { padding-bottom: 10px !important; margin-bottom: 10px !important; }
