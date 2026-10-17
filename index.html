@@ -1556,13 +1556,17 @@
              looking for a hostel had to scroll past the whole filter panel before seeing a single
              one. The count in the button label is what tells them a filter is still applied once
              the panel is shut. -->
-        <div class="flex gap-2 mb-3">
+        <!-- Filters aur Saved: pehle py-3 + text-sm + rounded-2xl - lagbhag 50px
+             oonche the. Ye do button kaam ke to hain, par guest ko HOSTEL dekhna
+             hai, button nahi. Ab chhote (phone par ~36px) - 14px bachte hain, aur
+             nazar seedha listing par jati hai. Dabne layak abhi bhi hain. -->
+        <div id="dashFilterBar" class="flex gap-2 mb-3">
         <button type="button" onclick="toggleDiscoverFilters()" id="discoverFilterToggle"
-            class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm rounded-2xl border-2 border-slate-200 transition flex items-center justify-center gap-2">
+            class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs rounded-xl border-2 border-slate-200 transition flex items-center justify-center gap-2">
             <span>⚙️ Filters</span><span id="discoverFilterCount" class="hidden text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full"></span>
         </button>
         <button type="button" onclick="toggleSavedFilter()" id="savedFilterBtn"
-            class="px-5 py-3 bg-white hover:bg-rose-50 text-rose-600 font-black text-sm rounded-2xl border-2 border-rose-200 transition flex items-center justify-center gap-2">
+            class="px-4 py-2 bg-white hover:bg-rose-50 text-rose-600 font-black text-xs rounded-xl border-2 border-rose-200 transition flex items-center justify-center gap-2">
             <span>❤️ Saved</span><span id="savedFilterCount" class="hidden text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full"></span>
         </button>
         </div>
