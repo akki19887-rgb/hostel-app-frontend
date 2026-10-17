@@ -448,24 +448,62 @@
            ============================================================ */
         @media (max-width: 767px) {
             /* --- Guest Dashboard ke upar wale chaar button ---
-               Ye chaar button (Messages / My Bookings / Account / Logout) ek hi
-               line me the, bina wrap ke. 360px chaude phone par poori line 373px
-               ki ho jati thi - yaani LOGOUT ka button screen se BAHAR chala jata
-               tha (331..406). Guest log out kar hi nahi sakta tha, aur usse koi
-               nishaan bhi nahi milta tha ki wahan kuch hai.
-               Ab ye line lapet jati hai (wrap), aur daayein taraf se shuru hoti
-               hai. Saath hi har button 40px ka ho gaya - pehle 34px tha, jo
-               ungli se dabane ke liye chhota hai. --- */
+               TEEN HAALAT GUZAR CHUKI HAIN, teeno likh raha hoon taaki koi
+               dobara peeche na le jaye:
+
+               1. Shuru me chaaron poore naam ke saath EK line me the, bina wrap
+                  ke. 360px chaude phone par line 373px ki ho jati thi - LOGOUT
+                  ka button screen se BAHAR chala jata tha (331..406). Guest log
+                  out kar hi nahi sakta tha.
+               2. Phir inhe wrap kar diya - Logout dikhne laga, par ab DO kataar
+                  ban gayin aur upar ki keemti jagah chali gayi.
+               3. Ab: phone par teen buttons ka likha hua hissa (.gdb-lamba)
+                  chhup jata hai, sirf nishaan bachta hai. Chaaron asaani se ek
+                  line me aa jate hain (~215px, 360px me bhi khoob jagah bachti
+                  hai), aur ek kataar bachti hai.
+
+               Logout par likhai rehti hai - baaki teen ke nishaan (chat, list,
+               gear) har app me ek jaise hain, par logout ka koi aisa nishaan
+               nahi jisme shak na ho. Galti se logout ho jana guest ke liye
+               sabse chidhane wali baat hai, isliye wahan andaza lagwana theek
+               nahi.
+
+               Buttons 40px oonche rehte hain - ungli se dabane layak. --- */
             #guestDashBtns {
-                flex-wrap: wrap !important;
+                flex-wrap: nowrap !important;
                 justify-content: flex-end;
-                gap: 0.5rem !important;
+                gap: 0.4rem !important;
                 max-width: 100%;
             }
             #guestDashBtns > button {
                 min-height: 40px;
                 padding-left: 0.7rem !important; padding-right: 0.7rem !important;
+                white-space: nowrap;
             }
+            /* Sirf nishaan wale button chaukor rakhiye, warna wo patle ho kar
+               dabane me mushkil ho jate hain. */
+            #guestDashBtns > button:not(.gdb-shabd) {
+                min-width: 44px;
+                font-size: 15px;
+                padding-left: 0.5rem !important; padding-right: 0.5rem !important;
+            }
+            #guestDashBtns .gdb-lamba { display: none; }
+
+            /* --- Shahar + tareekh ki kataar ---
+               Phone par "CITY" aur "FROM" ke shabd chhup jate hain: select me
+               shahar ka naam khud dikhta hai, aur date wale khaane ko har phone
+               apne aap "dd/mm/yyyy" jaisa dikhata hai. Dono shabd rakhne par
+               360px me select itna patla ho jata ki shahar ka naam kat jata. */
+            #dashKhojBar .dkb-label { display: none; }
+            #dashKhojBar { gap: 0.4rem; }
+            #dashKhojBar #guestCitySelect { padding: 0.6rem 0.5rem !important; min-width: 0; }
+            #dashKhojBar .dkb-date {
+                padding: 0.6rem 0.5rem !important;
+                font-size: 12px; flex: 0 0 auto; max-width: 46%;
+            }
+            /* Filters/Saved phone par aur chhote - par 36px se neeche nahi,
+               warna ungli se dabana mushkil ho jata hai. */
+            #dashFilterBar > button { min-height: 36px; padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
 
             /* --- Login ke teen button phone par ek-ek line me ---
                "Continue with Mobile" do line me toot jata tha ("Continue with" /
