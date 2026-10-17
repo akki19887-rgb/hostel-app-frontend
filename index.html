@@ -1568,26 +1568,32 @@
 
         <!-- Useful info strip below the listing, MakeMyTrip-style: quick trust signals + help, so the
              page doesn't just end abruptly after the property cards. -->
-        <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-                <div class="text-2xl mb-1">✅</div>
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Verified Listings</p>
-                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Every property checked</p>
+        <!-- "Powered by Razorpay" hata diya: PAYMENT_MODE abhi 'upi_manual' hai,
+             Razorpay live hi nahi hai. Guest se aisi baat kehna jo sach na ho,
+             choti si lagti hai - par paise ke panne par yahi bharosa todti hai. -->
+        <div id="trustStrip">
+            <div class="trust-box">
+                <div class="trust-ico">&#9989;</div>
+                <p class="trust-naam">Verified<span class="trust-lamba"> Listings</span></p>
+                <p class="trust-byora">Every property checked</p>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-                <div class="text-2xl mb-1">🔒</div>
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Secure Payment</p>
-                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">Powered by Razorpay</p>
+            <div class="trust-box">
+                <div class="trust-ico">&#128274;</div>
+                <p class="trust-naam">Secure<span class="trust-lamba"> Payment</span></p>
+                <p class="trust-byora">Every payment verified by us</p>
             </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-                <div class="text-2xl mb-1">↩️</div>
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Easy Refunds</p>
-                <p class="text-[9px] text-slate-400 font-semibold mt-0.5"><a href="#" onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')" class="underline">View policy</a></p>
-            </div>
-            <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-                <div class="text-2xl mb-1">💬</div>
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-wide">Need Help?</p>
-                <p class="text-[9px] text-slate-400 font-semibold mt-0.5">We're here for you</p>
+            <!-- Poora dabba hi link hai. Pehle sirf "View policy" ke do chhote
+                 shabd dabne layak the - ungli se woh pakadna mushkil tha. -->
+            <a href="#" class="trust-box trust-link"
+               onclick="event.preventDefault(); document.getElementById('modalTnC').classList.remove('hidden')">
+                <div class="trust-ico">&#8617;&#65039;</div>
+                <p class="trust-naam">Refunds</p>
+                <p class="trust-byora trust-rekha">View policy</p>
+            </a>
+            <div class="trust-box">
+                <div class="trust-ico">&#128172;</div>
+                <p class="trust-naam">Help<span class="trust-lamba">?</span></p>
+                <p class="trust-byora">We're here for you</p>
             </div>
         </div>
     </div>
