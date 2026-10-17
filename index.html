@@ -1475,10 +1475,18 @@
                 </div>
             </div>
             <div id="guestDashBtns" class="flex items-center gap-3">
-                <button type="button" onclick="openMessages('guest')" class="relative px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">💬 Messages<span id="guestMsgBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
-                <button type="button" onclick="goTo('screenMyBookings')" class="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">📋 My Bookings</button>
-                <button type="button" onclick="openAccountSettings()" title="Account settings" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">⚙️ Account</button>
-                <button type="button" onclick="logout()" class="px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
+                <!-- Phone par in buttons ka likha hua hissa (.gdb-lamba) chhup
+                     jata hai aur sirf nishaan bachta hai - isi se chaaron ek
+                     line me aa jate hain. Logout JAAN-BOOJH KAR shabd me rehta
+                     hai: baaki teen nishaan har app me ek jaise hain, par logout
+                     ka koi aisa nishaan nahi jisme shak na ho - aur galti se
+                     logout ho jana guest ke liye sabse chidhane wali baat hai.
+                     title/aria-label dono rakhe hain, taaki nishaan-wale button
+                     ka matlab dabane se pehle bhi pata chale. -->
+                <button type="button" onclick="openMessages('guest')" title="Messages" aria-label="Messages" class="gdb relative px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">💬<span class="gdb-lamba"> Messages</span><span id="guestMsgBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-indigo-600 text-white text-[10px] font-black rounded-full flex items-center justify-center"></span></button>
+                <button type="button" onclick="goTo('screenMyBookings')" title="My Bookings" aria-label="My Bookings" class="gdb px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 font-bold text-xs rounded-xl hover:bg-indigo-100 transition shadow-sm">📋<span class="gdb-lamba"> My Bookings</span></button>
+                <button type="button" onclick="openAccountSettings()" title="Account settings" aria-label="Account settings" class="gdb px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">⚙️<span class="gdb-lamba"> Account</span></button>
+                <button type="button" onclick="logout()" title="Logout" class="gdb gdb-shabd px-4 py-2 bg-white/70 text-slate-600 font-bold text-xs rounded-xl hover:bg-white transition shadow-sm border border-slate-200/60">Logout</button>
             </div>
         </div>
 
