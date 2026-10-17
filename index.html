@@ -1494,12 +1494,22 @@
              every app open, with the filtering done in the browser. That is fine at fifty listings
              and ruinous at five thousand: the phone renders them all, and every visitor pays for a
              full-collection read. Picking a city scopes the query at the server. -->
-        <div class="flex items-center gap-2 mb-4">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">City</label>
+        <!-- Shahar AUR check-in ki tareekh, ek hi kataar me, Map View se upar.
+             Tareekh pehle "Available Properties" wali kataar me neeche padi thi -
+             yaani guest naksha dekh chuka hota tha, listing dekh chuka hota tha,
+             tab jaa kar tareekh bharne ka mauka aata. Jabki tareekh wahi cheez
+             hai jo tay karti hai ki konsa bed khali hai. Ab dono sawaal ("kahan"
+             aur "kab") saath me, sabse upar. -->
+        <div id="dashKhojBar" class="flex items-center gap-2 mb-4">
+            <label for="guestCitySelect" class="dkb-label text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">City</label>
             <select id="guestCitySelect" onchange="onGuestCityChange()"
                 class="flex-1 p-3 border-2 border-indigo-200 rounded-2xl font-black text-sm text-slate-800 bg-white">
                 <option value="">Loading…</option>
             </select>
+            <label for="userCheckInDate" class="dkb-label text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">From</label>
+            <input type="date" id="userCheckInDate" title="Check-in date"
+                onchange="window.selectedCheckInDate = this.value;"
+                class="dkb-date p-3 border-2 border-slate-200 rounded-2xl font-bold text-slate-700 text-sm bg-white">
         </div>
 
         <div class="flex justify-between items-center mb-3">
