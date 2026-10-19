@@ -9588,7 +9588,17 @@
         // Ise "Tax Invoice" NAHI kaha gaya. Tax invoice sirf GST registration
         // wala de sakta hai; HOSTEL OM-F ka abhi nahi hai. Bina GSTIN ke "Tax
         // Invoice" likhna jhootha kagaz banana hota.
-        const RASID_FIRM = 'HOSTEL OM-F';
+        // Rasid par UPAR brand ka naam, aur neeche kanooni farm ka naam.
+        //
+        // Pehle sabse upar "HOSTEL OM-F" chhapta tha. Guest ne app me kabhi ye
+        // naam dekha hi nahi hota - uske liye to ye "HostelOM" hai. Rasid par
+        // koi anjaan naam dekh kar use lagta hai paisa kahin aur chala gaya.
+        //
+        // Par kanooni naam hata bhi nahi sakte: rasid wo kagaz hai jisse sabit
+        // hota hai ki paisa KISNE liya. Wahan us farm ka naam hona hi chahiye
+        // jiske khate me paisa gaya. Isliye dono - brand upar, farm neeche.
+        const RASID_FIRM = 'HostelOM';
+        const RASID_LEGAL = 'HOSTEL OM-F';
         // PURA PATA JAAN-BOOJH KAR NAHI.
         // Ye ek ghar ka pata hai. Rasid guest ke phone me chali jati hai, aur
         // wahan se aage kahin bhi. Kanoonan farm ka naam aur shehar kaafi hai;
