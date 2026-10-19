@@ -14471,6 +14471,25 @@
         }
 
         function openGuestRegistrationForm() {
+            // PREVIEW SE ASLI BOOKING BAN JATI THI.
+            //
+            // "Preview & Test" koi alag screen nahi hai - wo wahi screen hai
+            // jahan asli guest asli booking karta hai (screenUser2DLayout).
+            // Preview use udhaar leta hai, aur `isPreviewingAsUser` switch se
+            // dono alag hote hain.
+            //
+            // Par us switch ki jaanch YAHAN kabhi lagi hi nahi thi. Natija:
+            // admin preview me bed chunta, T&C tick karta, "Proceed to Pay"
+            // dabata - aur asli hostel par asli booking ban jati, kyunki
+            // currentPropertyData.id me asli listing ki id hoti hai. Bed
+            // occupied ho jata, malik ko notification jata, rent ledger
+            // chalu ho jata. Sirf jaanch kar raha tha admin.
+            if (typeof isPreviewingAsUser !== 'undefined' && isPreviewingAsUser) {
+                alert('Ye preview hai - yahan se asli booking nahi hoti.\n\n'
+                    + 'Bed chunna, rate aur guest ko kya dikhta hai, sab yahan jaanch lijiye. '
+                    + 'Layout theek lage to Architect Mode me wapas jaa kar "Publish Blueprint" dabaiye.');
+                return;
+            }
             if (!ensureLoggedInForBooking(openGuestRegistrationForm)) return;
             const hostelName = (window.currentPropertyData && (window.currentPropertyData.businessName || window.currentPropertyData.name || window.currentPropertyData.companyName || (window.currentPropertyData.businessProfile && window.currentPropertyData.businessProfile.company))) || 'Selected Hostel';
             document.getElementById('grfHostelNameHeading').innerText = hostelName;
