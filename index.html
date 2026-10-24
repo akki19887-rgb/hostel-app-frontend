@@ -327,6 +327,13 @@
             line-height: 1.3;
         }
         .trust-rekha { text-decoration: underline; }
+
+        /* EK HI SHAHAR HO TO SHAHAR KA KHAANA CHHUPA DIJIYE.
+           Class loadGuestCities() lagata hai - jis din doosre shahar ki pehli
+           listing approve hogi, wo apne aap hat jayegi aur dropdown wapas aa
+           jayega. Yahan sirf chhupane ka kaam hai, faisla wahan hota hai. */
+        #dashKhojBar.ek-shahar .dkb-label[for="guestCitySelect"],
+        #dashKhojBar.ek-shahar #guestCitySelect { display: none; }
         @media (max-width: 767px) {
             /* Phone par byora aur lambe naam chhup jate hain, chaaron ek kataar
                me aa jate hain. Dabba 44px se ooncha rehta hai, taaki ungli se
