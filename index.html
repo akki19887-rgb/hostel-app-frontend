@@ -15418,7 +15418,25 @@
         function startTour(kind, force) {
             if (!TOUR_STEPS[kind]) return;
             if (!force && tourAlreadySeen(kind)) return;
-            tourKind = kind; tourQueue = TOUR_STEPS[kind]; tourIdx = 0;
+            tourKind = kind;
+            // CHHUPE HUE KHAANE PAR TOUR MAT ROKIYE.
+            //
+            // Tour har kadam par getElementById karke us cheez ke paas card
+            // lagata hai. Agar wo cheez chhupi hui ho (jaise ek hi shahar hone
+            // par city ka dropdown), to uska naap 0x0 aata hai aur card screen
+            // ke kone me jaa kar chipak jata hai - guest ko lagta hai app toot
+            // gayi. Isliye aise kadam chhod dete hain.
+            //
+            // Jin kadam ka `el` null hai (beech ki baat) wo waise hi rehte hain.
+            tourQueue = TOUR_STEPS[kind].filter(s => {
+                if (!s.el) return true;
+                const e = document.getElementById(s.el);
+                if (!e) return false;
+                const r = e.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            });
+            if (!tourQueue.length) return;
+            tourIdx = 0;
             showTourStep();
         }
 
