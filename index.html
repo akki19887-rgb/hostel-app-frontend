@@ -14228,6 +14228,31 @@
                 });
                 if (missing > 0) html += `<option value="__nocity__">Older listings (no city set) — ${missing}</option>`;
                 sel.innerHTML = html;
+
+                // EK HI SHAHAR HO TO DROPDOWN DIKHANE KA MATLAB NAHI.
+                //
+                // Abhi poore HostelOM par ek hi shahar hai - Raipur. Us haalat
+                // me "City: Raipur ▾" ek aisa sawaal hai jiska ek hi jawab hai.
+                // Wo poori kataar jagah ghera rehti hai, theek wahan jahan guest
+                // ko hostel dikhna chahiye.
+                //
+                // Dropdown HATAYA nahi ja raha, sirf chhupaya ja raha hai: doosre
+                // shahar ki pehli listing approve hote hi wo apne aap wapas aa
+                // jayega. Isi liye shart yahan hai, CSS me nahi.
+                //
+                // "Older listings (no city set)" wale maujood hon to NAHI chhupate -
+                // tab chunne ko sach me do cheezein hain.
+                const bar = document.getElementById('dashKhojBar');
+                if (bar) {
+                    const ekHiShahar = list.length === 1 && missing === 0;
+                    bar.classList.toggle('ek-shahar', ekHiShahar);
+                    if (ekHiShahar) {
+                        // Wahi ek shahar chup-chaap chun lijiye, taaki query bhi
+                        // usi par simti rahe aur guest ko kuch karna na pade.
+                        sel.value = list[0];
+                        try { localStorage.setItem('hoom_guest_city', list[0]); } catch (e) {}
+                    }
+                }
             } catch (e) {
                 console.warn('City list failed', e);
                 sel.innerHTML = '<option value="">All cities</option>';
