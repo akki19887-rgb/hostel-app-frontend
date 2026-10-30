@@ -160,6 +160,13 @@
         }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
+            /* Jis likhai par koi size class nahi lagi, wo browser ka default
+               16px le leti thi - paimane se bahar. Base ko body naap par laane
+               se aisi har likhai apne aap kataar me aa jati hai.
+               rem par koi asar nahi: rem <html> se naapta hai, body se nahi,
+               isliye p-4 jaise padding jaise the waise hi rehte hain. */
+            font-size: var(--t3);
+            line-height: var(--lh3);
             overscroll-behavior-y: none;
             background: radial-gradient(ellipse at top left, rgba(79, 70, 229, 0.15), transparent 50%),
                         radial-gradient(ellipse at bottom right, rgba(236, 72, 153, 0.12), transparent 50%),
