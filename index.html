@@ -90,6 +90,68 @@
             --danger: #ef4444;
             --dark: #0f172a;
             --slate-50: #f8fafc;
+
+            /* ----- PAIMANA: likhai ke 5 naap ----- */
+            --t1: 10px;  --lh1: 14px;   /* micro - badge, sabse chhota label */
+            --t2: 12px;  --lh2: 17px;   /* small - byora, doosri line     */
+            --t3: 14px;  --lh3: 20px;   /* body  - aam likhai             */
+            --t4: 18px;  --lh4: 24px;   /* title - card ka sirnaam        */
+            --t5: 22px;  --lh5: 28px;   /* head  - screen ka sirnaam      */
+
+            /* ----- PAIMANA: kone ke 2 naap ----- */
+            --r-sm: 10px;               /* button, input, chhota dabba    */
+            --r-lg: 16px;               /* card, sheet, bada dabba        */
+        }
+
+        /* ===================================================================
+           PAIMANA - poore app me ek hi naap
+
+           KYUN: app me 17 alag text size chal rahe the (8, 9, 10, 11, 12, 13,
+           14, 15, 16, 17, 18, 20, 24 px) aur 6 alag kone. Itne naap aankh ko
+           bikhra hua lagte hain - wahi "app theek se jami nahi hai" wala ehsas.
+           Dhang se bani app me 5 ke aas-paas hote hain.
+
+           KAISE: 1054 jagah class badalne ke bajaye, yahan tw.css ki class ko
+           hi naye naap par baandh diya gaya hai. Ye block tw.css ke BAAD aata
+           hai, isliye barabari me ye jeetta hai. Fayda - badlaav ek jagah hai,
+           aur zarurat pade to yahi block hata dene se sab purana ho jata hai.
+
+           DHYAAN: ye block jaan-boojh kar <style> ke SHURU me hai, ant me
+           nahi. Isse tw.css to har jaye, par app ke apne niyam (jaise
+           .trust-naam, .gdb-shabd) neeche hone ke kaaran apni baat rakh lete
+           hain - unka naap soch-samajh kar chuna gaya tha.
+
+           text-3xl/4xl/5xl ko jaan-boojh kar chhoda hai - wo likhai nahi,
+           emoji ka naap hain. Wo alag faisla hai.
+           =================================================================== */
+
+        /* ----- 1. likhai ----- */
+        .text-\[8px\], .text-\[9px\], .text-\[10px\]
+            { font-size: var(--t1); line-height: var(--lh1); }
+        .text-\[11px\], .text-\[12px\], .text-xs
+            { font-size: var(--t2); line-height: var(--lh2); }
+        .text-\[13px\], .text-\[14px\], .text-sm
+            { font-size: var(--t3); line-height: var(--lh3); }
+        .text-\[15px\], .text-\[16px\], .text-\[17px\], .text-\[18px\], .text-base, .text-lg
+            { font-size: var(--t4); line-height: var(--lh4); }
+        .text-xl, .text-2xl
+            { font-size: var(--t5); line-height: var(--lh5); }
+
+        /* ----- 2. kone ----- */
+        .rounded, .rounded-lg, .rounded-xl      { border-radius: var(--r-sm); }
+        .rounded-2xl, .rounded-3xl              { border-radius: var(--r-lg); }
+        .rounded-\[2rem\]                       { border-radius: var(--r-lg); }
+
+        /* ----- 3. phone par kinare tak -----
+           Pehle har taraf 48px khaali jata tha: body ka p-4 (16px) + panel ka
+           p-8 (32px). 393px ke phone par 96px, yaani poori chaudai ka 24%,
+           sirf patti me. Ab 22px - content ko 50px zyada jagah milti hai.
+           body par !important isliye ki Tailwind ki .p-4 class element wale
+           niyam se zyada taakatwar hoti hai. Panel ko iski zarurat nahi -
+           .screen-panel.premium-card do class hain, .p-8 se upar.             */
+        @media (max-width: 767px) {
+            body { padding-left: 8px !important; padding-right: 8px !important; }
+            .screen-panel.premium-card { padding: 16px 14px; }
         }
         * { -webkit-tap-highlight-color: transparent; }
         html {
