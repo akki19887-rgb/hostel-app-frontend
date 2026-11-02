@@ -10390,7 +10390,7 @@
             if (walkIns.length) {
                 const first = walkIns[0];
                 const msg = encodeURIComponent(`Namaste ${first.guestName}, aapka rent ₹${(Number(first.amount)||0).toLocaleString('en-IN')} pending hai. Kripya jama kar dijiye. Dhanyavaad.`);
-                if (confirm(`${sent} guest(s) ko app par reminder chala gaya.\n\n${walkIns.length} walk-in guest hain jinke paas app nahi hai — WhatsApp kholein?`)) {
+                if (confirm(`Reminder sent in the app to ${sent} guest(s).\n\n${walkIns.length} walk-in guest(s) do not have the app — open WhatsApp?`)) {
                     openWhatsApp(first.guestPhone, decodeURIComponent(msg));
                 }
             } else {
