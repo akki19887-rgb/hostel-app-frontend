@@ -4680,13 +4680,13 @@
                     // karna padega.
                     const metre = Math.round(pos.coords.accuracy || 0);
                     if (metre > 60) {
-                        alert('Pin laga di gayi hai, par aapke phone ko aapki jagah '
-                            + 'sirf lagbhag ' + metre + ' meter tak hi pata hai.\n\n'
-                            + 'Map ko bada karke pin ko THEEK apni building par '
-                            + 'khisak dijiye - warna guest aas-paas kahin aur '
-                            + 'pahunch jayega.\n\n'
-                            + 'Khuli jagah par (chhat ya bahar) jaakar dobara dabane '
-                            + 'se bhi jagah zyada pakki milti hai.');
+                        alert('The pin is placed, but your phone only knows your location '
+                            + 'to within about ' + metre + ' metres.\n\n'
+                            + 'Zoom in and drag the pin EXACTLY onto your building '
+                            + '- otherwise guests may reach the wrong place '
+                            + 'nearby.\n\n'
+                            + 'Trying again in the open (on the roof or outside) '
+                            + 'also gives a more accurate location.');
                     } else if (window.showAppToast) {
                         window.showAppToast('\u{1F4CD} Pin aapki jagah par aa gayi '
                                           + '(lagbhag ' + metre + ' meter tak pakka)');
