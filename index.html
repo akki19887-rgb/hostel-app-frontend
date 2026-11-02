@@ -4634,17 +4634,17 @@
             if (navigator.permissions && navigator.permissions.query) {
                 navigator.permissions.query({ name: 'geolocation' }).then((p) => {
                     if (p && p.state === 'denied') {
-                        alert('Location ki ijaazat pehle mana ki ja chuki hai, isliye '
-                            + 'phone ab dobara nahi poochhega.\n\n'
-                            + 'Sabse aasan: map par ungli se hi pin laga dijiye - '
-                            + 'usse kaam ho jayega.\n\n'
-                            + 'Ijaazat wapas chalu karni ho to:\n'
+                        alert('Location permission was denied earlier, so '
+                            + 'the phone will not ask again.\n\n'
+                            + 'Easiest: just tap the map to place the pin - '
+                            + 'that works fine.\n\n'
+                            + 'To turn the permission back on:\n'
                             + (appKeAndarHain()
-                                ? 'Phone ki Settings → Apps → HostelOM → '
+                                ? 'Phone Settings → Apps → HostelOM → '
                                   + 'Permissions → Location → Allow'
-                                : 'Browser ke pate ke paas wale taale (\u{1F512}) par dabakar '
-                                  + '"Location" ko Allow kijiye')
-                            + '\n\nPhir ye button dobara dabaiye.');
+                                : 'Tap the lock (\u{1F512}) next to the address bar and '
+                                  + 'set "Location" to Allow')
+                            + '\n\nThen tap this button again.');
                         return;
                     }
                     aageBadho();
