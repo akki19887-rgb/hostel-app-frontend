@@ -12827,7 +12827,7 @@
             // sasta hai ki guest ke saamne toote.
             const _gadbad = (typeof layoutProblems === 'function') ? layoutProblems() : [];
             if (_gadbad.length) {
-                alert('Publish nahi kar sakte - pehle ye theek kijiye:\n\n'
+                alert('Cannot publish yet - please fix these first:\n\n'
                     + _gadbad.map((x, i) => (i + 1) + '. ' + x).join('\n\n'));
                 if (btn) { btn.disabled = false; btn.innerText = 'Submit to Admin →'; }
                 return;
