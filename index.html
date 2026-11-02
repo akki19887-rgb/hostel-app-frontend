@@ -12128,8 +12128,8 @@
             }
             const dohre = Object.keys(ginti).filter(k => ginti[k] > 1);
             if (dohre.length) {
-                p.push('Ye ID do-do baar hai: ' + dohre.slice(0, 5).join(', ')
-                     + '. Aisi booking par guest se DUGNA paisa katta hai aur do bed ek saath bik jate hain.');
+                p.push('These IDs are used twice: ' + dohre.slice(0, 5).join(', ')
+                     + '. A booking on them charges the guest TWICE and sells two beds at once.');
             }
 
             const lists = (typeof admin2DBlocks !== 'undefined' && Array.isArray(admin2DBlocks)) ? admin2DBlocks : [];
