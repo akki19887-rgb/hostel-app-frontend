@@ -10832,6 +10832,48 @@
             }
         }
 
+        // QR library loads only when the payment screen opens, so the rest of the app stays light.
+        let _qrLibPromise = null;
+        function loadQrLib() {
+            if (window.qrcode) return Promise.resolve(window.qrcode);
+            if (!_qrLibPromise) {
+                _qrLibPromise = new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+                    s.onload = () => window.qrcode ? resolve(window.qrcode) : reject(new Error('qr lib missing'));
+                    s.onerror = () => { _qrLibPromise = null; reject(new Error('qr lib failed')); };
+                    document.head.appendChild(s);
+                });
+            }
+            return _qrLibPromise;
+        }
+
+        // Draws the Scan & Pay QR for this exact booking - same upi:// link as the "Pay in UPI App"
+        // button, so the amount, payee and note are already filled in when the guest scans it.
+        async function renderUpiPayQr(upiLink, amount) {
+            const box = document.getElementById('payUpiQr');
+            const amt = document.getElementById('payUpiQrAmount');
+            if (amt) amt.innerText = amount;
+            if (!box) return;
+            box.innerHTML = 'Loading QR…';
+            try {
+                const qrcode = await loadQrLib();
+                const qr = qrcode(0, 'M');
+                qr.addData(upiLink);
+                qr.make();
+                box.innerHTML = qr.createSvgTag(4, 2);
+                const svg = box.querySelector('svg');
+                if (svg) {
+                    svg.setAttribute('width', '180');
+                    svg.setAttribute('height', '180');
+                    svg.setAttribute('role', 'img');
+                    svg.setAttribute('aria-label', 'UPI QR code to pay HOSTEL OM F');
+                }
+            } catch (e) {
+                box.innerHTML = 'QR could not load. Use the button below or the UPI ID.';
+            }
+        }
+
         function copyUpiId() {
             navigator.clipboard.writeText(PLATFORM_UPI_ID).then(() => showAdminCanvasTooltip('UPI ID copied!', window.innerWidth / 2, 100)).catch(() => {});
         }
