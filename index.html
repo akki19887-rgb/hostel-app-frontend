@@ -9840,30 +9840,30 @@
         window.rasidUtaaro = async function(b, btn) {
             const purana = btn ? btn.innerText : '';
             try {
-                if (btn) { btn.disabled = true; btn.innerText = 'Bana rahe hain...'; }
+                if (btn) { btn.disabled = true; btn.innerText = 'Preparing...'; }
                 const { doc, d } = await rasidPdfBanao(b);
                 doc.save('HostelOM-Rasid-' + (d.bookingId || 'booking') + '.pdf');
             } catch (e) {
                 console.warn('rasid', e);
-                alert('Rasid nahi ban payi: ' + (e.message || e)
-                      + '\n\nInternet dekh lijiye aur dobara koshish kijiye.');
+                alert('Could not create the receipt: ' + (e.message || e)
+                      + '\n\nCheck your internet and try again.');
             } finally {
-                if (btn) { btn.disabled = false; btn.innerText = purana || 'Rasid utaariye'; }
+                if (btn) { btn.disabled = false; btn.innerText = purana || 'Download Receipt'; }
             }
         };
 
         // My Bookings se: pehle booking padho, phir rasid banao.
         window.rasidBookingSe = async function(bookingDocId, btn) {
             try {
-                if (btn) { btn.disabled = true; btn.innerText = 'Bana rahe hain...'; }
+                if (btn) { btn.disabled = true; btn.innerText = 'Preparing...'; }
                 const snap = await window.getDoc(window.doc(window.db, 'bookings', bookingDocId));
-                if (!snap.exists()) throw new Error('Booking mili hi nahi');
+                if (!snap.exists()) throw new Error('Booking not found');
                 await window.rasidUtaaro(snap.data(), null);
             } catch (e) {
                 console.warn('rasid', e);
-                alert('Rasid nahi ban payi: ' + (e.message || e));
+                alert('Could not create the receipt: ' + (e.message || e));
             } finally {
-                if (btn) { btn.disabled = false; btn.innerText = '📄 Rasid'; }
+                if (btn) { btn.disabled = false; btn.innerText = '📄 Receipt'; }
             }
         };
 
@@ -9871,7 +9871,7 @@
         // isliye payment ke waqt hi saaman alag rakh liya jata hai.
         window.rasidSuccessScreenSe = function(btn) {
             const b = window._lastBookingReceipt;
-            if (!b) { alert('Is booking ka byora is session me nahi hai. "Meri Booking" se rasid le lijiye.'); return; }
+            if (!b) { alert('This booking is not available in this session. Get the receipt from "My Bookings".'); return; }
             return window.rasidUtaaro(b, btn);
         };
 
