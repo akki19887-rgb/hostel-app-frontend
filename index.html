@@ -14649,9 +14649,9 @@
             // occupied ho jata, malik ko notification jata, rent ledger
             // chalu ho jata. Sirf jaanch kar raha tha admin.
             if (typeof isPreviewingAsUser !== 'undefined' && isPreviewingAsUser) {
-                alert('Ye preview hai - yahan se asli booking nahi hoti.\n\n'
-                    + 'Bed chunna, rate aur guest ko kya dikhta hai, sab yahan jaanch lijiye. '
-                    + 'Layout theek lage to Architect Mode me wapas jaa kar "Publish Blueprint" dabaiye.');
+                alert('This is a preview - no real booking is made from here.\n\n'
+                    + 'Check bed selection, rates and what guests see. '
+                    + 'If the layout looks right, go back to Architect Mode and tap "Publish Blueprint".');
                 return;
             }
             if (!ensureLoggedInForBooking(openGuestRegistrationForm)) return;
