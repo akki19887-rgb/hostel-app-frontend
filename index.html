@@ -11187,7 +11187,7 @@
 
         // Edit ke beech me niyam ka form kholna.
         window.openRulesForEdit = function() {
-            if (!editingBusinessDocId) { alert('Pehle koi listing kholiye.'); return; }
+            if (!editingBusinessDocId) { alert('Please open a listing first.'); return; }
             rulesEditReturnScreen = 'screenBusinessBedConfig';
             rulesEditLockedGender = (businessRules && businessRules.genderType) || '';
             fillRulesForm(businessRules);
