@@ -11569,8 +11569,8 @@
                 // CHUP-CHAAP AAGE MAT BADHO. Manzoori likhi nahi gayi to agli baar
                 // phir poochhna padega - par malik ka kaam rokna bhi theek nahi,
                 // isliye use saaf bata kar aage jaane dete hain.
-                dikhao('Manzoori save nahi ho payi (' + (e.message || e) + '). '
-                       + 'Aap aage badh sakte hain, par agli baar ye dobara poochha jayega.');
+                dikhao('Your acceptance could not be saved (' + (e.message || e) + '). '
+                       + 'You can continue, but you will be asked again next time.');
                 _ownerAgreementSwikar = false;
                 const aage = _ownerAgreementAage;
                 setTimeout(() => { window.closeOwnerAgreement(); if (aage) aage(); }, 2500);
