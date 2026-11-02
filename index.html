@@ -12178,13 +12178,13 @@
                     });
                     if (!khaali.length) return;
                     const naamSuchi = khaali.slice(0, 5).map(b => b.id || '?').join(', ');
-                    p.push('Aapne "' + naam + '" thehrav chuna hai, par ' + khaali.length
-                         + ' bed ka ' + naam + ' rate 0 hai (' + naamSuchi
-                         + (khaali.length > 5 ? ' aur aur' : '')
-                         + '). Rate 0 rehne par guest ko ' + naam
-                         + ' ka vikalp DIKHTA HI NAHI - yaani ' + kaal
-                         + ' ke hisaab se booking ho hi nahi sakti. Rate bhariye, ya '
-                         + naam + ' ka tick hata dijiye.');
+                    p.push('You chose the "' + naam + '" stay type, but ' + khaali.length
+                         + ' bed(s) have a ' + naam + ' rate of 0 (' + naamSuchi
+                         + (khaali.length > 5 ? ' and more' : '')
+                         + '). With a rate of 0, guests DO NOT SEE the ' + naam
+                         + ' option - so no ' + kaal
+                         + ' booking is possible. Enter a rate, or untick '
+                         + naam + '.');
                 });
             }
 
