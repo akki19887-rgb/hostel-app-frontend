@@ -17180,29 +17180,29 @@
             if (!t) return;
 
             if (mode === 'free') {
-                t.innerText = 'Bed occupied karein?';
-                p.innerHTML = 'Guest ki detail bharenge to rent, check-out aur occupancy sab apne aap chalte hain. Nahi bharna hai to bhi chalega &mdash; bed occupied ho jayega.';
+                t.innerText = 'Mark bed as occupied?';
+                p.innerHTML = 'Add the guest details and rent, check-out and occupancy are tracked automatically. You can skip it too &mdash; the bed will still be marked occupied.';
                 bDetail.classList.remove('hidden'); bDetailNote.classList.remove('hidden');
-                bDetail.innerText = 'Guest ki detail bharo';
-                bDetailNote.innerText = 'Naam, rent, joining date — sujhaav yahi hai';
-                bSkip.innerText = 'Sirf occupied karo — detail nahi';
-                bSkipNote.innerText = 'Bed band ho jayega, par kiska hai ye app ko pata nahi chalega';
+                bDetail.innerText = 'Add guest details';
+                bDetailNote.innerText = 'Name, rent, joining date — recommended';
+                bSkip.innerText = 'Just mark occupied — no details';
+                bSkipNote.innerText = 'The bed will be blocked, but the app will not know who is in it';
             } else if (mode === 'skipped') {
                 // Yahi wo haalat hai jo pehle dead-end thi.
-                t.innerText = 'Ye bed occupied hai';
-                p.innerHTML = 'Is bed par kisi guest ki detail nahi bhari gayi hai. Ab bhar denge to rent aur check-out apne aap chalne lagenge.';
+                t.innerText = 'This bed is occupied';
+                p.innerHTML = 'No guest details have been added for this bed. Add them now and rent and check-out will be tracked automatically.';
                 bDetail.classList.remove('hidden'); bDetailNote.classList.remove('hidden');
-                bDetail.innerText = 'Ab guest ki detail bharo';
-                bDetailNote.innerText = 'Bed occupied hi rahega — bas uska guest jud jayega';
-                bSkip.innerText = 'Bed khaali karo';
-                bSkipNote.innerText = 'Bed dobara guest ko dikhne aur bikne lagega';
+                bDetail.innerText = 'Add guest details now';
+                bDetailNote.innerText = 'The bed stays occupied — the guest is just linked to it';
+                bSkip.innerText = 'Mark bed as free';
+                bSkipNote.innerText = 'The bed will be shown and bookable by guests again';
             } else {
                 // booking judi hai - yahan detail ka button dena hi nahi chahiye
-                t.innerText = 'Is bed par booking hai';
-                p.innerHTML = 'Is bed par ek booking judi hui hai. Guest ki detail wahin se aati hai, isliye yahan dobara nahi bhari ja sakti &mdash; warna ek hi bed par do booking ban jayengi.';
+                t.innerText = 'This bed has a booking';
+                p.innerHTML = 'A booking is linked to this bed. Guest details come from that booking, so they cannot be added again here &mdash; otherwise one bed would have two bookings.';
                 bDetail.classList.add('hidden'); bDetailNote.classList.add('hidden');
-                bSkip.innerText = 'Bed khaali karo';
-                bSkipNote.innerText = 'Sirf tab jab guest sach me ja chuka ho';
+                bSkip.innerText = 'Mark bed as free';
+                bSkipNote.innerText = 'Only when the guest has really left';
             }
         }
 
