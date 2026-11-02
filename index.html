@@ -11412,7 +11412,7 @@
                     showAppToast('Niyam aur daam live ho gaye.');
                 } catch (e) {
                     console.error('niyam save nahi hue:', e);
-                    alert('Niyam save nahi ho paye: ' + (e.message || e) + '\n\nEk baar aur koshish kijiye.');
+                    alert('Could not save the rules: ' + (e.message || e) + '\n\nPlease try again.');
                 }
                 goTo(wapas);
             })();
