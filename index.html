@@ -11953,7 +11953,7 @@
                    || (window.currentPropertyData && window.currentPropertyData.coordinates)
                    || (typeof businessCoordinates !== 'undefined' ? businessCoordinates : null);
             if (!c || !c.lat || !c.lng) {
-                alert('Is property ka naksha pin abhi nahi laga hai.\n\nPehle Google Map wale step me pin laga dijiye, phir Street View khulega.');
+                alert('This property has no map pin yet.\n\nPlace the pin in the Google Map step first, then Street View will open.');
                 return;
             }
             window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + c.lat + ',' + c.lng, '_blank', 'noopener');
