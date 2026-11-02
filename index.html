@@ -9481,7 +9481,7 @@
             if (phoneKhaana && !phoneKhaana.classList.contains('hidden')) {
                 daalaHuaPhone = String((phoneEl && phoneEl.value) || '').replace(/\D/g, '');
                 if (daalaHuaPhone.length !== 10) {
-                    alert('Apna 10-ank ka mobile number daaliye. Hostel malik isi number par aapse baat karega.');
+                    alert('Please enter your 10-digit mobile number. The hostel owner will contact you on this number.');
                     if (phoneEl) phoneEl.focus();
                     return;
                 }
