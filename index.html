@@ -10823,7 +10823,7 @@
                 document.getElementById('payUpiIdDisplay').innerText = PLATFORM_UPI_ID;
                 document.getElementById('payUpiAmountLabel').innerText = advanceAmount;
                 const note = encodeURIComponent(`HostelOM booking advance - ${hostelName || ''}`);
-                const upiLink = `upi://pay?pa=${encodeURIComponent(PLATFORM_UPI_ID)}&pn=${encodeURIComponent(PLATFORM_UPI_PAYEE_NAME)}&mc=${PLATFORM_UPI_MCC}&am=${advanceAmount}&cu=INR&tn=${note}`;
+                const upiLink = `upi://pay?pa=${PLATFORM_UPI_ID}&pn=${encodeURIComponent(PLATFORM_UPI_PAYEE_NAME)}&mc=${PLATFORM_UPI_MCC}&am=${advanceAmount}&cu=INR&tn=${note}`;
                 document.getElementById('btnOpenUpiApp').href = upiLink;
                 renderUpiPayQr(upiLink, advanceAmount);
                 document.getElementById('payUtrInput').value = '';
