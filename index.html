@@ -11545,8 +11545,8 @@
             const naam = (naamEl && naamEl.value || '').trim();
             const dikhao = (m) => { if (err) { err.innerText = m; err.classList.remove('hidden'); } };
 
-            if (!tick || !tick.checked) { dikhao('Pehle tick lagaiye ki aapne padh liya hai.'); return; }
-            if (naam.length < 3) { dikhao('Apna poora naam likhiye - yahi dastkhat ki jagah hai.'); return; }
+            if (!tick || !tick.checked) { dikhao('Please tick the box to confirm you have read the terms.'); return; }
+            if (naam.length < 3) { dikhao('Please type your full name - it works as your signature.'); return; }
 
             const purana = btn ? btn.innerText : '';
             try {
