@@ -11550,9 +11550,9 @@
 
             const purana = btn ? btn.innerText : '';
             try {
-                if (btn) { btn.disabled = true; btn.innerText = 'Likh rahe hain...'; }
+                if (btn) { btn.disabled = true; btn.innerText = 'Saving...'; }
                 const uid = (window.auth && window.auth.currentUser) ? window.auth.currentUser.uid : null;
-                if (!uid) throw new Error('Pehle login kijiye');
+                if (!uid) throw new Error('Please log in first');
                 await window.setDoc(window.doc(window.db, 'users', uid), {
                     agreement: {
                         version: OWNER_AGREEMENT_VERSION,
