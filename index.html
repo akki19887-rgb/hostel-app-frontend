@@ -12511,7 +12511,7 @@
                     console.error('Notification listener (' + tag + ') fail hua:', err);
                     const panel = document.getElementById('bizNotifPanel');
                     if (panel && Object.keys(_bizNotifStore).length === 0) {
-                        panel.innerHTML = '<p class="text-xs text-red-500 font-semibold text-center py-4">Notification abhi nahi aa pa rahe.<br>Dobara login karke dekhiye.</p>';
+                        panel.innerHTML = '<p class="text-xs text-red-500 font-semibold text-center py-4">Notifications could not load right now.<br>Please log in again.</p>';
                     }
                 });
             }
