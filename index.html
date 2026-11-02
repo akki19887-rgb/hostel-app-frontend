@@ -12135,7 +12135,7 @@
             const lists = (typeof admin2DBlocks !== 'undefined' && Array.isArray(admin2DBlocks)) ? admin2DBlocks : [];
             const khaaliKamre = lists.filter(b => b && b.type === 'room' && (!b.beds || !b.beds.length));
             if (khaaliKamre.length) {
-                p.push(khaaliKamre.length + ' kamre me ek bhi bed nahi: '
+                p.push(khaaliKamre.length + ' room(s) have no beds: '
                      + khaaliKamre.slice(0, 4).map(r => r.name || r.id).join(', '));
             }
 
