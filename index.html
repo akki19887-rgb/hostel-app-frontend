@@ -4520,7 +4520,7 @@
                 setTimeout(() => { try { window.nakshaFit('blueprintGrid'); } catch (e) {} }, 60);
             } else {
                 panel.classList.add('hidden');
-                if (btn) btn.innerText = '\u{1F53C} Naksha dekhein';
+                if (btn) btn.innerText = '\u{1F53C} Show layout';
             }
         }
         function toggleAdminFloorPlanPanel() { const panel = document.getElementById('adminFloorPlanPanel'); const canvasPanel = document.getElementById('adminCanvasPanel'); const btn = document.getElementById('floorPanelToggleBtn'); if (!panel) return; if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); canvasPanel.classList.remove('w-full'); if (btn) btn.innerText = '◧ Hide Plan'; } else { panel.classList.add('hidden'); canvasPanel.classList.add('w-full'); if (btn) btn.innerText = '◨ Show Plan'; } }
