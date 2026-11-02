@@ -4608,8 +4608,8 @@
             const wapas = () => { if (b) { b.innerHTML = purana || '\u{1F3AF}'; b.disabled = false; } };
 
             if (!navigator.geolocation) {
-                alert('Is phone/browser me location ka intezaam nahi hai.\n\n'
-                    + 'Map par ungli se hostel ki jagah par pin laga dijiye.');
+                alert('Location is not available on this phone/browser.\n\n'
+                    + 'Tap the map to place the pin on the hostel.');
                 return;
             }
             if (!googleMap || !googleMarker) {
