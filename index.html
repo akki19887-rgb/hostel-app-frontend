@@ -12162,9 +12162,9 @@
                 ? businessRules.stayTypes : null;
             if (chune && beds.length) {
                 const THEHRAV = [
-                    ['daily',   'priceDaily',   'Daily',   'din'],
-                    ['weekly',  'priceWeekly',  'Weekly',  'hafte'],
-                    ['monthly', 'priceMonthly', 'Monthly', 'mahine'],
+                    ['daily',   'priceDaily',   'Daily',   'daily'],
+                    ['weekly',  'priceWeekly',  'Weekly',  'weekly'],
+                    ['monthly', 'priceMonthly', 'Monthly', 'monthly'],
                 ];
                 THEHRAV.forEach(([kunji, khana, naam, kaal]) => {
                     if (!chune[kunji]) return;
