@@ -13176,12 +13176,12 @@
                 const m = String((error && error.message) || error || '');
                 if (m.indexOf('client has already been terminated') >= 0
                     || m.indexOf('INTERNAL ASSERTION') >= 0) {
-                    alert('App ka database se rishta toot gaya hai (aksar bahut saare tab '
-                        + 'khule hone par hota hai).\n\nAapka kaam is screen par abhi bhi '
-                        + 'maujood hai. Kripya:\n'
-                        + '1. baaki tab band kijiye\n'
-                        + '2. ye page dobara kholiye (refresh)\n'
-                        + '3. phir Publish dabaiye');
+                    alert('The app lost its connection to the database (this often happens when many tabs '
+                        + 'are open).\n\nYour work is still on this screen. '
+                        + 'Please:\n'
+                        + '1. close the other tabs\n'
+                        + '2. reload this page\n'
+                        + '3. then tap Publish');
                 } else {
                     alert("Error: " + m);
                 }
