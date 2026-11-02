@@ -7932,10 +7932,10 @@
                 // Was "Your bed has been released". It is not: the status goes to
                 // cancellation_requested and the bed stays occupied until an admin approves. The
                 // guest walked away believing they were free while the bed sat off the market.
-                alert('Cancellation bhej di gayi.\n\nAbhi aapka bed chhoda nahi gaya hai — HostelOM ke dekhne ke baad chhoota hai. '
-                    + 'Aam taur par ek din lagta hai.\n\nAapka advance wapas nahi hota jab aap khud cancel karte hain. '
-                    + 'Par agar hostel ne cancel kiya, ya aap pahunche aur jis bed ka paisa diya wo mila hi nahi — '
-                    + 'to +91 91832 06742 par phone kijiye, poora advance wapas milta hai.');
+                alert('Cancellation request sent.\n\nYour bed is not released yet — it is released after HostelOM reviews it. '
+                    + 'This usually takes a day.\n\nThe advance is not refunded when you cancel yourself. '
+                    + 'But if the hostel cancelled, or you arrived and did not get the bed you paid for — '
+                    + 'call +91 91832 06742 and you get the full advance back.');
                 loadMyBookings();
             } catch (err) {
                 console.error('Cancellation request failed', err);
