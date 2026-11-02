@@ -3944,8 +3944,8 @@
                 globalDynamicRooms[roomIndex].raw360File = null;
                 globalDynamicRooms[roomIndex].panorama360Url = null;
                 renderRoomEditorPage(roomIndex);   // label wapas theek ho jaye
-                alert('Ye 360 ki photo nahi judi: ' + (e.message || e)
-                    + '\n\nEk baar aur koshish kijiye, ya doosri photo lijiye.');
+                alert('This 360 photo could not be added: ' + (e.message || e)
+                    + '\n\nPlease try again, or use another photo.');
                 return;
             }
             renderRoomEditorPage(roomIndex);
