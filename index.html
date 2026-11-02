@@ -9953,7 +9953,7 @@
             const body = (lines || []).filter(Boolean).concat(['Issue: ']).join('\n');
             return `https://wa.me/${number}?text=${encodeURIComponent(body)}`;
         }
-        const PLATFORM_UPI_PAYEE_NAME = 'HostelOM';
+        const PLATFORM_UPI_PAYEE_NAME = 'HOSTEL OM F';   // must match the name registered on the bank QR, or UPI apps show a name-mismatch warning
         // PAY-AT-HOSTEL MODEL: the guest only pays this % through the app at booking time — this
         // amount is HostelOM's booking fee/commission. It is not refunded when the GUEST cancels,
         // changes plan or does not turn up — but it is refunded in full in the two cases named in
