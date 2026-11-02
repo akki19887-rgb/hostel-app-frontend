@@ -12112,7 +12112,7 @@
             const beds = allBedsEverywhere();
 
             if (!beds.length) {
-                p.push('Ek bhi bed nahi hai. Bina bed ke listing guest ko "No beds" dikhati hai.');
+                p.push('There are no beds. A listing without beds shows "No beds" to guests.');
             }
 
             const binaId = beds.filter(b => !b.id || !String(b.id).trim()).length;
