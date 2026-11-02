@@ -14793,7 +14793,7 @@
             if (mEl && mEl.offsetParent !== null) {
                 const md = String(mEl.value || '').replace(/\D/g, '');
                 if (md.length !== 10 || !/^[6-9]/.test(md)) {
-                    if (err) { err.innerText = 'Aapka mobile number 10 ank ka hona chahiye (6, 7, 8 ya 9 se shuru).'; err.classList.remove('hidden'); }
+                    if (err) { err.innerText = 'Your mobile number must be 10 digits (starting with 6, 7, 8 or 9).'; err.classList.remove('hidden'); }
                     mEl.focus();
                     mEl.classList.add('ring-2', 'ring-red-400');
                     setTimeout(function () { mEl.classList.remove('ring-2', 'ring-red-400'); }, 2200);
