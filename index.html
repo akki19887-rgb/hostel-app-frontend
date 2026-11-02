@@ -9028,8 +9028,8 @@
             if (res.ok && data && !data.error) return data;
             if (data && data.error) throw new Error(data.error);
             if (res.status === 429) {
-                throw new Error('Abhi bahut baar koshish ho chuki hai. Thodi der baad '
-                              + 'dobara try kijiye, ya Google/Email se login kar lijiye.');
+                throw new Error('Too many attempts right now. Please try again '
+                              + 'in a little while, or sign in with Google/Email.');
             }
             if (res.status >= 500) {
                 throw new Error('Server abhi jawab nahi de raha. Ek minute baad dobara '
