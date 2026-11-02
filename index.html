@@ -3707,6 +3707,15 @@
              verify and confirm (see Admin Console → Booking Management). -->
         <div id="payUpiSection" class="hidden">
             <div class="bg-indigo-50 border-2 border-indigo-100 rounded-2xl p-4 mb-4 text-center">
+                <!-- Scan & Pay: QR is generated on the fly with this booking's exact amount filled in -->
+                <div id="payUpiQrBox" style="background:#fff;border:1px solid #e0e7ff;border-radius:16px;padding:14px 12px 12px;margin:0 auto 14px;max-width:236px;box-shadow:0 4px 14px rgba(79,70,229,.08)">
+                    <p style="font-size:11px;font-weight:900;color:#312e81;letter-spacing:.08em;margin:0 0 8px">SCAN &amp; PAY</p>
+                    <div id="payUpiQr" style="width:180px;height:180px;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;font-weight:700">Loading QR…</div>
+                    <p style="font-size:13px;font-weight:900;color:#0f172a;margin:8px 0 0">HOSTEL OM F</p>
+                    <p style="font-size:12px;font-weight:900;color:#4338ca;margin:2px 0 0">₹<span id="payUpiQrAmount">0</span></p>
+                    <p style="font-size:9px;font-weight:700;color:#64748b;margin:4px 0 0">GPay · PhonePe · Paytm · BHIM · any UPI app</p>
+                    <p style="font-size:9px;font-weight:600;color:#94a3b8;margin:6px 0 0;line-height:1.35">Paying on this phone? Tap the button below, or save a screenshot and scan it from your UPI app's gallery.</p>
+                </div>
                 <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">Pay via UPI to</p>
                 <p id="payUpiIdDisplay" class="text-lg font-black text-indigo-700 mb-2">—</p>
                 <button type="button" onclick="copyUpiId()" class="text-[10px] font-black text-indigo-600 bg-white px-3 py-1.5 rounded-lg border border-indigo-200">📋 Copy UPI ID</button>
