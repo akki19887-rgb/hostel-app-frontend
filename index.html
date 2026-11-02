@@ -13086,7 +13086,7 @@
                     if (!globalBizProfile.company || !globalBizProfile.company.trim()) {
                         const askedName = prompt('Hostel ka naam?\n\nGuest ko yahi dikhega, isliye khaali nahi chhod sakte.\n\nJaise: Nikky Girls Hostel');
                         if (!askedName || !askedName.trim()) {
-                            alert('Hostel ka naam zaroori hai. Publish nahi ho paya.');
+                            alert('Hostel name is required. Could not publish.');
                             if (btn) { btn.disabled = false; btn.innerText = 'VERIFY & PUBLISH'; }
                             return;
                         }
