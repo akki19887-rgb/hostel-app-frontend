@@ -9032,8 +9032,8 @@
                               + 'in a little while, or sign in with Google/Email.');
             }
             if (res.status >= 500) {
-                throw new Error('Server abhi jawab nahi de raha. Ek minute baad dobara '
-                              + 'koshish kijiye.');
+                throw new Error('The server is not responding right now. Please try again '
+                              + 'in a minute.');
             }
             throw new Error('Kuch gadbad hui (code ' + res.status + '). Dobara koshish kijiye.');
         }
