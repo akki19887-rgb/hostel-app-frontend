@@ -11649,6 +11649,8 @@
             ['formPortalMatch', 'formUpiMatch'].forEach(id => { const e = document.getElementById(id); if (e) e.value = 'unchecked'; });
             const rt = document.getElementById('formRegType'); if (rt) rt.value = 'none';
             selectedPropertyType = '';
+            // Nayi listing = nayi ID. Pichhli adhoori koshish ki ID yahin bhool jao.
+            window._pendingNewListingId = null;
 
             // Cover photo ka file input bhi — warna pichhli hostel ki photo chali jati thi.
             const cov = document.getElementById('propertyCoverPhoto');
