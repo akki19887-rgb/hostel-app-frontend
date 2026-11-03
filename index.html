@@ -13167,20 +13167,22 @@
                     // Ab saaf-saaf batao kya hua. Pehle sirf "submitted" likha aata tha,
                     // chahe malik juda ho ya na juda ho.
                     if (!own.ok) {
-                        alert('Listing save ho gayi, LEKIN malik us se juda nahi.\n\n'
-                            + 'Iska matlab: malik ko ye listing apne dashboard me nahi dikhegi.\n\n'
-                            + 'Ankit ko bata dijiye. Wajah: ' + (own.error || 'pata nahi'));
+                        alert('The listing was saved, BUT it is not linked to the owner yet.\n\n'
+                            + 'This means the owner will not see it on their dashboard.\n\n'
+                            + 'Please tell HostelOM support. Reason: ' + (own.error || 'unknown'));
                     } else if (own.claimed) {
-                        alert('✅ Listing ban gayi aur malik ke naam ho gayi.\n\n'
-                            + 'Malik apne number se login karke ise abhi dekh sakta hai.'
-                            + (leadOk ? '' : '\n\n⚠ Lead se jod nahi paye — Leads page par khud check kar lijiye.'));
+                        alert('✅ Listing created and linked to the owner.\n\n'
+                            + 'The owner can log in with their number and see it now.'
+                            + (leadOk ? '' : '\n\n⚠ Could not link the lead — please check the Leads page.'));
                     } else {
-                        alert('✅ Listing ban gayi.\n\n'
-                            + 'Malik ne abhi tak app me login nahi kiya hai.\n'
-                            + 'Usse ' + ownerPhoneForContacts + ' par EK BAAR OTP login karwa dijiye —\n'
-                            + 'listing usi waqt apne aap uske naam ho jayegi.'
-                            + (leadOk ? '' : '\n\n⚠ Lead se jod nahi paye — Leads page par khud check kar lijiye.'));
+                        alert('✅ Listing created.\n\n'
+                            + 'The owner has not logged in to the app yet.\n'
+                            + 'Ask them to log in ONCE with OTP on ' + ownerPhoneForContacts + ' —\n'
+                            + 'the listing will be linked to them automatically.'
+                            + (leadOk ? '' : '\n\n⚠ Could not link the lead — please check the Leads page.'));
                     }
+                    // Save poora hua - agli listing ko nayi ID milni chahiye.
+                    window._pendingNewListingId = null;
 
                 }
                 editingBusinessDocId = null; exitListing();
