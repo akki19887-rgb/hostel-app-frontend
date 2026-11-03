@@ -6252,10 +6252,10 @@
 
         // Number khali ho to POOCHO. Chup-chaap aage badhna hi asli bug tha.
         function askOwnerPhone(hostelName) {
-            const p = prompt('Malik ka phone number (10 ank)\n\n'
+            const p = prompt('Owner\'s phone number (10 digits)\n\n'
                 + (hostelName ? (hostelName + '\n\n') : '')
-                + 'Isi number se malik apne dashboard me login karega aur yahi listing\n'
-                + 'use dikhegi. Number ke bina listing kisi ki nahi hoti.');
+                + 'The owner logs in to their dashboard with this number and sees\n'
+                + 'this listing. Without a number the listing belongs to no one.');
             if (p === null) return null;
             const d = String(p).replace(/\D/g, '').slice(-10);
             return d.length === 10 ? d : '';
