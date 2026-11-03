@@ -13137,9 +13137,9 @@
                     if (ownerPhoneForContacts.length !== 10) {
                         const asked = askOwnerPhone(globalBizProfile.company || '');
                         if (asked === null || asked === '') {
-                            alert('Malik ka 10 ank ka number zaroori hai.\n\n'
-                                + 'Uske bina listing kisi ke naam nahi hoti — na malik ko dikhegi, '
-                                + 'na hum us tak pahunch payenge.');
+                            alert('The owner\'s 10-digit number is required.\n\n'
+                                + 'Without it the listing belongs to no one — the owner will not see it, '
+                                + 'and we cannot reach them.');
                             if (btn) { btn.disabled = false; btn.innerText = 'VERIFY & PUBLISH'; }
                             return;
                         }
