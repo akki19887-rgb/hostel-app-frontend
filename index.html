@@ -13078,15 +13078,13 @@
                     alert('Updates synced live to users!' + msgNaksha + msg360);
                 }
                 else {
-                    const newDocId = `${hostelSlug}-${Date.now().toString(36)}`;
-                    currentAdminDocId = newDocId;
                     // Naam KHAALI nahi ja sakta.
                     // Onboarding poora kiye bina koi seedha "Add Property" par chala jaye to
                     // globalBizProfile khaali reh jata hai — aur listing bina naam ke ban jati
                     // hai. Guest ko "bina naam ka hostel" dikhta hai aur koi book nahi karta.
                     // (Firestore me aisi ek listing mili thi: businessName: "", company: "".)
                     if (!globalBizProfile.company || !globalBizProfile.company.trim()) {
-                        const askedName = prompt('Hostel ka naam?\n\nGuest ko yahi dikhega, isliye khaali nahi chhod sakte.\n\nJaise: Nikky Girls Hostel');
+                        const askedName = prompt('Hostel name?\n\nGuests will see this name, so it cannot be empty.\n\ne.g. Nikky Girls Hostel');
                         if (!askedName || !askedName.trim()) {
                             alert('Hostel name is required. Could not publish.');
                             if (btn) { btn.disabled = false; btn.innerText = 'VERIFY & PUBLISH'; }
@@ -13094,6 +13092,23 @@
                         }
                         globalBizProfile.company = askedName.trim();
                     }
+
+                    // EK LISTING = EK ID.
+                    //
+                    // Pehle har Publish par nayi ID banti thi. Net dheema ho aur pehli
+                    // koshish chup-chaap save ho jaye par jawab na aaye, to malik dobara
+                    // dabata tha - aur DUSRI listing ban jati thi ("OM hostel" do baar,
+                    // 27 second ke farak se, 19 Oct). Ab pehli ID yaad rehti hai; dobara
+                    // dabane par wahi document update hota hai (setDoc = overwrite).
+                    //
+                    // Aur ID naam poochhne ke BAAD banti hai - pehle naam khaali ho to ID
+                    // "hostel-xxxx" ban jati thi.
+                    if (!window._pendingNewListingId) {
+                        const naamSlug = slugify(globalBizProfile.company) || hostelSlug;
+                        window._pendingNewListingId = `${naamSlug}-${Date.now().toString(36)}`;
+                    }
+                    const newDocId = window._pendingNewListingId;
+                    currentAdminDocId = newDocId;
                     // MALIK KA PHONE DUNIYA KO NAHI JANA CHAHIYE.
                     //
                     // `businesses` par rules me `allow read: if true` hai — aur hona bhi
